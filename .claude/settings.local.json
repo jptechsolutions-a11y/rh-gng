@@ -11,7 +11,9 @@
       "Bash(npm install *)",
       "Bash(ls ~/.clasprc.json 2>&1 || echo \"NO_LOGIN\")",
       "Bash(clasp login *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(clasp create *)",
+      "Bash(clasp push *)"
     ]
   }
 }

@@ -1,92 +1,73 @@
-# 🚀 COMECE AQUI — Como colocar o sistema no ar
+# 🚀 PRÓXIMOS PASSOS — Deploy do Sistema
 
-Tudo o que você precisa fazer (≈ 10 minutos):
+✅ Já feito automaticamente:
+- `clasp` instalado e logado
+- Projeto Apps Script criado
+- Planilha vinculada criada
+- 22 arquivos enviados ao Apps Script
 
-## 1. Instalar o `clasp` (uma vez)
+## IDs criados
 
-Abra o PowerShell e rode:
+| Recurso | URL |
+|---------|-----|
+| 📊 **Planilha do sistema** | https://drive.google.com/open?id=1Cs_4CYUzVoKaVvqwdzZHePT0tW-Jf-5_p4G8BZyQg-w |
+| 📝 **Editor Apps Script** | https://script.google.com/d/15nuzkMAK1mnHXdplC1zmCJPjj3yOWddQd5yBnUykxdyUtxCryJP5lshp/edit |
 
-```bash
-npm install -g @google/clasp
-```
+> 💡 Renomeie a planilha "RH G&G" no Drive como preferir (não muda o ID).
 
-> Se ainda não tem Node.js: instale do site oficial https://nodejs.org/ (versão LTS).
+---
 
-## 2. Logar no Google
+## 1. Abrir o editor e rodar `setupPlanilha`
 
-```bash
-clasp login
-```
+Abra o **Editor Apps Script**: https://script.google.com/d/15nuzkMAK1mnHXdplC1zmCJPjj3yOWddQd5yBnUykxdyUtxCryJP5lshp/edit
 
-Vai abrir o navegador. Faça login com **a mesma conta Google que tem acesso à planilha**.
+(ou rode `clasp open` no terminal)
 
-## 3. Vincular o projeto à sua planilha
+No editor:
 
-No PowerShell, dentro da pasta do projeto:
+1. No seletor de função (em cima, ao lado do botão ▶), escolha **`setupPlanilha`**.
+2. Clique **▶ Executar**.
+3. Vai aparecer popup pedindo permissões → **Revisar permissões** → escolha sua conta → "Avançado" → "Acessar RH G&G (não seguro)" → **Permitir**.
+4. Quando terminar (5–10s), abra os **Logs**: menu `Ver > Logs` (ou Ctrl+Enter).
+5. **📝 ANOTE TODAS AS SENHAS** que aparecem no log — uma por filial + a do admin.
+
+---
+
+## 2. Implantar como Web App
+
+Ainda no editor:
+
+1. Clique no botão **Implantar** (canto superior direito) > **Nova implantação**.
+2. Clique no ícone ⚙ ao lado de "Selecionar o tipo" > escolha **Aplicativo da Web**.
+3. Preencha:
+   - **Descrição**: `v0.1.0 MVP`
+   - **Executar como**: **Usuário que acessa o app**
+   - **Quem tem acesso**: **Qualquer pessoa**
+4. Clique **Implantar**.
+5. Copie a **URL do aplicativo da Web** que aparecer.
+
+---
+
+## 3. Distribuir
+
+- 🔗 Mande a URL para cada filial junto com a senha correspondente que você anotou.
+- 🔑 Para administrar (RH central), use a mesma URL + usuário `admin` + senha do admin.
+
+---
+
+## Atualizar o sistema no futuro
+
+Quando quiser alterar código:
 
 ```bash
 cd "C:/Users/juliano.correa/Desktop/G&G"
-clasp create --type sheets --title "RH G&G" --parentId "19TcyRi3TT9X7ef4ikCYz5B6q3LMmz_U8EDt-FPmAbaE" --rootDir .
-```
-
-> Isso cria o arquivo `.clasp.json` localmente (já está no `.gitignore`).
-
-## 4. Subir o código para o Apps Script
-
-```bash
 clasp push
 ```
 
-Se ele perguntar se quer sobrescrever o `appsscript.json`, responda **Sim**.
-
-## 5. Abrir o editor Apps Script
-
-```bash
-clasp open
-```
-
-Vai abrir o editor no navegador.
-
-## 6. Executar `setupPlanilha` (cria abas + senhas)
-
-No editor:
-- Em cima, no seletor de função, escolha **`setupPlanilha`**.
-- Clique **▶ Executar**.
-- Vai pedir permissões — autorize tudo (Sheets + Drive).
-- **Vá em `Ver > Logs`** — copie as senhas geradas (uma por filial + admin). **Anote em local seguro!**
-
-## 7. Implantar como Web App
-
-No editor, clique:
-- **Implantar > Nova implantação**
-- Tipo: **Aplicativo da Web**
-- Descrição: `v0.1.0 MVP`
-- Executar como: **Usuário que acessa**
-- Quem tem acesso: **Qualquer pessoa**
-- Clicar **Implantar** → copiar a **URL do aplicativo**.
-
-## 8. Pronto!
-
-Compartilhe a URL + a senha correspondente com cada filial. Para administrar, use a URL com o **usuário `admin`** e a senha gerada.
+Depois no editor: **Implantar > Gerenciar implantações** > **✏ editar** > **Versão: Nova versão** > **Implantar**. A URL **não muda**.
 
 ---
 
-## Atualizações futuras
+## Smoke test
 
-Quando quiser alterar o código:
-1. Editar localmente
-2. `clasp push`
-3. Editor → **Implantar > Gerenciar implantações** → **✏ editar** → **Nova versão** → **Implantar**.
-
-A URL **não muda** entre versões.
-
----
-
-## Documentação completa
-
-- [README.md](README.md) — visão geral
-- [docs/SMOKE-TEST.md](docs/SMOKE-TEST.md) — roteiro de teste passo a passo
-- [docs/superpowers/specs/2026-06-01-rh-gng-design.md](docs/superpowers/specs/2026-06-01-rh-gng-design.md) — spec completo
-- [docs/superpowers/plans/2026-06-01-rh-gng.md](docs/superpowers/plans/2026-06-01-rh-gng.md) — plano de implementação
-- [docs/LGPD.md](docs/LGPD.md) — adequação LGPD
-- [docs/MIGRACAO.md](docs/MIGRACAO.md) — migração futura para Vercel
+Use o roteiro em [docs/SMOKE-TEST.md](docs/SMOKE-TEST.md) — 13 passos pra validar tudo.

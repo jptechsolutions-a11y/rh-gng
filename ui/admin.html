@@ -1,0 +1,126 @@
+<div x-data="adminPanel()" x-init="carregar()" class="min-h-screen bg-slate-50">
+  <header class="bg-white border-b px-6 py-4 flex justify-between">
+    <div><h1 class="text-xl font-bold">Console Admin</h1><p class="text-xs text-slate-500">Visão consolidada de todas as filiais</p></div>
+    <div class="space-x-3">
+      <a href="#/admin-config" class="text-sm text-slate-500 hover:text-slate-900">⚙ Configurações</a>
+      <button @click="sair" class="text-sm text-slate-500 hover:text-slate-900">Sair</button>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto p-6 space-y-6">
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <template x-for="c in cards">
+        <div class="bg-white rounded-xl p-4 shadow-sm">
+          <p class="text-xs uppercase text-slate-500" x-text="c.label"></p>
+          <p class="text-2xl font-bold" x-text="c.valor"></p>
+        </div>
+      </template>
+    </div>
+
+    <div class="grid md:grid-cols-2 gap-6">
+      <div class="bg-white p-4 rounded-xl shadow-sm"><h3 class="font-semibold mb-2">Por filial</h3><canvas id="chFilial" height="180"></canvas></div>
+      <div class="bg-white p-4 rounded-xl shadow-sm"><h3 class="font-semibold mb-2">Por status</h3><canvas id="chStatus" height="180"></canvas></div>
+      <div class="bg-white p-4 rounded-xl shadow-sm"><h3 class="font-semibold mb-2">Por mês</h3><canvas id="chMes" height="180"></canvas></div>
+      <div class="bg-white p-4 rounded-xl shadow-sm"><h3 class="font-semibold mb-2">Top cargos</h3><canvas id="chCargo" height="180"></canvas></div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm p-4">
+      <h3 class="font-semibold mb-3">Busca global</h3>
+      <div class="grid grid-cols-2 md:grid-cols-6 gap-2 mb-3">
+        <input x-model="f.cpf" placeholder="CPF" class="border rounded-lg px-3 py-2">
+        <input x-model="f.nome" placeholder="Nome" class="border rounded-lg px-3 py-2">
+        <input x-model="f.cargo" placeholder="Cargo" class="border rounded-lg px-3 py-2">
+        <select x-model="f.filial" class="border rounded-lg px-3 py-2">
+          <option value="">Filial</option>
+          <template x-for="fi in ctx.filiais"><option :value="fi.codigo" x-text="fi.codigo + ' - ' + fi.nome"></option></template>
+        </select>
+        <select x-model="f.status" class="border rounded-lg px-3 py-2"><option value="">Status</option>
+          <template x-for="s in ctx.opcoes.status"><option x-text="s"></option></template>
+        </select>
+        <button @click="buscar" class="bg-slate-900 text-white rounded-lg">Buscar</button>
+      </div>
+      <div class="flex justify-between text-sm mb-2">
+        <span x-text="resultado.length + ' resultados'"></span>
+        <button @click="exportar" class="text-blue-600 hover:underline">⬇ Exportar CSV</button>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-slate-100"><tr>
+            <th class="px-3 py-2 text-left">Data</th><th class="px-3 py-2 text-left">Filial</th>
+            <th class="px-3 py-2 text-left">Nome</th><th class="px-3 py-2 text-left">CPF</th>
+            <th class="px-3 py-2 text-left">Cargo</th><th class="px-3 py-2 text-left">Nota</th>
+            <th class="px-3 py-2 text-left">Status</th>
+          </tr></thead>
+          <tbody>
+            <template x-for="r in resultado" :key="r.id_entrevista">
+              <tr class="border-t hover:bg-slate-50">
+                <td class="px-3 py-2" x-text="(r.data_hora||'').slice(0,10)"></td>
+                <td class="px-3 py-2" x-text="r.filial"></td>
+                <td class="px-3 py-2" x-text="r.nome"></td>
+                <td class="px-3 py-2" x-text="r.cpf"></td>
+                <td class="px-3 py-2" x-text="r.cargo_pretendido"></td>
+                <td class="px-3 py-2" x-text="r.nota_geral"></td>
+                <td class="px-3 py-2" x-text="r.status"></td>
+              </tr>
+            </template>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+function adminPanel() {
+  return {
+    ctx: { filiais:[], opcoes:{} }, cards: [], resultado: [],
+    f: { cpf:'', nome:'', cargo:'', filial:'', status:'', dataDe:'', dataAte:'' },
+    async carregar() {
+      const token = localStorage.getItem('rhgng:token');
+      this.ctx = await api.bootstrap(token);
+      const d = await api.dashboard(token);
+      this.cards = [
+        { label: 'Total entrevistas', valor: d.total },
+        { label: 'Banco de Talentos', valor: d.bancoTalentos },
+        { label: 'Aprovados', valor: d.aprovados },
+        { label: 'Contratados', valor: d.contratados },
+        { label: 'Média nota geral', valor: d.mediaNotaGeral },
+      ];
+      this._desenhaGraficos(d);
+      this.buscar();
+    },
+    _desenhaGraficos(d) {
+      const mk = (id, labels, data, type) => new Chart(document.getElementById(id), {
+        type: type || 'bar',
+        data: { labels, datasets: [{ data, backgroundColor: ['#1e293b','#475569','#64748b','#94a3b8','#cbd5e1','#0f766e','#0e7490','#1d4ed8','#7c3aed'] }] },
+        options: { plugins:{ legend:{ display: type === 'doughnut' } }, scales: (type === 'doughnut' || type === 'line') ? {} : { y:{ beginAtZero:true } } }
+      });
+      mk('chFilial', Object.keys(d.porFilial), Object.values(d.porFilial));
+      mk('chStatus', Object.keys(d.porStatus), Object.values(d.porStatus), 'doughnut');
+      mk('chMes', Object.keys(d.porMes).sort(), Object.keys(d.porMes).sort().map(k => d.porMes[k]), 'line');
+      const topCargos = Object.entries(d.porCargo).sort((a,b)=>b[1]-a[1]).slice(0,5);
+      mk('chCargo', topCargos.map(x=>x[0]), topCargos.map(x=>x[1]));
+    },
+    async buscar() {
+      const token = localStorage.getItem('rhgng:token');
+      this.resultado = await api.listarTodas(token, this.f);
+    },
+    exportar() {
+      if (!this.resultado.length) return;
+      const head = Object.keys(this.resultado[0]);
+      const csv = [head.join(';')].concat(this.resultado.map(r =>
+        head.map(k => '"' + String(r[k] == null ? '' : r[k]).replace(/"/g,'""') + '"').join(';'))).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'rh-gng-export.csv';
+      a.click();
+    },
+    sair() {
+      const t = localStorage.getItem('rhgng:token');
+      api.authLogout(t).finally(() => { localStorage.clear(); location.hash='#/login'; location.reload(); });
+    }
+  };
+}
+</script>

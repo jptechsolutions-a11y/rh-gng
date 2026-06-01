@@ -1,0 +1,10 @@
+{
+  "name": "rh-gng",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "push": "clasp push",
+    "open": "clasp open",
+    "logs": "clasp logs --watch"
+  }
+}

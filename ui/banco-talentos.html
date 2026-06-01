@@ -1,0 +1,72 @@
+<div x-data="banco()" x-init="carregar()" class="min-h-screen bg-slate-50">
+  <header class="bg-white border-b px-6 py-4 flex justify-between">
+    <h1 class="text-lg font-bold">Banco de Talentos — Filial <span x-text="filial"></span></h1>
+    <a href="#/painel" class="text-sm text-slate-500 hover:text-slate-900">← Voltar</a>
+  </header>
+
+  <main class="max-w-6xl mx-auto p-6">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+      <input x-model="f.cargo" placeholder="Cargo" class="border rounded-lg px-3 py-2">
+      <input x-model="f.cidade" placeholder="Cidade" class="border rounded-lg px-3 py-2">
+      <input type="number" x-model.number="f.notaMin" placeholder="Nota mín." class="border rounded-lg px-3 py-2">
+      <input type="date" x-model="f.dataDe" class="border rounded-lg px-3 py-2">
+    </div>
+
+    <div class="bg-white rounded-xl shadow-sm overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-slate-100"><tr>
+          <th class="px-3 py-2 text-left">Data</th><th class="px-3 py-2 text-left">Nome</th>
+          <th class="px-3 py-2 text-left">Cargo</th><th class="px-3 py-2 text-left">Cidade</th>
+          <th class="px-3 py-2 text-left">Nota</th><th class="px-3 py-2 text-left">Ação</th>
+        </tr></thead>
+        <tbody>
+          <template x-for="r in filtradas" :key="r.id_entrevista">
+            <tr class="border-t hover:bg-slate-50">
+              <td class="px-3 py-2" x-text="(r.data_hora||'').slice(0,10)"></td>
+              <td class="px-3 py-2" x-text="r.nome"></td>
+              <td class="px-3 py-2" x-text="r.cargo_pretendido"></td>
+              <td class="px-3 py-2" x-text="r.cidade"></td>
+              <td class="px-3 py-2" x-text="r.nota_geral"></td>
+              <td class="px-3 py-2 space-x-1">
+                <button @click="agir(r,'Aprovado')" class="text-xs bg-green-600 text-white px-2 py-1 rounded">Aprovar</button>
+                <button @click="agir(r,'Reprovado')" class="text-xs bg-red-600 text-white px-2 py-1 rounded">Reprovar</button>
+                <button @click="agir(r,'Contratado')" class="text-xs bg-blue-600 text-white px-2 py-1 rounded">Contratado</button>
+              </td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<script>
+function banco() {
+  return {
+    filial: localStorage.getItem('rhgng:filial'),
+    registros: [], f: { cargo:'', cidade:'', notaMin:'', dataDe:'' },
+    get filtradas() {
+      return this.registros
+        .filter(r => r.status === 'Banco de Talentos')
+        .filter(r => !this.f.cargo || (r.cargo_pretendido || '').toLowerCase().includes(this.f.cargo.toLowerCase()))
+        .filter(r => !this.f.cidade || (r.cidade || '').toLowerCase().includes(this.f.cidade.toLowerCase()))
+        .filter(r => !this.f.notaMin || Number(r.nota_geral) >= this.f.notaMin)
+        .filter(r => !this.f.dataDe || (r.data_hora || '') >= this.f.dataDe);
+    },
+    async carregar() {
+      const token = localStorage.getItem('rhgng:token');
+      this.registros = await api.listarFilial(token);
+    },
+    async agir(r, novo) {
+      let motivo = '';
+      if (novo === 'Reprovado') {
+        motivo = prompt('Motivo da reprovação:') || '';
+        if (!motivo) return;
+      }
+      const token = localStorage.getItem('rhgng:token');
+      const resp = await api.atualizarStatus(token, { id: r.id_entrevista, para_status: novo, motivo });
+      if (resp.ok) this.carregar(); else alert(resp.erro);
+    }
+  };
+}
+</script>

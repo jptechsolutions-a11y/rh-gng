@@ -1,0 +1,50 @@
+<div x-data="loginForm()" class="min-h-screen flex items-center justify-center px-4">
+  <div class="w-full max-w-sm bg-white rounded-2xl shadow p-8">
+    <h1 class="text-2xl font-bold mb-1">RH G&amp;G</h1>
+    <p class="text-sm text-slate-500 mb-6">Entre com a senha da sua filial.</p>
+
+    <form @submit.prevent="entrar" class="space-y-4">
+      <template x-if="modoAdmin">
+        <input x-model="usuario" type="text" placeholder="Usuário admin"
+               class="w-full border rounded-lg px-3 py-2" required>
+      </template>
+      <input x-model="senha" type="password" placeholder="Senha"
+             class="w-full border rounded-lg px-3 py-2" required>
+
+      <button type="submit"
+              class="w-full bg-slate-900 text-white py-2 rounded-lg hover:bg-slate-800"
+              :disabled="carregando">
+        <span x-text="carregando ? 'Entrando…' : 'Entrar'"></span>
+      </button>
+    </form>
+
+    <button @click="modoAdmin = !modoAdmin"
+            class="mt-4 text-xs text-slate-500 hover:text-slate-900 w-full">
+      <span x-text="modoAdmin ? 'Voltar ao login de filial' : 'Acesso administrativo'"></span>
+    </button>
+
+    <p x-show="erro" x-text="erro" class="mt-4 text-sm text-red-600"></p>
+  </div>
+</div>
+
+<script>
+function loginForm() {
+  return {
+    senha: '', usuario: '', modoAdmin: false, carregando: false, erro: '',
+    async entrar() {
+      this.carregando = true; this.erro = '';
+      try {
+        const r = await api.authLogin({ senha: this.senha, usuario: this.modoAdmin ? this.usuario : null });
+        if (!r.ok) { this.erro = r.erro; return; }
+        localStorage.setItem('rhgng:token', r.token);
+        localStorage.setItem('rhgng:perfil', r.perfil);
+        localStorage.setItem('rhgng:filial', r.filial || '');
+        localStorage.setItem('rhgng:nome', r.nome);
+        location.hash = r.perfil === 'admin' ? '#/admin' : '#/painel';
+        location.reload();
+      } catch (e) { this.erro = String(e); }
+      finally { this.carregando = false; }
+    }
+  };
+}
+</script>

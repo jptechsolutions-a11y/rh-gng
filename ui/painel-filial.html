@@ -1,0 +1,84 @@
+<div x-data="painelFilial()" x-init="carregar()" class="min-h-screen bg-slate-50">
+  <header class="bg-white border-b px-6 py-4 flex justify-between items-center">
+    <div>
+      <h1 class="text-xl font-bold">Filial <span x-text="ctx.filial"></span> — <span x-text="ctx.nome"></span></h1>
+      <p class="text-xs text-slate-500">Painel de entrevistas</p>
+    </div>
+    <button @click="sair" class="text-sm text-slate-500 hover:text-slate-900">Sair</button>
+  </header>
+
+  <main class="p-6 max-w-6xl mx-auto">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <template x-for="c in cards">
+        <div class="bg-white rounded-xl p-4 shadow-sm">
+          <p class="text-xs uppercase text-slate-500" x-text="c.label"></p>
+          <p class="text-2xl font-bold" x-text="c.valor"></p>
+        </div>
+      </template>
+    </div>
+
+    <div class="flex gap-3 mb-4">
+      <a href="#/entrevista" class="bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800">+ Nova entrevista</a>
+      <a href="#/banco" class="bg-white border px-4 py-2 rounded-lg hover:bg-slate-100">📚 Banco de Talentos</a>
+    </div>
+
+    <input x-model="busca" placeholder="Buscar por nome ou CPF..." class="border rounded-lg px-3 py-2 w-full mb-3">
+
+    <div class="bg-white rounded-xl shadow-sm overflow-x-auto">
+      <table class="min-w-full text-sm">
+        <thead class="bg-slate-100"><tr>
+          <th class="px-3 py-2 text-left">Data</th>
+          <th class="px-3 py-2 text-left">Candidato</th>
+          <th class="px-3 py-2 text-left">CPF</th>
+          <th class="px-3 py-2 text-left">Cargo</th>
+          <th class="px-3 py-2 text-left">Nota</th>
+          <th class="px-3 py-2 text-left">Status</th>
+        </tr></thead>
+        <tbody>
+          <template x-for="r in filtradas" :key="r.id_entrevista">
+            <tr class="border-t hover:bg-slate-50">
+              <td class="px-3 py-2" x-text="(r.data_hora||'').slice(0,10)"></td>
+              <td class="px-3 py-2" x-text="r.nome"></td>
+              <td class="px-3 py-2" x-text="r.cpf"></td>
+              <td class="px-3 py-2" x-text="r.cargo_pretendido"></td>
+              <td class="px-3 py-2" x-text="r.nota_geral"></td>
+              <td class="px-3 py-2" x-text="r.status"></td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<script>
+function painelFilial() {
+  return {
+    ctx: { filial: localStorage.getItem('rhgng:filial'), nome: localStorage.getItem('rhgng:nome') },
+    cards: [], registros: [], busca: '',
+    get filtradas() {
+      const q = this.busca.toLowerCase();
+      return this.registros.filter(r =>
+        !q || (r.nome || '').toLowerCase().includes(q) || (String(r.cpf) || '').includes(q));
+    },
+    async carregar() {
+      const token = localStorage.getItem('rhgng:token');
+      const all = await api.listarFilial(token);
+      this.registros = (all || []).reverse();
+      const hoje = new Date().toISOString().slice(0, 10);
+      this.cards = [
+        { label: 'Entrevistas hoje', valor: this.registros.filter(r => (r.data_hora || '').startsWith(hoje)).length },
+        { label: 'Banco de Talentos', valor: this.registros.filter(r => r.status === 'Banco de Talentos').length },
+        { label: 'Aguardando retorno', valor: this.registros.filter(r => r.data_retorno && r.status === 'Em análise').length },
+        { label: 'Aprovados no mês', valor: this.registros.filter(r => r.status === 'Aprovado' && (r.data_hora || '').slice(0,7) === hoje.slice(0,7)).length },
+      ];
+    },
+    sair() {
+      const t = localStorage.getItem('rhgng:token');
+      api.authLogout(t).finally(() => {
+        localStorage.clear(); location.hash = '#/login'; location.reload();
+      });
+    }
+  };
+}
+</script>

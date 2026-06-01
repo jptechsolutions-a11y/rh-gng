@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <?!= include('ui/styles'); ?>
+</head>
+<body class="bg-slate-50 text-slate-900">
+  <div id="app" x-data="router()" x-init="init()" x-cloak class="min-h-screen">
+    <template x-if="rota === 'login'"><div><?!= include('ui/login'); ?></div></template>
+    <template x-if="rota === 'painel'"><div><?!= include('ui/painel-filial'); ?></div></template>
+    <template x-if="rota === 'entrevista'"><div><?!= include('ui/entrevista'); ?></div></template>
+    <template x-if="rota === 'banco'"><div><?!= include('ui/banco-talentos'); ?></div></template>
+    <template x-if="rota === 'admin'"><div><?!= include('ui/admin'); ?></div></template>
+    <template x-if="rota === 'admin-config'"><div><?!= include('ui/admin-config'); ?></div></template>
+  </div>
+  <?!= include('ui/scripts'); ?>
+  <script>
+    function router() {
+      return {
+        rota: 'login',
+        init() {
+          const token = localStorage.getItem('rhgng:token');
+          const perfil = localStorage.getItem('rhgng:perfil');
+          const hash = location.hash.replace('#/', '');
+          if (!token) { this.rota = 'login'; location.hash = ''; }
+          else this.rota = hash || (perfil === 'admin' ? 'admin' : 'painel');
+          window.addEventListener('hashchange', () => {
+            const t = localStorage.getItem('rhgng:token');
+            this.rota = t ? (location.hash.replace('#/', '') || 'painel') : 'login';
+          });
+        }
+      };
+    }
+  </script>
+</body>
+</html>

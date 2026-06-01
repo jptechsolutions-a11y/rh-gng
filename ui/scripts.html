@@ -1,0 +1,12 @@
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script>
+  // Promisifica google.script.run
+  window.api = new Proxy({}, {
+    get: (_, fn) => (...args) => new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler(resolve)
+        .withFailureHandler(reject)
+        [fn](...args);
+    })
+  });
+</script>

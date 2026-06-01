@@ -1,0 +1,260 @@
+<div x-data="wizard()" x-init="iniciar()" class="min-h-screen bg-slate-50">
+  <header class="bg-white border-b px-6 py-4 flex justify-between">
+    <h1 class="text-lg font-bold">Nova Entrevista — Passo <span x-text="passo"></span>/4</h1>
+    <a href="#/painel" class="text-sm text-slate-500 hover:text-slate-900">← Voltar</a>
+  </header>
+
+  <main class="max-w-3xl mx-auto p-6 space-y-6">
+    <!-- Passo 1 -->
+    <section x-show="passo === 1" class="bg-white rounded-xl p-6 shadow-sm space-y-4">
+      <h2 class="text-lg font-semibold">1. Identificação</h2>
+      <div>
+        <label class="block text-sm">CPF *</label>
+        <input x-model="dados.cpf" @blur="buscarCPF" placeholder="000.000.000-00"
+               class="border rounded-lg px-3 py-2 w-full">
+        <template x-if="historico.length">
+          <div class="mt-2 bg-yellow-50 border border-yellow-200 rounded p-3 text-sm">
+            <p class="font-medium">⚠ Candidato já entrevistado antes:</p>
+            <ul class="list-disc ml-5">
+              <template x-for="h in historico">
+                <li><span x-text="(h.data||'').slice(0,10)"></span> — filial <span x-text="h.filial"></span> — <span x-text="h.cargo"></span> — status <span x-text="h.status"></span></li>
+              </template>
+            </ul>
+            <button @click="usarDadosAnteriores" class="mt-2 text-xs underline">Usar dados anteriores</button>
+          </div>
+        </template>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div><label class="text-sm">Nome *</label><input x-model="dados.nome" class="border rounded-lg px-3 py-2 w-full"></div>
+        <div><label class="text-sm">Data nasc.</label><input type="date" x-model="dados.data_nasc" class="border rounded-lg px-3 py-2 w-full"></div>
+        <div><label class="text-sm">RG</label><input x-model="dados.rg" class="border rounded-lg px-3 py-2 w-full"></div>
+        <div><label class="text-sm">Telefone</label><input x-model="dados.telefone" class="border rounded-lg px-3 py-2 w-full"></div>
+        <div><label class="text-sm">Email</label><input type="email" x-model="dados.email" class="border rounded-lg px-3 py-2 w-full"></div>
+        <div><label class="text-sm">Cidade</label><input x-model="dados.cidade" class="border rounded-lg px-3 py-2 w-full"></div>
+        <div><label class="text-sm">Cargo pretendido *</label>
+          <select x-model="dados.cargo_pretendido" @change="carregarRoteiro" class="border rounded-lg px-3 py-2 w-full">
+            <option value="">—</option>
+            <template x-for="c in ctx.cargos"><option :value="c" x-text="c"></option></template>
+          </select>
+        </div>
+        <div><label class="text-sm">Escolaridade</label>
+          <select x-model="dados.escolaridade" class="border rounded-lg px-3 py-2 w-full">
+            <option value="">—</option>
+            <template x-for="o in ctx.opcoes.escolaridade"><option :value="o" x-text="o"></option></template>
+          </select>
+        </div>
+        <div><label class="text-sm">Estado civil</label>
+          <select x-model="dados.estado_civil" class="border rounded-lg px-3 py-2 w-full">
+            <option value="">—</option>
+            <template x-for="o in ctx.opcoes.estado_civil"><option :value="o" x-text="o"></option></template>
+          </select>
+        </div>
+        <div><label class="text-sm">Tem filhos?</label>
+          <select x-model="dados.tem_filhos" class="border rounded-lg px-3 py-2 w-full"><option value="">—</option><option>sim</option><option>não</option></select>
+        </div>
+      </div>
+    </section>
+
+    <!-- Passo 2 -->
+    <section x-show="passo === 2" class="bg-white rounded-xl p-6 shadow-sm space-y-4">
+      <h2 class="text-lg font-semibold">2. Perfil &amp; Disponibilidade</h2>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="col-span-2"><label class="text-sm">Experiências anteriores</label><textarea x-model="dados.experiencias" rows="3" class="border rounded-lg px-3 py-2 w-full"></textarea></div>
+        <div><label class="text-sm">Pretensão salarial</label><input type="number" x-model="dados.pretensao_salarial" class="border rounded-lg px-3 py-2 w-full"></div>
+        <div><label class="text-sm">LinkedIn</label><input x-model="dados.linkedin" class="border rounded-lg px-3 py-2 w-full"></div>
+        <div><label class="text-sm">CNH</label>
+          <select x-model="dados.possui_cnh" class="border rounded-lg px-3 py-2 w-full">
+            <option value="">—</option>
+            <template x-for="o in ctx.opcoes.cnh"><option :value="o" x-text="o"></option></template>
+          </select>
+        </div>
+        <div><label class="text-sm">Veículo próprio?</label>
+          <select x-model="dados.veiculo_proprio" class="border rounded-lg px-3 py-2 w-full"><option value="">—</option><option>sim</option><option>não</option></select>
+        </div>
+        <div class="col-span-2">
+          <label class="text-sm">Disponibilidade de turnos</label>
+          <div class="flex flex-wrap gap-2 mt-1">
+            <template x-for="t in ctx.opcoes.turnos">
+              <label class="text-sm flex items-center gap-1 border rounded px-2 py-1">
+                <input type="checkbox" :value="t" x-model="dados.disponibilidade_turnos">
+                <span x-text="t"></span>
+              </label>
+            </template>
+          </div>
+        </div>
+        <div><label class="text-sm">Pode iniciar em</label><input type="date" x-model="dados.disponibilidade_inicio" class="border rounded-lg px-3 py-2 w-full"></div>
+        <div><label class="text-sm">Disponível para viagem?</label>
+          <select x-model="dados.disponibilidade_viagem" class="border rounded-lg px-3 py-2 w-full"><option value="">—</option><option>sim</option><option>não</option></select>
+        </div>
+        <div><label class="text-sm">PCD?</label>
+          <select x-model="dados.pcd" class="border rounded-lg px-3 py-2 w-full"><option value="">—</option><option>sim</option><option>não</option></select>
+        </div>
+        <div x-show="dados.pcd === 'sim'"><label class="text-sm">Tipo PCD</label><input x-model="dados.pcd_tipo" class="border rounded-lg px-3 py-2 w-full"></div>
+        <div><label class="text-sm">Indicação?</label>
+          <select x-model="dados.indicacao" class="border rounded-lg px-3 py-2 w-full"><option value="">—</option><option>sim</option><option>não</option></select>
+        </div>
+        <div x-show="dados.indicacao === 'sim'"><label class="text-sm">Indicado por (nome)</label><input x-model="dados.indicado_por_nome" class="border rounded-lg px-3 py-2 w-full"></div>
+        <div x-show="dados.indicacao === 'sim'"><label class="text-sm">Cargo do indicador</label><input x-model="dados.indicado_por_cargo" class="border rounded-lg px-3 py-2 w-full"></div>
+        <div><label class="text-sm">Fumante?</label>
+          <select x-model="dados.fumante" class="border rounded-lg px-3 py-2 w-full"><option value="">—</option><option>sim</option><option>não</option></select>
+        </div>
+        <div><label class="text-sm">Já trabalhou no grupo?</label>
+          <select x-model="dados.ja_trabalhou_grupo" class="border rounded-lg px-3 py-2 w-full"><option value="">—</option><option>sim</option><option>não</option></select>
+        </div>
+        <div x-show="dados.ja_trabalhou_grupo === 'sim'" class="col-span-2"><label class="text-sm">Quando/onde?</label><input x-model="dados.ja_trabalhou_quando" class="border rounded-lg px-3 py-2 w-full"></div>
+        <div class="col-span-2">
+          <label class="text-sm">Currículo (PDF)</label>
+          <input type="file" accept="application/pdf" @change="uploadCV($event)" class="text-sm">
+          <span x-show="dados.curriculo_url" class="text-xs text-green-700 ml-2">✓ enviado</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Passo 3 -->
+    <section x-show="passo === 3" class="bg-white rounded-xl p-6 shadow-sm space-y-4">
+      <h2 class="text-lg font-semibold">3. Roteiro de perguntas</h2>
+      <template x-for="p in roteiro" :key="p.id">
+        <div>
+          <label class="text-sm font-medium" x-text="p.ordem + '. ' + p.pergunta"></label>
+          <template x-if="p.tipo === 'texto'">
+            <textarea x-model="dados.respostas_roteiro[p.id]" rows="2" class="border rounded-lg px-3 py-2 w-full"></textarea>
+          </template>
+          <template x-if="p.tipo === 'sim-nao'">
+            <select x-model="dados.respostas_roteiro[p.id]" class="border rounded-lg px-3 py-2 w-full">
+              <option value="">—</option><option>sim</option><option>não</option>
+            </select>
+          </template>
+          <template x-if="p.tipo === 'escala'">
+            <input type="number" min="1" max="5" x-model.number="dados.respostas_roteiro[p.id]" class="border rounded-lg px-3 py-2 w-32">
+          </template>
+        </div>
+      </template>
+    </section>
+
+    <!-- Passo 4 -->
+    <section x-show="passo === 4" class="bg-white rounded-xl p-6 shadow-sm space-y-4">
+      <h2 class="text-lg font-semibold">4. Avaliação &amp; Decisão</h2>
+      <template x-for="c in ctx.criterios" :key="c.id">
+        <div class="flex items-center gap-3">
+          <span class="w-48 text-sm" x-text="c.nome_criterio"></span>
+          <input type="range" :min="1" :max="c.escala_max" x-model.number="dados.notas_criterios[c.id]" class="flex-1">
+          <span class="w-8 text-right text-sm" x-text="dados.notas_criterios[c.id] || 0"></span>
+        </div>
+      </template>
+      <p class="text-sm">Média: <strong x-text="media"></strong></p>
+      <div><label class="text-sm">Observações</label><textarea x-model="dados.observacoes" rows="3" class="border rounded-lg px-3 py-2 w-full"></textarea></div>
+      <div><label class="text-sm">Nota geral (0–10)</label><input type="number" min="0" max="10" x-model.number="dados.nota_geral" class="border rounded-lg px-3 py-2 w-32"></div>
+      <div><label class="text-sm">Decisão *</label>
+        <div class="flex gap-2 mt-1 flex-wrap">
+          <button @click="dados.status='Aprovado'" :class="dados.status==='Aprovado'?'bg-green-600 text-white':'bg-white border'" class="px-3 py-2 rounded-lg">🟢 Aprovado</button>
+          <button @click="dados.status='Banco de Talentos'" :class="dados.status==='Banco de Talentos'?'bg-yellow-500 text-white':'bg-white border'" class="px-3 py-2 rounded-lg">🟡 Banco de Talentos</button>
+          <button @click="dados.status='Reprovado'" :class="dados.status==='Reprovado'?'bg-red-600 text-white':'bg-white border'" class="px-3 py-2 rounded-lg">🔴 Reprovado</button>
+        </div>
+      </div>
+      <div x-show="dados.status === 'Reprovado'"><label class="text-sm">Motivo da decisão *</label><textarea x-model="dados.motivo_decisao" rows="2" class="border rounded-lg px-3 py-2 w-full"></textarea></div>
+      <div><label class="text-sm">Próxima etapa</label><input x-model="dados.proxima_etapa" class="border rounded-lg px-3 py-2 w-full"></div>
+      <div><label class="text-sm">Data de retorno</label><input type="date" x-model="dados.data_retorno" class="border rounded-lg px-3 py-2 w-full"></div>
+    </section>
+
+    <div class="flex justify-between">
+      <button @click="passo--" x-show="passo > 1" class="px-4 py-2 rounded-lg border">← Anterior</button>
+      <button @click="proximo" x-show="passo < 4" class="ml-auto bg-slate-900 text-white px-4 py-2 rounded-lg">Próximo →</button>
+      <button @click="salvar" x-show="passo === 4" class="ml-auto bg-green-600 text-white px-4 py-2 rounded-lg" :disabled="salvando">
+        <span x-text="salvando ? 'Salvando…' : 'Salvar entrevista'"></span>
+      </button>
+    </div>
+    <p x-show="erro" x-text="erro" class="text-red-600 text-sm"></p>
+  </main>
+</div>
+
+<script>
+function wizard() {
+  return {
+    passo: 1, salvando: false, erro: '', historico: [], roteiro: [],
+    ctx: { cargos: [], opcoes: {}, criterios: [] },
+    dados: {
+      cpf:'', nome:'', cargo_pretendido:'', status:'',
+      respostas_roteiro:{}, notas_criterios:{}, disponibilidade_turnos:[],
+    },
+    get media() {
+      const v = Object.values(this.dados.notas_criterios).filter(n => typeof n === 'number');
+      if (!v.length) return 0;
+      return Math.round((v.reduce((a,b)=>a+b,0)/v.length)*100)/100;
+    },
+    async iniciar() {
+      const token = localStorage.getItem('rhgng:token');
+      this.ctx = await api.bootstrap(token);
+      this._restaurarRascunho();
+      setInterval(() => this._salvarRascunho(), 30000);
+    },
+    _salvarRascunho() {
+      localStorage.setItem('rhgng:rascunho', JSON.stringify({ dados: this.dados, passo: this.passo }));
+    },
+    _restaurarRascunho() {
+      const r = localStorage.getItem('rhgng:rascunho');
+      if (r && confirm('Recuperar rascunho de entrevista não salva?')) {
+        const obj = JSON.parse(r);
+        Object.assign(this.dados, obj.dados);
+        this.passo = obj.passo;
+      }
+    },
+    async buscarCPF() {
+      if (!this.dados.cpf) return;
+      const token = localStorage.getItem('rhgng:token');
+      const r = await api.buscarPorCPF(token, this.dados.cpf);
+      if (r.ok) this.historico = r.historico;
+    },
+    usarDadosAnteriores() {
+      const token = localStorage.getItem('rhgng:token');
+      api.buscarPorCPF(token, this.dados.cpf).then(r => {
+        if (r.dados) Object.assign(this.dados, {
+          nome: r.dados.nome, data_nasc: r.dados.data_nasc, rg: r.dados.rg,
+          telefone: r.dados.telefone, email: r.dados.email, cidade: r.dados.cidade,
+        });
+      });
+    },
+    async carregarRoteiro() {
+      const token = localStorage.getItem('rhgng:token');
+      this.roteiro = await api.getRoteiro(token, this.dados.cargo_pretendido);
+    },
+    async uploadCV(ev) {
+      const file = ev.target.files[0];
+      if (!file) return;
+      const b64 = await this._toBase64(file);
+      const token = localStorage.getItem('rhgng:token');
+      const r = await api.uploadPDF(token, { base64: b64, nomeArquivo: this.dados.cpf + '_' + (this.dados.nome || 'cv') + '.pdf' });
+      if (r.ok) this.dados.curriculo_url = r.url;
+    },
+    _toBase64(file) {
+      return new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(r.result.split(',')[1]);
+        r.onerror = rej;
+        r.readAsDataURL(file);
+      });
+    },
+    proximo() {
+      this.erro = '';
+      if (this.passo === 1) {
+        if (!this.dados.cpf || !this.dados.nome || !this.dados.cargo_pretendido) {
+          this.erro = 'Preencha CPF, nome e cargo.'; return;
+        }
+        if (!this.roteiro.length) this.carregarRoteiro();
+      }
+      this.passo++;
+    },
+    async salvar() {
+      this.erro = '';
+      if (!this.dados.status) { this.erro = 'Escolha uma decisão.'; return; }
+      this.salvando = true;
+      const token = localStorage.getItem('rhgng:token');
+      const r = await api.salvarEntrevista(token, this.dados);
+      this.salvando = false;
+      if (!r.ok) { this.erro = r.erro; return; }
+      localStorage.removeItem('rhgng:rascunho');
+      alert('Entrevista salva: ' + r.id);
+      location.hash = '#/painel';
+    }
+  };
+}
+</script>

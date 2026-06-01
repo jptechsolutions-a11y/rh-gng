@@ -1,0 +1,123 @@
+<div x-data="cfg()" x-init="carregar()" class="min-h-screen bg-slate-50">
+  <header class="bg-white border-b px-6 py-4 flex justify-between">
+    <h1 class="text-xl font-bold">Configurações</h1>
+    <a href="#/admin" class="text-sm text-slate-500 hover:text-slate-900">← Voltar</a>
+  </header>
+
+  <main class="max-w-5xl mx-auto p-6 space-y-6">
+    <section class="bg-white rounded-xl p-4 shadow-sm">
+      <h2 class="font-semibold mb-3">Cargos</h2>
+      <div class="flex gap-2 mb-3">
+        <input x-model="novoCargo" placeholder="Novo cargo" class="border rounded-lg px-3 py-2 flex-1">
+        <button @click="addCargo" class="bg-slate-900 text-white px-4 rounded-lg">Adicionar</button>
+      </div>
+      <ul class="text-sm grid grid-cols-2 md:grid-cols-3 gap-1">
+        <template x-for="c in cargos"><li class="border rounded px-2 py-1" x-text="c"></li></template>
+      </ul>
+    </section>
+
+    <section class="bg-white rounded-xl p-4 shadow-sm">
+      <h2 class="font-semibold mb-3">Roteiro de perguntas</h2>
+      <table class="min-w-full text-sm mb-3">
+        <thead class="bg-slate-100"><tr><th class="px-2 py-1">ID</th><th>Cargo</th><th>Ordem</th><th>Pergunta</th><th>Tipo</th><th></th></tr></thead>
+        <tbody>
+          <template x-for="r in roteiro" :key="r.id">
+            <tr class="border-t">
+              <td class="px-2 py-1" x-text="r.id"></td><td x-text="r.cargo"></td>
+              <td x-text="r.ordem"></td><td x-text="r.pergunta"></td><td x-text="r.tipo"></td>
+              <td><button @click="excluirRoteiro(r.id)" class="text-red-600 text-xs">excluir</button></td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+      <div class="grid grid-cols-5 gap-2">
+        <input x-model="nr.id" placeholder="id ex: q5" class="border rounded px-2 py-1">
+        <input x-model="nr.cargo" placeholder="cargo ou TODOS" class="border rounded px-2 py-1">
+        <input type="number" x-model.number="nr.ordem" placeholder="ordem" class="border rounded px-2 py-1">
+        <input x-model="nr.pergunta" placeholder="pergunta" class="border rounded px-2 py-1">
+        <select x-model="nr.tipo" class="border rounded px-2 py-1"><option>texto</option><option>sim-nao</option><option>escala</option></select>
+      </div>
+      <button @click="addRoteiro" class="mt-2 bg-slate-900 text-white px-4 py-2 rounded-lg">Salvar pergunta</button>
+    </section>
+
+    <section class="bg-white rounded-xl p-4 shadow-sm">
+      <h2 class="font-semibold mb-3">Critérios de avaliação</h2>
+      <table class="min-w-full text-sm mb-3">
+        <thead class="bg-slate-100"><tr><th class="px-2 py-1">ID</th><th>Nome</th><th>Escala</th><th>Peso</th><th>Ativo</th></tr></thead>
+        <tbody>
+          <template x-for="c in criterios" :key="c.id">
+            <tr class="border-t">
+              <td class="px-2 py-1" x-text="c.id"></td><td x-text="c.nome_criterio"></td>
+              <td x-text="c.escala_max"></td><td x-text="c.peso"></td><td x-text="c.ativo"></td>
+            </tr>
+          </template>
+        </tbody>
+      </table>
+      <div class="grid grid-cols-5 gap-2">
+        <input x-model="nc.id" placeholder="id ex: c6" class="border rounded px-2 py-1">
+        <input x-model="nc.nome_criterio" placeholder="nome" class="border rounded px-2 py-1">
+        <input type="number" x-model.number="nc.escala_max" placeholder="escala (ex 5)" class="border rounded px-2 py-1">
+        <input type="number" x-model.number="nc.peso" placeholder="peso" class="border rounded px-2 py-1">
+        <select x-model="nc.ativo" class="border rounded px-2 py-1"><option>sim</option><option>não</option></select>
+      </div>
+      <button @click="addCriterio" class="mt-2 bg-slate-900 text-white px-4 py-2 rounded-lg">Salvar critério</button>
+    </section>
+
+    <section class="bg-white rounded-xl p-4 shadow-sm">
+      <h2 class="font-semibold mb-3">Trocar senha de filial</h2>
+      <div class="flex gap-2">
+        <select x-model="sf.codigo" class="border rounded px-2 py-1">
+          <option value="">Filial</option>
+          <template x-for="f in filiais"><option :value="f.codigo" x-text="f.codigo + ' - ' + f.nome"></option></template>
+        </select>
+        <input x-model="sf.senha" placeholder="Nova senha" class="border rounded px-2 py-1 flex-1">
+        <button @click="trocarSenha" class="bg-slate-900 text-white px-4 rounded-lg">Trocar</button>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+function cfg() {
+  return {
+    cargos:[], roteiro:[], criterios:[], filiais:[],
+    novoCargo:'', nr:{id:'',cargo:'TODOS',ordem:0,pergunta:'',tipo:'texto'},
+    nc:{id:'',nome_criterio:'',escala_max:5,peso:1,ativo:'sim'},
+    sf:{codigo:'',senha:''},
+    async carregar() {
+      const t = localStorage.getItem('rhgng:token');
+      const b = await api.bootstrap(t);
+      this.cargos = b.cargos; this.criterios = b.criterios; this.filiais = b.filiais;
+      this.roteiro = await api.getRoteiro(t, 'TODOS');
+    },
+    async addCargo() {
+      if (!this.novoCargo) return;
+      const t = localStorage.getItem('rhgng:token');
+      await api.salvarCargo(t, { nome_cargo: this.novoCargo, ativo: 'sim' });
+      this.novoCargo = ''; this.carregar();
+    },
+    async addRoteiro() {
+      if (!this.nr.id || !this.nr.pergunta) return;
+      const t = localStorage.getItem('rhgng:token');
+      await api.salvarRoteiroItem(t, this.nr);
+      this.nr = { id:'', cargo:'TODOS', ordem:0, pergunta:'', tipo:'texto' }; this.carregar();
+    },
+    async excluirRoteiro(id) {
+      const t = localStorage.getItem('rhgng:token');
+      await api.excluirRoteiroItem(t, id); this.carregar();
+    },
+    async addCriterio() {
+      if (!this.nc.id || !this.nc.nome_criterio) return;
+      const t = localStorage.getItem('rhgng:token');
+      await api.salvarCriterio(t, this.nc);
+      this.nc = { id:'', nome_criterio:'', escala_max:5, peso:1, ativo:'sim' }; this.carregar();
+    },
+    async trocarSenha() {
+      if (!this.sf.codigo || !this.sf.senha) return;
+      const t = localStorage.getItem('rhgng:token');
+      const r = await api.trocarSenhaFilial(t, this.sf.codigo, this.sf.senha);
+      if (r.ok) { alert('Senha trocada.'); this.sf = { codigo:'', senha:'' }; }
+    }
+  };
+}
+</script>

@@ -26,7 +26,7 @@ No PowerShell, dentro da pasta do projeto:
 
 ```bash
 cd "C:/Users/juliano.correa/Desktop/G&G"
-clasp create --type sheets --title "RH G&G" --parentId "1eZ4EXsnUV6t3w_A5K7lwGFK4zygjVGF0aQl2ykumqCo" --rootDir .
+clasp create --type sheets --title "RH G&G" --parentId "19TcyRi3TT9X7ef4ikCYz5B6q3LMmz_U8EDt-FPmAbaE" --rootDir .
 ```
 
 > Isso cria o arquivo `.clasp.json` localmente (já está no `.gitignore`).

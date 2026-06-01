@@ -5,7 +5,13 @@
       "Bash(git branch *)",
       "Bash(git config *)",
       "Bash(git add *)",
-      "Bash(git commit -m 'feat: sistema RH G&G MVP completo *)"
+      "Bash(git commit -m 'feat: sistema RH G&G MVP completo *)",
+      "Bash(npm --version)",
+      "Bash(clasp --version)",
+      "Bash(npm install *)",
+      "Bash(ls ~/.clasprc.json 2>&1 || echo \"NO_LOGIN\")",
+      "Bash(clasp login *)",
+      "Bash(git commit *)"
     ]
   }
 }

@@ -16,7 +16,7 @@ npm install -g @google/clasp
 clasp login                  # abre navegador
 clasp create --type sheets \
   --title "RH G&G" \
-  --parentId "1eZ4EXsnUV6t3w_A5K7lwGFK4zygjVGF0aQl2ykumqCo" \
+  --parentId "19TcyRi3TT9X7ef4ikCYz5B6q3LMmz_U8EDt-FPmAbaE" \
   --rootDir .
 clasp push
 ```

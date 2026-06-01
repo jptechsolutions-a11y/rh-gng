@@ -66,7 +66,7 @@ Sistema web para auxiliar entrevistas de RH nas 9 filiais do grupo G&G. Cada fil
                      │ SpreadsheetApp / DriveApp
 ┌────────────────────▼────────────────────────────────┐
 │  Google Sheets (banco) + Google Drive (PDFs)        │
-│  Planilha alvo: 1eZ4EXsnUV6t3w_A5K7lwGFK4zygjVGF0… │
+│  Planilha alvo: 19TcyRi3TT9X7ef4ikCYz5B6q3LMmz_U8… │
 └─────────────────────────────────────────────────────┘
 ```
 

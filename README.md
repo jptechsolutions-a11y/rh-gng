@@ -1,57 +1,62 @@
-# RH G&G
+# RH G&G — Perlog
 
-Web app de **Gente & Gestão** para conduzir entrevistas guiadas e gerir banco de talentos das 9 filiais do grupo.
+Plataforma corporativa de Gente & Gestão para condução de entrevistas e gestão do
+banco de talentos das 9 filiais do Grupo Perlog.
 
-- Login por filial (senha única) + admin (usuário + senha)
-- Wizard de entrevista (4 passos: identificação, perfil, roteiro, avaliação)
-- Banco de Talentos por filial
-- Console admin com dashboard, busca global, exportação CSV e gestão de roteiro/critérios/cargos/senhas
-- Dados na Planilha Google + PDFs no Drive
-- Histórico imutável de mudanças de status
+Stack: **Next.js 15 (App Router) · TypeScript · Tailwind + shadcn/ui · Drizzle ORM ·
+Supabase Postgres (Supavisor pooled) · Supabase Storage · Vercel**.
 
-## Setup (uma vez)
+## Setup local
 
 ```bash
-npm install -g @google/clasp
-clasp login                  # abre navegador
-clasp create --type sheets \
-  --title "RH G&G" \
-  --parentId "19TcyRi3TT9X7ef4ikCYz5B6q3LMmz_U8EDt-FPmAbaE" \
-  --rootDir .
-clasp push
+npm install
+cp .env.example .env.local
+# preencha SUPABASE_URL, DATABASE_URL, DIRECT_URL, SUPABASE_SERVICE_ROLE_KEY, SESSION_SECRET
+npm run seed         # cria filiais e admin (imprime senhas — anote!)
+npm run dev
 ```
 
-No editor Apps Script (`clasp open`):
-1. Executar a função `setupPlanilha` (autorizar acessos).
-2. Ver o log (`Ver > Logs`) — **anote as senhas geradas**.
-3. **Implantar > Nova implantação > Web app**
-   - Executar como: o usuário que acessa
-   - Quem tem acesso: qualquer pessoa
-4. Copiar a URL e compartilhar com as filiais.
+Acesse http://localhost:3000.
 
-## Estrutura
+## Scripts
+
+| Comando            | Função                              |
+|--------------------|-------------------------------------|
+| `npm run dev`      | Servidor de desenvolvimento         |
+| `npm run build`    | Build de produção                   |
+| `npm run typecheck`| `tsc --noEmit`                      |
+| `npm run lint`     | ESLint                              |
+| `npm run db:push`  | Sincroniza schema Drizzle ao DB     |
+| `npm run db:studio`| Drizzle Studio                      |
+| `npm run seed`     | Popula filiais e admin              |
+
+## Arquitetura
 
 ```
-Code.gs                doGet + include
-src/Auth.gs            login filial/admin, sessões
-src/Candidatos.gs      busca por CPF, listagem filial
-src/Entrevistas.gs     salvar/atualizar entrevistas
-src/Config.gs          endpoints bootstrap + CRUD config
-src/Relatorios.gs      dashboard admin + busca global
-src/Drive.gs           upload de PDFs
-src/Log.gs             logs de acesso
-src/Repo.gs            camada Sheets
-src/Setup.gs           bootstrap das abas (executar 1x)
-src/Tests.gs           runAllTests
-src/Utils.gs           uuid, sha256, validaCPF
-ui/                    SPA Alpine + Tailwind
-docs/                  LGPD, CHANGELOG, MIGRACAO, SMOKE-TEST
+app/                  rotas (App Router)
+  (app)/              área autenticada (layout com sidebar)
+  login/              tela pública de login
+  api/                route handlers (upload, csv, health)
+actions/              Server Actions (auth, entrevistas, admin)
+components/           UI (ui/, layout/, wizard/, brand/)
+db/                   schema Drizzle + cliente pooled + queries cacheadas
+lib/                  auth (password, session, rate-limit) + validators
+supabase/             migrations de referência
+scripts/              seed
+legacy/               código antigo (Apps Script + planilha) — não usado
 ```
 
-## Documentação
+## Segurança
 
-- Spec: [`docs/superpowers/specs/2026-06-01-rh-gng-design.md`](docs/superpowers/specs/2026-06-01-rh-gng-design.md)
-- Plano: [`docs/superpowers/plans/2026-06-01-rh-gng.md`](docs/superpowers/plans/2026-06-01-rh-gng.md)
-- LGPD: [`docs/LGPD.md`](docs/LGPD.md)
-- Migração futura para Vercel/Supabase: [`docs/MIGRACAO.md`](docs/MIGRACAO.md)
-- Smoke test: [`docs/SMOKE-TEST.md`](docs/SMOKE-TEST.md)
+- Senhas em argon2id.
+- Sessões em cookie HttpOnly + Secure + SameSite=Lax, TTL 8h.
+- Rate-limit no login (5/15min por IP) em tabela Postgres.
+- RLS ativa em todas as tabelas (acesso via service-role server-side somente).
+- Storage privado + URLs assinadas com TTL 5 min.
+- Upload: whitelist PDF + magic-byte check + 10 MB.
+- Headers: CSP, HSTS, X-Frame-Options DENY, X-Content-Type-Options nosniff.
+- Logs append-only via triggers de banco (UPDATE/DELETE bloqueados).
+
+## Deploy
+
+Vercel + Supabase, ambos via MCP. Veja `docs/superpowers/specs/2026-06-02-migracao-vercel-supabase-design.md`.

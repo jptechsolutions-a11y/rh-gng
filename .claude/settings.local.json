@@ -13,7 +13,22 @@
       "Bash(clasp login *)",
       "Bash(git commit *)",
       "Bash(clasp create *)",
-      "Bash(clasp push *)"
+      "Bash(clasp push *)",
+      "mcp__86839c5b-a0a8-4979-95bb-418fd749048c__list_organizations",
+      "mcp__1a892842-7d66-45c5-86db-3cbe95c89b0b__list_teams",
+      "Bash(gh auth *)",
+      "PowerShell(gh auth status 2>&1)",
+      "PowerShell($env:GITHUB_TOKEN -ne $null; $env:GH_TOKEN -ne $null; if \\(Test-Path \"$env:USERPROFILE\\\\.gitconfig\"\\) { Get-Content \"$env:USERPROFILE\\\\.gitconfig\" }; winget --version 2>&1 | Select-Object -First 1)",
+      "mcp__86839c5b-a0a8-4979-95bb-418fd749048c__get_cost",
+      "mcp__86839c5b-a0a8-4979-95bb-418fd749048c__list_projects",
+      "mcp__86839c5b-a0a8-4979-95bb-418fd749048c__confirm_cost",
+      "mcp__86839c5b-a0a8-4979-95bb-418fd749048c__create_project",
+      "PowerShell($env:Path = \"C:\\\\Users\\\\juliano.correa\\\\AppData\\\\Local\\\\Microsoft\\\\WinGet\\\\Packages\\\\GitHub.cli_Microsoft.Winget.Source_8wekyb3d8bbwe\\\\bin;\" + $env:Path; gh auth login --hostname github.com --git-protocol https --web --scopes \"repo,workflow,read:org\")",
+      "mcp__86839c5b-a0a8-4979-95bb-418fd749048c__apply_migration",
+      "mcp__86839c5b-a0a8-4979-95bb-418fd749048c__get_project",
+      "mcp__86839c5b-a0a8-4979-95bb-418fd749048c__execute_sql",
+      "mcp__86839c5b-a0a8-4979-95bb-418fd749048c__get_publishable_keys",
+      "mcp__86839c5b-a0a8-4979-95bb-418fd749048c__get_project_url"
     ]
   }
 }

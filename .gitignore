@@ -14,3 +14,5 @@ coverage
 .vscode
 .clasp.json
 .clasprc.json
+# nunca commitar seed gerado (contém hashes de senhas)
+scripts/seed-output.sql

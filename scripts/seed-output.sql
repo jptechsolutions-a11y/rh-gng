@@ -1,0 +1,11 @@
+-- INSERTs de seed (filiais + admin)
+insert into public.filiais (codigo, nome, senha_hash) values ('464', 'MT TREVO', '$argon2id$v=19$m=65536,t=3,p=1$GANf4+xXQn8K0Ue8znIyxg$NkmxEUu3Ssf1q9BGiYrTVffyW0LzHillnd597kNTNUc') on conflict (codigo) do nothing;
+insert into public.filiais (codigo, nome, senha_hash) values ('468', 'MT PONTE NOVA', '$argon2id$v=19$m=65536,t=3,p=1$Z00x24GEdKEqDCho80z6SA$fJaxQJwW63oziu9VRB2WeAJlhSiqb49/b9FoLZhR4Uc') on conflict (codigo) do nothing;
+insert into public.filiais (codigo, nome, senha_hash) values ('743', 'MS GUAICURUS', '$argon2id$v=19$m=65536,t=3,p=1$WsA9HIG0l0Hr564S/QEB4g$Em4LBVniNtNeGDFv0iupcn1X4bf0T1vg5LqkyL8M3zY') on conflict (codigo) do nothing;
+insert into public.filiais (codigo, nome, senha_hash) values ('783', 'SC SAO JOSE', '$argon2id$v=19$m=65536,t=3,p=1$xjRJzWfLYHOktKut8nR96Q$R11QeZPInrCMrLAucrerD5aGXozOiw4PN45xyw0C/4s') on conflict (codigo) do nothing;
+insert into public.filiais (codigo, nome, senha_hash) values ('264', 'SC PORTO BELO', '$argon2id$v=19$m=65536,t=3,p=1$OeusXE9Gucr1d2dQiI6P+A$+9pMVFNwq1oRT8VcWzPj6S4ShLvHlFdB5c8QxS4vVoQ') on conflict (codigo) do nothing;
+insert into public.filiais (codigo, nome, senha_hash) values ('773', 'RS SAO LEOPOLDO', '$argon2id$v=19$m=65536,t=3,p=1$N1iJGnS21yCejsKwcwrPvA$5She+GYUfReHAXmujHQ51tCxhz+lu/YFitwqzKuKZI8') on conflict (codigo) do nothing;
+insert into public.filiais (codigo, nome, senha_hash) values ('713', 'SP VARGEM GRANDE', '$argon2id$v=19$m=65536,t=3,p=1$1t2pD44wi3H4/K6r3pkbjg$guLntgunPnSMePbV4bn9QLsXPxN3NY9RXk+Lhr2rQ/4') on conflict (codigo) do nothing;
+insert into public.filiais (codigo, nome, senha_hash) values ('733', 'SP JACAREI', '$argon2id$v=19$m=65536,t=3,p=1$wnNFKHw0b2td89Epw1NkDg$N+OIdkg9uGOSwckLZ1bWaC8lAreuM9bty88VwSeY4cY') on conflict (codigo) do nothing;
+insert into public.filiais (codigo, nome, senha_hash) values ('364', 'DF SIA', '$argon2id$v=19$m=65536,t=3,p=1$Z0Q7GfVpbbKD0paWaVru6g$c4dmfAZNYiUXwkCtsldkBkTaL6sBFGZr1oNCh/pgQZQ') on conflict (codigo) do nothing;
+insert into public.admins (usuario, nome, senha_hash) values ('admin', 'Administrador', '$argon2id$v=19$m=65536,t=3,p=1$Wmt4topn03CL7Z9n8H+O5w$VOMFo7nCsofyU5gsZJVeYsi/ybHmyrakqlqIfpUdCb0') on conflict (usuario) do nothing;

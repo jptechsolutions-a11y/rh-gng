@@ -1,6 +1,6 @@
 import 'server-only';
 import { cache } from 'react';
-import { eq, asc } from 'drizzle-orm';
+import { and, asc, eq, or } from 'drizzle-orm';
 import { db, schema } from '../client';
 
 export const getCargosAtivos = cache(async () =>
@@ -11,10 +11,9 @@ export const getCargosAtivos = cache(async () =>
 );
 
 export const getRoteiro = cache(async (cargo: string) => {
-  const rows = await db.select().from(schema.roteiro).where(eq(schema.roteiro.ativo, true));
-  return rows
-    .filter((r) => r.cargo === 'TODOS' || r.cargo === cargo)
-    .sort((a, b) => a.ordem - b.ordem);
+  return db.select().from(schema.roteiro)
+    .where(and(eq(schema.roteiro.ativo, true), or(eq(schema.roteiro.cargo, 'TODOS'), eq(schema.roteiro.cargo, cargo))))
+    .orderBy(asc(schema.roteiro.ordem));
 });
 
 export const getCriterios = cache(async () =>

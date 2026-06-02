@@ -1,7 +1,5 @@
 'use client';
 import { useFormContext } from 'react-hook-form';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import type { EntrevistaInput } from '@/lib/validators';
 
 type Item = { id: string; ordem: number; pergunta: string; tipo: string };
@@ -22,13 +20,14 @@ export function Step3Roteiro({ roteiro }: { roteiro: Item[] }) {
       <div className="space-y-4">
         {roteiro.map((q, i) => (
           <div key={q.id} className="rounded-lg border border-slate-100 bg-slate-50/40 p-4">
-            <Label className="flex items-baseline gap-2">
+            <label htmlFor={`q-${q.id}`} className="flex items-baseline gap-2 text-sm font-medium text-perlog-navy">
               <span className="text-perlog-orange tabular-nums">{(i + 1).toString().padStart(2, '0')}.</span>
               <span>{q.pergunta}</span>
-            </Label>
+            </label>
 
             {q.tipo === 'texto' && (
               <textarea
+                id={`q-${q.id}`}
                 rows={3}
                 {...register(`respostasRoteiro.${q.id}` as const)}
                 className="mt-2 flex w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-perlog-orange/60"
@@ -78,7 +77,6 @@ export function Step3Roteiro({ roteiro }: { roteiro: Item[] }) {
                     );
                   })}
                 </div>
-                <Input type="hidden" {...register(`respostasRoteiro.${q.id}` as const)} />
               </div>
             )}
           </div>

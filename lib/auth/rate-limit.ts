@@ -1,5 +1,5 @@
 import 'server-only';
-import { sql } from 'drizzle-orm';
+import { lt, sql } from 'drizzle-orm';
 import { db, schema } from '@/db/client';
 
 const WINDOW_MS = 15 * 60 * 1000;
@@ -7,6 +7,12 @@ const MAX_TRIES = 5;
 
 export async function checkRateLimit(chave: string): Promise<{ ok: boolean; restantes: number }> {
   const janela = new Date(Math.floor(Date.now() / WINDOW_MS) * WINDOW_MS);
+
+  // Cleanup oportunista (1% das chamadas): remove janelas com >1h.
+  if (Math.random() < 0.01) {
+    const cutoff = new Date(Date.now() - 60 * 60 * 1000);
+    await db.delete(schema.rateLimits).where(lt(schema.rateLimits.janelaIni, cutoff)).catch(() => {});
+  }
 
   const [row] = await db
     .insert(schema.rateLimits)

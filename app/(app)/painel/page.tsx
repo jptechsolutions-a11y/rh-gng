@@ -59,10 +59,10 @@ export default async function PainelPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-perlog-slate">
-                    <th className="px-6 py-3 font-medium">Candidato</th>
-                    <th className="px-6 py-3 font-medium">Cargo</th>
-                    <th className="px-6 py-3 font-medium">Status</th>
-                    <th className="px-6 py-3 font-medium">Data</th>
+                    <th scope="col" className="px-6 py-3 font-medium">Candidato</th>
+                    <th scope="col" className="px-6 py-3 font-medium">Cargo</th>
+                    <th scope="col" className="px-6 py-3 font-medium">Status</th>
+                    <th scope="col" className="px-6 py-3 font-medium">Data</th>
                   </tr>
                 </thead>
                 <tbody>

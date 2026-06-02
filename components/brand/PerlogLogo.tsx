@@ -5,7 +5,7 @@ type Props = { className?: string; variant?: 'full' | 'mark' };
 export function PerlogLogo({ className, variant = 'full' }: Props) {
   if (variant === 'mark') {
     return (
-      <svg viewBox="0 0 64 64" className={cn('h-8 w-8', className)} aria-label="Perlog">
+      <svg viewBox="0 0 64 64" className={cn('h-8 w-8', className)} role="img" aria-label="Perlog">
         <defs>
           <linearGradient id="pl-mark" x1="0%" y1="0%" x2="100%" y2="100%">
             <stop offset="0%" stopColor="#F37021" />
@@ -22,7 +22,7 @@ export function PerlogLogo({ className, variant = 'full' }: Props) {
     );
   }
   return (
-    <svg viewBox="0 0 220 56" className={cn('h-9 w-auto', className)} aria-label="Perlog">
+    <svg viewBox="0 0 220 56" className={cn('h-9 w-auto', className)} role="img" aria-label="Perlog">
       <defs>
         <linearGradient id="pl-grad" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#F37021" />

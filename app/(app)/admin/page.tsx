@@ -47,7 +47,14 @@ export default async function AdminDashboard() {
                         <Badge variant={statusVariant(s.status)}>{s.status}</Badge>
                         <span className="text-sm tabular-nums text-perlog-slate">{Number(s.n)} <span className="text-xs">({pct}%)</span></span>
                       </div>
-                      <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                      <div
+                        className="h-1.5 rounded-full bg-slate-100 overflow-hidden"
+                        role="progressbar"
+                        aria-valuenow={pct}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-label={`${s.status}: ${pct}%`}
+                      >
                         <div className="h-full bg-perlog-orange rounded-full transition-all" style={{ width: `${pct}%` }} />
                       </div>
                     </div>

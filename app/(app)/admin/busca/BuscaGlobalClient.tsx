@@ -33,7 +33,6 @@ export function BuscaGlobalClient() {
             onChange={(e) => setQ(e.target.value)}
             placeholder="Nome, CPF ou e-mail..."
             className="pl-9"
-            autoFocus
           />
         </div>
         <Button type="submit" disabled={pending || q.trim().length < 2}>
@@ -51,7 +50,10 @@ export function BuscaGlobalClient() {
         <table className="w-full text-sm border-t border-slate-100">
           <thead>
             <tr className="text-left text-xs uppercase tracking-wide text-perlog-slate">
-              <th className="py-2">Nome</th><th>CPF</th><th>Status</th><th>Data</th>
+              <th scope="col" className="py-2">Nome</th>
+              <th scope="col">CPF</th>
+              <th scope="col">Status</th>
+              <th scope="col">Data</th>
             </tr>
           </thead>
           <tbody>

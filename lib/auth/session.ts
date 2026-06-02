@@ -35,9 +35,11 @@ export async function createSession(opts:
   });
 
   const c = await cookies();
+  // Cookie Secure sempre, exceto quando rodando localmente em dev (http localhost).
+  const isLocal = h.get('host')?.startsWith('localhost') ?? false;
   c.set(SESSION_COOKIE, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: !isLocal,
     sameSite: 'lax',
     path: '/',
     expires: expira,

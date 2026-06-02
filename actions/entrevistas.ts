@@ -37,7 +37,7 @@ export async function salvarEntrevista(input: EntrevistaInput, idExistente?: str
   const s = await requireSession('filial');
   const parsed = entrevistaInputSchema.parse(input);
 
-  const base = {
+  const baseSemConsentimento = {
     filialId: s.filialId,
     cpf: parsed.cpf,
     nome: parsed.nome,
@@ -75,18 +75,19 @@ export async function salvarEntrevista(input: EntrevistaInput, idExistente?: str
     proximaEtapa: parsed.proximaEtapa || null,
     dataRetorno: parsed.dataRetorno || null,
     recrutador: parsed.recrutador || s.filialCodigo,
-    consentimentoLgpdEm: new Date(),
     atualizadoPor: `filial:${s.filialCodigo}`,
   };
 
   if (idExistente) {
-    await db.update(schema.entrevistas).set(base)
+    // No update, NÃO sobrescrevemos consentimentoLgpdEm: a data original deve ser preservada.
+    await db.update(schema.entrevistas).set(baseSemConsentimento)
       .where(and(eq(schema.entrevistas.id, idExistente), eq(schema.entrevistas.filialId, s.filialId)));
     revalidatePath('/painel');
     revalidatePath('/banco-talentos');
     return { id: idExistente };
   }
 
+  const base = { ...baseSemConsentimento, consentimentoLgpdEm: new Date() };
   const [row] = await db.insert(schema.entrevistas).values(base).returning({ id: schema.entrevistas.id });
   if (!row) throw new Error('Falha ao salvar');
   await db.insert(schema.logHistorico).values({
@@ -128,11 +129,16 @@ export async function atualizarStatus(input: { entrevistaId: string; novoStatus:
   return { ok: true };
 }
 
+function escapeLike(s: string) {
+  return s.replace(/[\\%_]/g, (c) => `\\${c}`);
+}
+
 export async function buscaGlobal(termo: string) {
   await requireSession('admin');
   const q = termo.trim();
   if (q.length < 2) return [];
   const digits = q.replace(/\D/g, '');
+  const like = `%${escapeLike(q)}%`;
   return db.select({
     id: schema.entrevistas.id,
     nome: schema.entrevistas.nome,
@@ -144,9 +150,9 @@ export async function buscaGlobal(termo: string) {
   })
     .from(schema.entrevistas)
     .where(or(
-      ilike(schema.entrevistas.nome, `%${q}%`),
-      ilike(schema.entrevistas.email, `%${q}%`),
-      digits.length >= 3 ? ilike(schema.entrevistas.cpf, `%${digits}%`) : undefined,
+      ilike(schema.entrevistas.nome, like),
+      ilike(schema.entrevistas.email, like),
+      digits.length >= 3 ? ilike(schema.entrevistas.cpf, `%${escapeLike(digits)}%`) : undefined,
     ))
     .orderBy(desc(schema.entrevistas.dataHora))
     .limit(50);

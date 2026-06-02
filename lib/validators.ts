@@ -57,12 +57,12 @@ export const entrevistaInputSchema = z.object({
   notasCriterios: z.record(z.string(), z.number().min(0).max(10)).optional().default({}),
   observacoes: z.string().max(5000).optional().nullable(),
   notaGeral: z.number().min(0).max(10).optional().nullable(),
-  status: z.string().optional(),
+  status: z.enum(['Em análise', 'Aprovado', 'Reprovado', 'Banco de Talentos', 'Contratado']).optional(),
   motivoDecisao: z.string().optional().nullable(),
   proximaEtapa: z.string().optional().nullable(),
   dataRetorno: z.string().date().optional().nullable(),
   recrutador: z.string().optional().nullable(),
-  consentimentoLgpd: z.literal(true, { message: 'Consentimento LGPD obrigatório' }),
+  consentimentoLgpd: z.boolean().refine((v) => v === true, 'Consentimento LGPD obrigatório'),
 });
 
 export type EntrevistaInput = z.infer<typeof entrevistaInputSchema>;

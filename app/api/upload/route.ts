@@ -27,11 +27,12 @@ export async function POST(req: NextRequest) {
 
   if (!ALLOWED_BUCKETS.has(bucket)) return NextResponse.json({ erro: 'Bucket inválido' }, { status: 400 });
   if (!(file instanceof File)) return NextResponse.json({ erro: 'Arquivo ausente' }, { status: 400 });
+  // file.size é confiável (pré-buffer pelo runtime); cortamos cedo para evitar leitura desnecessária.
   if (file.size === 0 || file.size > MAX) return NextResponse.json({ erro: 'Tamanho inválido (max 10MB)' }, { status: 400 });
-  if (file.type !== 'application/pdf') return NextResponse.json({ erro: 'Apenas PDF' }, { status: 400 });
 
   const ab = await file.arrayBuffer();
   const buf = Buffer.from(ab);
+  // Magic byte é a única verificação confiável; file.type vem do cliente.
   if (!isPdf(buf)) return NextResponse.json({ erro: 'Arquivo não é PDF válido' }, { status: 400 });
 
   const supabase = createClient(
@@ -49,6 +50,7 @@ export async function POST(req: NextRequest) {
   });
   if (error) return NextResponse.json({ erro: error.message }, { status: 500 });
 
-  const { data } = await supabase.storage.from(bucket).createSignedUrl(path, 300);
+  // URL assinada com download forçado: previne execução de PDFs maliciosos in-browser.
+  const { data } = await supabase.storage.from(bucket).createSignedUrl(path, 300, { download: true });
   return NextResponse.json({ path, url: data?.signedUrl });
 }

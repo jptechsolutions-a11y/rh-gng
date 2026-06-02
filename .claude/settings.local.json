@@ -28,7 +28,9 @@
       "mcp__86839c5b-a0a8-4979-95bb-418fd749048c__get_project",
       "mcp__86839c5b-a0a8-4979-95bb-418fd749048c__execute_sql",
       "mcp__86839c5b-a0a8-4979-95bb-418fd749048c__get_publishable_keys",
-      "mcp__86839c5b-a0a8-4979-95bb-418fd749048c__get_project_url"
+      "mcp__86839c5b-a0a8-4979-95bb-418fd749048c__get_project_url",
+      "mcp__Claude_Preview__preview_start",
+      "Read(//c/Users/JULIAN~1.COR/AppData/Local/Temp/claude/C--Users-juliano-correa-Desktop-G-G/45201735-ac15-40d3-a846-a4198c66739c/tasks/**)"
     ]
   }
 }

@@ -40,7 +40,9 @@ export function Sidebar({
 
       <nav className="flex-1 px-3 py-4 space-y-1">
         {nav.map(({ href, label, icon: Icon }) => {
-          const active = pathname === href || pathname.startsWith(href + '/');
+          // Match exato para rotas-raiz ('/admin', '/painel'); prefixo para subrotas.
+          const isRoot = href === '/admin' || href === '/painel';
+          const active = isRoot ? pathname === href : (pathname === href || pathname.startsWith(href + '/'));
           return (
             <Link
               key={href}

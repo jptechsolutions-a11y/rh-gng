@@ -9,10 +9,14 @@ const COLS = [
   'cargoPretendido','status','notaGeral','recrutador','atualizadoEm',
 ] as const;
 
+// CSV-injection-safe escape: aspas as necessárias + prefix `'` quando o valor
+// começa com caractere interpretado como fórmula por Excel/LibreOffice.
 function csvEscape(v: unknown): string {
   if (v == null) return '';
   const s = String(v);
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  const dangerous = /^[=+\-@\t\r]/.test(s);
+  const body = dangerous ? `'${s}` : s;
+  return /[",\n]/.test(body) ? `"${body.replace(/"/g, '""')}"` : body;
 }
 
 export async function GET() {

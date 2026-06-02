@@ -48,9 +48,9 @@ export function EntrevistaWizard({
       nome: (inicial?.nome as string) ?? '',
       respostasRoteiro: (inicial?.respostasRoteiro as Record<string, string | number | boolean>) ?? {},
       notasCriterios: (inicial?.notasCriterios as Record<string, number>) ?? {},
-      consentimentoLgpd: inicial ? true : (false as unknown as true),
-      status: (inicial?.status as string) ?? 'Em análise',
-    },
+      consentimentoLgpd: Boolean(inicial),
+      status: (inicial?.status as EntrevistaInput['status']) ?? 'Em análise',
+    } as Partial<EntrevistaInput>,
   });
 
   const goNext = async () => {
@@ -78,9 +78,16 @@ export function EntrevistaWizard({
     });
   });
 
+  // Bloqueia submit via Enter exceto no último step (evita salvar entrevista incompleta).
+  const onKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
+    if (e.key === 'Enter' && step < 4 && (e.target as HTMLElement).tagName !== 'TEXTAREA') {
+      e.preventDefault();
+    }
+  };
+
   return (
     <FormProvider {...methods}>
-      <form onSubmit={onSubmit} className="space-y-6">
+      <form onSubmit={onSubmit} onKeyDown={onKeyDown} className="space-y-6">
         <Stepper step={step} />
 
         <Card>

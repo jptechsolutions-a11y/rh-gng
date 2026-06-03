@@ -45,6 +45,7 @@ export const roteiro = pgTable('roteiro', {
   ordem: integer('ordem').notNull(),
   pergunta: text('pergunta').notNull(),
   tipo: text('tipo').notNull(),
+  opcoes: text('opcoes').array(),
   ativo: boolean('ativo').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
@@ -107,6 +108,10 @@ export const entrevistas = pgTable('entrevistas', {
   proximaEtapa: text('proxima_etapa'),
   dataRetorno: date('data_retorno'),
   recrutador: text('recrutador'),
+  gestorAprovador: text('gestor_aprovador'),
+  aprovadoPeloGg: boolean('aprovado_pelo_gg').default(false),
+  decisaoEm: timestamp('decisao_em', { withTimezone: true }),
+  decisaoPor: text('decisao_por'),
   consentimentoLgpdEm: timestamp('consentimento_lgpd_em', { withTimezone: true }),
   atualizadoEm: timestamp('atualizado_em', { withTimezone: true }).notNull().defaultNow(),
   atualizadoPor: text('atualizado_por'),
@@ -141,3 +146,76 @@ export const rateLimits = pgTable('rate_limits', {
   janelaIni: timestamp('janela_ini', { withTimezone: true }).notNull(),
   contagem: integer('contagem').notNull().default(1),
 }, (t) => ({ pk: primaryKey({ columns: [t.chave, t.janelaIni] }) }));
+
+// ==================== AVALIAÇÃO DE DESEMPENHO ====================
+
+export const pessoas = pgTable('pessoas', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  matricula: text('matricula').notNull().unique(),
+  nome: text('nome').notNull(),
+  funcao: text('funcao'),
+  filialId: uuid('filial_id').references(() => filiais.id, { onDelete: 'set null' }),
+  regional: text('regional'),
+  isColaborador: boolean('is_colaborador').notNull().default(true),
+  isGestor: boolean('is_gestor').notNull().default(false),
+  ativo: boolean('ativo').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  filialIdx: index('pessoas_filial_idx').on(t.filialId),
+  matriculaIdx: index('pessoas_matricula_idx').on(t.matricula),
+}));
+
+export const competencias = pgTable('competencias', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  nome: text('nome').notNull().unique(),
+  descricao: text('descricao'),
+  ordem: integer('ordem').notNull().default(0),
+  peso: numeric('peso', { precision: 4, scale: 2 }).notNull().default('1'),
+  ativo: boolean('ativo').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const fatoresAvaliacao = pgTable('fatores_avaliacao', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  competenciaId: uuid('competencia_id').notNull().references(() => competencias.id, { onDelete: 'cascade' }),
+  ordem: integer('ordem').notNull(),
+  texto: text('texto').notNull(),
+  escalaMax: integer('escala_max').notNull().default(5),
+  ativo: boolean('ativo').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  competenciaOrdemIdx: index('fatores_competencia_ordem_idx').on(t.competenciaId, t.ordem),
+}));
+
+export const avaliacoesDesempenho = pgTable('avaliacoes_desempenho', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  filialId: uuid('filial_id').notNull().references(() => filiais.id, { onDelete: 'restrict' }),
+  avaliadoId: uuid('avaliado_id').notNull().references(() => pessoas.id, { onDelete: 'restrict' }),
+  gestorId: uuid('gestor_id').notNull().references(() => pessoas.id, { onDelete: 'restrict' }),
+  dataAvaliacao: date('data_avaliacao').notNull().default(sql`current_date`),
+  pontuacaoFinal: numeric('pontuacao_final', { precision: 4, scale: 2 }),
+  classificacao: text('classificacao'),
+  pontosFortes: text('pontos_fortes'),
+  oportunidades: text('oportunidades'),
+  comentarios: text('comentarios'),
+  planoDesenvolvimento: text('plano_desenvolvimento'),
+  criadaPor: text('criada_por'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  filialDataIdx: index('avaliacoes_desempenho_filial_data_idx').on(t.filialId, t.dataAvaliacao),
+  avaliadoDataIdx: index('avaliacoes_desempenho_avaliado_data_idx').on(t.avaliadoId, t.dataAvaliacao),
+  uniqDia: index('avaliacoes_desempenho_uniq_dia').on(t.avaliadoId, t.gestorId, t.dataAvaliacao),
+}));
+
+export const avaliacoesDetalhes = pgTable('avaliacoes_detalhes', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  avaliacaoId: uuid('avaliacao_id').notNull().references(() => avaliacoesDesempenho.id, { onDelete: 'cascade' }),
+  fatorId: uuid('fator_id').notNull().references(() => fatoresAvaliacao.id, { onDelete: 'restrict' }),
+  competenciaId: uuid('competencia_id').notNull().references(() => competencias.id, { onDelete: 'restrict' }),
+  nota: integer('nota').notNull(),
+}, (t) => ({
+  avaliacaoIdx: index('avaliacoes_detalhes_avaliacao_idx').on(t.avaliacaoId),
+  uniqFator: index('avaliacoes_detalhes_uniq_fator').on(t.avaliacaoId, t.fatorId),
+  notaCheck: check('avaliacoes_detalhes_nota_check', sql`nota BETWEEN 1 AND 5`),
+}));

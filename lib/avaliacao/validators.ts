@@ -3,7 +3,9 @@ import { z } from 'zod';
 export const NovaAvaliacaoSchema = z.object({
   avaliadoId: z.string().uuid(),
   gestorId: z.string().uuid(),
-  dataAvaliacao: z.coerce.date().max(new Date(), { message: 'Não pode ser futura' }),
+  dataAvaliacao: z.coerce.date().refine((d) => d.getTime() <= Date.now() + 60_000, {
+    message: 'Não pode ser futura',
+  }),
   notas: z.array(z.object({
     fatorId: z.string().uuid(),
     nota: z.number().int().min(1).max(5),

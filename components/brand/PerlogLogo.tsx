@@ -22,7 +22,7 @@ export function PerlogLogo({ className, variant = 'full' }: Props) {
     );
   }
   return (
-    <svg viewBox="0 0 220 56" className={cn('h-9 w-auto', className)} role="img" aria-label="Perlog">
+    <svg viewBox="0 0 160 56" className={cn('h-9 w-auto', className)} role="img" aria-label="Perlog">
       <defs>
         <linearGradient id="pl-grad" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#F37021" />
@@ -38,10 +38,6 @@ export function PerlogLogo({ className, variant = 'full' }: Props) {
         fontStyle="italic"
         letterSpacing="-1"
       >Perlog</text>
-      <path
-        d="M168 16 l24 12 l-24 12 v-7 h-12 v-10 h12 z"
-        fill="url(#pl-grad)"
-      />
     </svg>
   );
 }

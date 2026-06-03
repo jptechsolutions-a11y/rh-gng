@@ -6,6 +6,7 @@ import {
   PolarAngleAxis,
   PolarRadiusAxis,
   ResponsiveContainer,
+  LabelList,
 } from 'recharts';
 
 export function RadarCompetencias({
@@ -20,7 +21,14 @@ export function RadarCompetencias({
           <PolarGrid />
           <PolarAngleAxis dataKey="competencia" tick={{ fontSize: 11 }} />
           <PolarRadiusAxis domain={[0, 5]} tickCount={6} />
-          <Radar dataKey="media" stroke="#0B2447" fill="#0B2447" fillOpacity={0.35} />
+          <Radar dataKey="media" stroke="#0B2447" fill="#0B2447" fillOpacity={0.35}>
+            <LabelList
+              dataKey="media"
+              position="top"
+              formatter={(v) => Number(v).toFixed(2)}
+              style={{ fontSize: 11, fill: '#0B2447', fontWeight: 700 }}
+            />
+          </Radar>
         </RadarChart>
       </ResponsiveContainer>
     </div>

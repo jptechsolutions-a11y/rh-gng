@@ -8,6 +8,7 @@ import {
   CartesianGrid,
   ResponsiveContainer,
   Tooltip,
+  LabelList,
 } from 'recharts';
 import { Card, CardContent } from '@/components/ui/card';
 import type {
@@ -60,12 +61,19 @@ export function RelatoriosCharts({
         <Card>
           <CardContent className="h-80 pt-6">
             <ResponsiveContainer>
-              <BarChart data={filialData}>
+              <BarChart data={filialData} margin={{ top: 20, right: 16, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="codigo" />
                 <YAxis domain={[0, 5]} />
                 <Tooltip />
-                <Bar dataKey="media" fill="#0B2447" />
+                <Bar dataKey="media" fill="#0B2447">
+                  <LabelList
+                    dataKey="media"
+                    position="top"
+                    formatter={(v) => Number(v).toFixed(2)}
+                    style={{ fontSize: 11, fill: '#0B2447', fontWeight: 600 }}
+                  />
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -76,12 +84,19 @@ export function RelatoriosCharts({
         <Card>
           <CardContent className="h-80 pt-6">
             <ResponsiveContainer>
-              <BarChart data={compData}>
+              <BarChart data={compData} margin={{ top: 20, right: 16, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="competencia" tick={{ fontSize: 10 }} />
                 <YAxis domain={[0, 5]} />
                 <Tooltip />
-                <Bar dataKey="media" fill="#F26B1F" />
+                <Bar dataKey="media" fill="#F26B1F">
+                  <LabelList
+                    dataKey="media"
+                    position="top"
+                    formatter={(v) => Number(v).toFixed(2)}
+                    style={{ fontSize: 11, fill: '#0B2447', fontWeight: 600 }}
+                  />
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
           </CardContent>

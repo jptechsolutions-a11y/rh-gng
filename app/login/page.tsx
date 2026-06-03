@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth/session';
 import { PerlogLogo } from '@/components/brand/PerlogLogo';
 import { LoginForm } from './LoginForm';
-import { ShieldCheck, Lock, Users } from 'lucide-react';
+import { ShieldCheck, Lock, LayoutGrid } from 'lucide-react';
 
 export default async function LoginPage() {
   const s = await getSession();
@@ -23,21 +23,21 @@ export default async function LoginPage() {
           <div className="space-y-8 max-w-md">
             <div>
               <h2 className="text-3xl font-semibold leading-tight">
-                Entrevistas guiadas. <br />
-                <span className="text-perlog-orange">Decisões melhores.</span>
+                Sistema de Gente &amp; Gestão <br />
+                <span className="text-perlog-orange">do Grupo Perlog.</span>
               </h2>
               <p className="mt-3 text-white/70">
-                Plataforma corporativa para conduzir entrevistas e gerir o banco de talentos
-                das 9 filiais do Grupo Perlog.
+                Plataforma corporativa única para os processos de RH do grupo —
+                entrevistas, banco de talentos e avaliação de desempenho.
               </p>
             </div>
 
             <ul className="space-y-3 text-sm text-white/80">
               <li className="flex items-center gap-3">
                 <span className="grid place-items-center h-8 w-8 rounded-lg bg-white/10">
-                  <ShieldCheck className="h-4 w-4 text-perlog-orange" />
+                  <LayoutGrid className="h-4 w-4 text-perlog-orange" />
                 </span>
-                Conformidade LGPD e logs imutáveis
+                Módulos integrados de Entrevistas e Avaliação
               </li>
               <li className="flex items-center gap-3">
                 <span className="grid place-items-center h-8 w-8 rounded-lg bg-white/10">
@@ -47,9 +47,9 @@ export default async function LoginPage() {
               </li>
               <li className="flex items-center gap-3">
                 <span className="grid place-items-center h-8 w-8 rounded-lg bg-white/10">
-                  <Users className="h-4 w-4 text-perlog-orange" />
+                  <ShieldCheck className="h-4 w-4 text-perlog-orange" />
                 </span>
-                Banco de talentos isolado por filial
+                Conformidade LGPD e logs imutáveis
               </li>
             </ul>
           </div>
@@ -70,7 +70,7 @@ export default async function LoginPage() {
             <div className="mb-6">
               <h1 className="text-2xl font-semibold text-perlog-navy tracking-tight">Bem-vindo de volta</h1>
               <p className="mt-1 text-sm text-perlog-slate">
-                Acesse com a senha da sua filial. Administradores: informe o usuário.
+                Acesse o sistema de Gente &amp; Gestão Perlog. Filiais usam a senha da unidade; administradores informam o usuário.
               </p>
             </div>
             <LoginForm />

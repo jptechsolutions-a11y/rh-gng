@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
   LayoutDashboard, Users, FileText, Settings, LogOut, ShieldCheck, ClipboardList, History, CalendarClock,
-  PanelLeftClose, PanelLeftOpen, Home, Target,
+  PanelLeftClose, PanelLeftOpen, Home, Target, Plus, BarChart3, UserCog, ArrowLeft,
 } from 'lucide-react';
 import { PerlogLogo } from '@/components/brand/PerlogLogo';
 import { cn } from '@/lib/cn';
@@ -20,7 +20,6 @@ const FILIAL_NAV: NavItem[] = [
   { href: '/historico',       label: 'Histórico',       icon: History },
   { href: '/agenda',          label: 'Agenda',          icon: CalendarClock },
   { href: '/banco-talentos',  label: 'Banco de talentos', icon: Users },
-  { href: '/avaliacao',       label: 'Avaliação de desempenho', icon: Target },
 ];
 
 const ADMIN_NAV: NavItem[] = [
@@ -28,9 +27,20 @@ const ADMIN_NAV: NavItem[] = [
   { href: '/admin',           label: 'Dashboard',       icon: LayoutDashboard },
   { href: '/admin/busca',     label: 'Busca global',    icon: Users },
   { href: '/admin/relatorios', label: 'Relatórios',     icon: FileText },
-  { href: '/avaliacao',       label: 'Avaliação de desempenho', icon: Target },
   { href: '/admin/config',    label: 'Configuração',    icon: Settings },
   { href: '/admin/seguranca', label: 'Segurança',       icon: ShieldCheck },
+];
+
+const AVALIACAO_NAV_BASE: NavItem[] = [
+  { href: '/inicio',                 label: 'Voltar ao início',       icon: ArrowLeft },
+  { href: '/avaliacao',              label: 'Visão geral',            icon: LayoutDashboard },
+  { href: '/avaliacao/nova',         label: 'Nova avaliação',         icon: Plus },
+  { href: '/avaliacao/historico',    label: 'Histórico',              icon: History },
+  { href: '/avaliacao/relatorios',   label: 'Relatórios',             icon: BarChart3 },
+];
+const AVALIACAO_NAV_ADMIN_EXTRAS: NavItem[] = [
+  { href: '/admin/config/pessoas',       label: 'Pessoas',                icon: UserCog },
+  { href: '/admin/config/competencias',  label: 'Competências e fatores', icon: Target },
 ];
 
 const STORAGE_KEY = 'sidebar:collapsed';
@@ -39,7 +49,19 @@ export function Sidebar({
   perfil, nome, subtitulo,
 }: { perfil: 'filial' | 'admin'; nome: string; subtitulo: string }) {
   const pathname = usePathname();
-  const nav = perfil === 'admin' ? ADMIN_NAV : FILIAL_NAV;
+  const inAvaliacao =
+    pathname === '/avaliacao' ||
+    pathname.startsWith('/avaliacao/') ||
+    pathname.startsWith('/admin/config/pessoas') ||
+    pathname.startsWith('/admin/config/competencias');
+  const nav = inAvaliacao
+    ? perfil === 'admin'
+      ? [...AVALIACAO_NAV_BASE, ...AVALIACAO_NAV_ADMIN_EXTRAS]
+      : AVALIACAO_NAV_BASE
+    : perfil === 'admin'
+      ? ADMIN_NAV
+      : FILIAL_NAV;
+  const moduleLabel = inAvaliacao ? 'Avaliação de desempenho' : 'RH G&G';
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
@@ -77,7 +99,7 @@ export function Sidebar({
         </div>
         {!collapsed && (
           <>
-            <div className="mt-4 text-[11px] uppercase tracking-widest text-white/50">RH G&amp;G</div>
+            <div className="mt-4 text-[11px] uppercase tracking-widest text-white/50">{moduleLabel}</div>
             <div className="mt-0.5 text-sm font-semibold truncate">{nome}</div>
             <div className="text-xs text-white/60 truncate">{subtitulo}</div>
           </>
@@ -86,7 +108,7 @@ export function Sidebar({
 
       <nav className={cn('flex-1 py-4 space-y-1', collapsed ? 'px-2' : 'px-3')}>
         {nav.map(({ href, label, icon: Icon }) => {
-          const isRoot = href === '/admin' || href === '/painel';
+          const isRoot = href === '/admin' || href === '/painel' || href === '/avaliacao' || href === '/inicio';
           const active = isRoot ? pathname === href : (pathname === href || pathname.startsWith(href + '/'));
           return (
             <Link

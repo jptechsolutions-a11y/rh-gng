@@ -318,3 +318,80 @@ export async function statsHistorico() {
     precisam_melhorar: number;
   };
 }
+
+export type RelatorioFilialRow = {
+  codigo: string;
+  nome: string;
+  total: number;
+  media: string | null;
+};
+
+export async function relatorioPorFilial(): Promise<RelatorioFilialRow[]> {
+  const s = await requireSession();
+  const where =
+    s.perfil === 'filial' && s.filialId ? sql`WHERE a.filial_id = ${s.filialId}` : sql``;
+  const r = await db.execute(sql`
+    SELECT f.codigo, f.nome,
+           COUNT(*)::int AS total,
+           ROUND(AVG(a.pontuacao_final)::numeric, 2) AS media
+    FROM avaliacoes_desempenho a
+    JOIN filiais f ON f.id = a.filial_id
+    ${where}
+    GROUP BY f.codigo, f.nome
+    ORDER BY media DESC NULLS LAST
+  `);
+  return r as unknown as RelatorioFilialRow[];
+}
+
+export type RelatorioCompetenciaRow = {
+  competencia: string;
+  media: string | null;
+  amostras: number;
+};
+
+export async function relatorioPorCompetencia(): Promise<RelatorioCompetenciaRow[]> {
+  const s = await requireSession();
+  const where =
+    s.perfil === 'filial' && s.filialId ? sql`WHERE a.filial_id = ${s.filialId}` : sql``;
+  const r = await db.execute(sql`
+    SELECT c.nome AS competencia,
+           ROUND(AVG(d.nota)::numeric, 2) AS media,
+           COUNT(*)::int AS amostras
+    FROM avaliacoes_detalhes d
+    JOIN competencias c ON c.id = d.competencia_id
+    JOIN avaliacoes_desempenho a ON a.id = d.avaliacao_id
+    ${where}
+    GROUP BY c.nome, c.ordem
+    ORDER BY c.ordem
+  `);
+  return r as unknown as RelatorioCompetenciaRow[];
+}
+
+export type RankingRow = {
+  avaliado: string;
+  matricula: string;
+  media: string | null;
+  avaliacoes: number;
+};
+
+export async function relatorioRanking(
+  direcao: 'top' | 'bottom' = 'top',
+  limit = 10,
+): Promise<RankingRow[]> {
+  const s = await requireSession();
+  const where =
+    s.perfil === 'filial' && s.filialId ? sql`WHERE a.filial_id = ${s.filialId}` : sql``;
+  const ord = direcao === 'top' ? sql`DESC` : sql`ASC`;
+  const r = await db.execute(sql`
+    SELECT p.nome AS avaliado, p.matricula,
+           ROUND(AVG(a.pontuacao_final)::numeric, 2) AS media,
+           COUNT(*)::int AS avaliacoes
+    FROM avaliacoes_desempenho a
+    JOIN pessoas p ON p.id = a.avaliado_id
+    ${where}
+    GROUP BY p.id, p.nome, p.matricula
+    ORDER BY media ${ord} NULLS LAST
+    LIMIT ${limit}
+  `);
+  return r as unknown as RankingRow[];
+}

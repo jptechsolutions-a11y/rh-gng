@@ -13,7 +13,9 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "seed": "tsx scripts/seed.ts",
-    "seed:avaliacao": "tsx scripts/seed-avaliacao.ts"
+    "seed:avaliacao": "tsx scripts/seed-avaliacao.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -51,6 +53,7 @@
     "@types/node": "^22.10.10",
     "@types/react": "19.0.7",
     "@types/react-dom": "19.0.3",
+    "@vitest/ui": "^4.1.8",
     "autoprefixer": "^10.4.20",
     "drizzle-kit": "^0.30.4",
     "eslint": "^9.18.0",
@@ -58,7 +61,8 @@
     "postcss": "^8.5.1",
     "tailwindcss": "^3.4.17",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "vitest": "^4.1.8"
   },
   "engines": {
     "node": ">=20.0.0"

@@ -6,7 +6,7 @@ import { ShieldCheck, Lock, Users } from 'lucide-react';
 
 export default async function LoginPage() {
   const s = await getSession();
-  if (s) redirect(s.perfil === 'admin' ? '/admin' : '/painel');
+  if (s) redirect('/inicio');
 
   return (
     <div className="min-h-screen grid lg:grid-cols-2">

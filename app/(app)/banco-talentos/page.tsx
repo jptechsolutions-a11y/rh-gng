@@ -17,6 +17,7 @@ export default async function BancoTalentosPage() {
     cargoPretendido: r.cargoPretendido,
     status: r.status,
     cidade: r.cidade,
+    dataHora: r.dataHora.toISOString(),
   }));
 
   return (

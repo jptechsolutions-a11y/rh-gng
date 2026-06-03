@@ -15,7 +15,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="flex min-h-screen">
       <Sidebar perfil={s.perfil} nome={nome} subtitulo={sub} />
       <main className="flex-1 min-w-0 flex flex-col">
-        <div className="md:hidden flex items-center gap-3 border-b border-slate-100 bg-white px-4 py-3">
+        <div className="sm:hidden flex items-center gap-3 border-b border-slate-100 bg-white px-4 py-3">
           <MobileNav perfil={s.perfil} nome={nome} subtitulo={sub} />
           <PerlogLogo className="h-7 w-auto" />
         </div>

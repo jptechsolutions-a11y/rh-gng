@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { Users, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge, statusVariant } from '@/components/ui/badge';
 
 type Row = {
   id: string;
@@ -15,7 +14,16 @@ type Row = {
   cargoPretendido: string | null;
   status: string;
   cidade: string | null;
+  dataHora: string;
 };
+
+function ageBadge(dataHora: string) {
+  const days = Math.floor((Date.now() - new Date(dataHora).getTime()) / 86400000);
+  if (days >= 60) return { label: `${days}d · atenção crítica`, cls: 'bg-red-100 text-red-800 border-red-200' };
+  if (days >= 30) return { label: `${days}d · atenção`, cls: 'bg-amber-100 text-amber-800 border-amber-200' };
+  if (days >= 14) return { label: `${days}d`, cls: 'bg-slate-100 text-slate-700 border-slate-200' };
+  return { label: `${days}d · recente`, cls: 'bg-emerald-100 text-emerald-800 border-emerald-200' };
+}
 
 export function BancoTalentosClient({ rows }: { rows: Row[] }) {
   const [q, setQ] = useState('');
@@ -66,24 +74,31 @@ export function BancoTalentosClient({ rows }: { rows: Row[] }) {
                 <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-perlog-slate">
                   <th scope="col" className="px-6 py-3 font-medium">Candidato</th>
                   <th scope="col" className="px-6 py-3 font-medium">Cargo</th>
-                  <th scope="col" className="px-6 py-3 font-medium">Status</th>
                   <th scope="col" className="px-6 py-3 font-medium">Cidade</th>
+                  <th scope="col" className="px-6 py-3 font-medium">Tempo no banco</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((e) => (
-                  <tr key={e.id} className="border-b border-slate-50 hover:bg-slate-50/60">
-                    <td className="px-6 py-3">
-                      <Link href={`/entrevista/${e.id}`} className="font-medium text-perlog-navy hover:text-perlog-orange">
-                        {e.nome}
-                      </Link>
-                      <div className="text-xs text-perlog-slate">{e.telefone ?? '—'}</div>
-                    </td>
-                    <td className="px-6 py-3 text-perlog-slate">{e.cargoPretendido ?? '—'}</td>
-                    <td className="px-6 py-3"><Badge variant={statusVariant(e.status)}>{e.status}</Badge></td>
-                    <td className="px-6 py-3 text-perlog-slate">{e.cidade ?? '—'}</td>
-                  </tr>
-                ))}
+                {filtered.map((e) => {
+                  const age = ageBadge(e.dataHora);
+                  return (
+                    <tr key={e.id} className="border-b border-slate-50 hover:bg-slate-50/60">
+                      <td className="px-6 py-3">
+                        <Link href={`/entrevista/${e.id}`} className="font-medium text-perlog-navy hover:text-perlog-orange">
+                          {e.nome}
+                        </Link>
+                        <div className="text-xs text-perlog-slate">{e.telefone ?? '—'}</div>
+                      </td>
+                      <td className="px-6 py-3 text-perlog-slate">{e.cargoPretendido ?? '—'}</td>
+                      <td className="px-6 py-3 text-perlog-slate">{e.cidade ?? '—'}</td>
+                      <td className="px-6 py-3">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${age.cls}`}>
+                          {age.label}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           )}

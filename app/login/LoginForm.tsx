@@ -55,6 +55,21 @@ export function LoginForm() {
         </div>
       </div>
 
+      <label className="flex items-center gap-2 text-sm text-perlog-slate cursor-pointer select-none">
+        <input
+          type="checkbox"
+          name="lembrar"
+          defaultChecked={false}
+          className="h-4 w-4 rounded border-slate-300 text-perlog-orange focus:ring-perlog-orange/40"
+        />
+        <span>
+          Lembrar minha senha neste dispositivo
+          <span className="block text-[11px] text-perlog-slate/80">
+            Se desmarcado, a senha será pedida novamente quando você fechar o navegador.
+          </span>
+        </span>
+      </label>
+
       {state?.erro && (
         <div className="flex items-start gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2">
           <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />

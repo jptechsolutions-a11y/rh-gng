@@ -2,7 +2,7 @@
 import { useFormContext } from 'react-hook-form';
 import type { EntrevistaInput } from '@/lib/validators';
 
-type Item = { id: string; ordem: number; pergunta: string; tipo: string };
+type Item = { id: string; ordem: number; pergunta: string; tipo: string; opcoes?: string[] | null };
 
 export function Step3Roteiro({ roteiro }: { roteiro: Item[] }) {
   const { register, watch, setValue } = useFormContext<EntrevistaInput>();
@@ -54,6 +54,17 @@ export function Step3Roteiro({ roteiro }: { roteiro: Item[] }) {
                   );
                 })}
               </div>
+            )}
+
+            {q.tipo === 'select' && q.opcoes && q.opcoes.length > 0 && (
+              <select
+                id={`q-${q.id}`}
+                {...register(`respostasRoteiro.${q.id}` as const)}
+                className="mt-2 flex h-10 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-perlog-orange/60"
+              >
+                <option value="">Selecione...</option>
+                {q.opcoes.map((o) => <option key={o} value={o}>{o}</option>)}
+              </select>
             )}
 
             {q.tipo === 'escala' && (

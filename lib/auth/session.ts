@@ -1,4 +1,5 @@
 import 'server-only';
+import { cache } from 'react';
 import { cookies, headers } from 'next/headers';
 import { randomBytes } from 'crypto';
 import { eq, lt } from 'drizzle-orm';
@@ -6,7 +7,8 @@ import { db, schema } from '@/db/client';
 
 import { SESSION_COOKIE } from './constants';
 export { SESSION_COOKIE };
-const TTL_HOURS = 8;
+const TTL_HOURS = 8;             // sessão padrão (cookie de sessão — apagado ao fechar o navegador)
+const TTL_HOURS_LEMBRAR = 24 * 30; // 30 dias quando "Lembrar senha" marcado
 
 export type FilialSession = { perfil: 'filial'; token: string; filialId: string; filialCodigo: string; filialNome: string };
 export type AdminSession  = { perfil: 'admin';  token: string; adminId: string; usuario: string; nome: string | null };
@@ -17,11 +19,12 @@ function genToken() {
 }
 
 export async function createSession(opts:
-  | { perfil: 'filial'; filialId: string }
-  | { perfil: 'admin'; adminId: string }
+  | { perfil: 'filial'; filialId: string; lembrar?: boolean }
+  | { perfil: 'admin'; adminId: string; lembrar?: boolean }
 ) {
   const token = genToken();
-  const expira = new Date(Date.now() + TTL_HOURS * 3600 * 1000);
+  const horas = opts.lembrar ? TTL_HOURS_LEMBRAR : TTL_HOURS;
+  const expira = new Date(Date.now() + horas * 3600 * 1000);
   const h = await headers();
   const ip = h.get('x-forwarded-for')?.split(',')[0]?.trim() ?? null;
   const ua = h.get('user-agent') ?? null;
@@ -37,12 +40,14 @@ export async function createSession(opts:
   const c = await cookies();
   // Cookie Secure sempre, exceto quando rodando localmente em dev (http localhost).
   const isLocal = h.get('host')?.startsWith('localhost') ?? false;
+  // Sem `expires` → cookie de sessão (apagado ao fechar o navegador → pedirá senha novamente).
+  // Com `expires` → cookie persistente até a data definida.
   c.set(SESSION_COOKIE, token, {
     httpOnly: true,
     secure: !isLocal,
     sameSite: 'lax',
     path: '/',
-    expires: expira,
+    ...(opts.lembrar ? { expires: expira } : {}),
   });
   return token;
 }
@@ -54,7 +59,7 @@ export async function destroySession() {
   c.delete(SESSION_COOKIE);
 }
 
-export async function getSession(): Promise<Session | null> {
+export const getSession = cache(async (): Promise<Session | null> => {
   const c = await cookies();
   const token = c.get(SESSION_COOKIE)?.value;
   if (!token) return null;
@@ -97,7 +102,7 @@ export async function getSession(): Promise<Session | null> {
     };
   }
   return null;
-}
+});
 
 export async function requireSession(perfilEsperado: 'filial'): Promise<FilialSession>;
 export async function requireSession(perfilEsperado: 'admin'):  Promise<AdminSession>;

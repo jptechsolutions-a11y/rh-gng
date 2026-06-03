@@ -4,5 +4,5 @@ import { getSession } from '@/lib/auth/session';
 export default async function Home() {
   const s = await getSession();
   if (!s) redirect('/login');
-  redirect(s.perfil === 'admin' ? '/admin' : '/painel');
+  redirect('/inicio');
 }

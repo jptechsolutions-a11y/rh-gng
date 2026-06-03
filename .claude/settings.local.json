@@ -30,7 +30,22 @@
       "mcp__86839c5b-a0a8-4979-95bb-418fd749048c__get_publishable_keys",
       "mcp__86839c5b-a0a8-4979-95bb-418fd749048c__get_project_url",
       "mcp__Claude_Preview__preview_start",
-      "Read(//c/Users/JULIAN~1.COR/AppData/Local/Temp/claude/C--Users-juliano-correa-Desktop-G-G/45201735-ac15-40d3-a846-a4198c66739c/tasks/**)"
+      "Read(//c/Users/JULIAN~1.COR/AppData/Local/Temp/claude/C--Users-juliano-correa-Desktop-G-G/45201735-ac15-40d3-a846-a4198c66739c/tasks/**)",
+      "Bash(git push *)",
+      "Bash(git check-ignore *)",
+      "Bash(git rm *)",
+      "Bash(git -C \"C:\\\\Users\\\\juliano.correa\\\\Desktop\\\\G&G\" log --oneline --all)",
+      "Bash(git -C \"C:\\\\Users\\\\juliano.correa\\\\Desktop\\\\G&G\" log --all --diff-filter=D --name-only --pretty=format:)",
+      "Bash(npx tsx *)",
+      "Bash(extract-text \"C:\\\\Users\\\\juliano.correa\\\\Downloads\\\\ENTREVISTAS PERLOG \\(4\\).docx\")",
+      "Bash(pandoc \"C:\\\\Users\\\\juliano.correa\\\\Downloads\\\\ENTREVISTAS PERLOG \\(4\\).docx\" -t markdown)",
+      "PowerShell($path = \"C:\\\\Users\\\\juliano.correa\\\\Downloads\\\\ENTREVISTAS PERLOG \\(4\\).docx\"; Add-Type -AssemblyName System.IO.Compression.FileSystem; $zip = [System.IO.Compression.ZipFile]::OpenRead\\($path\\); $entry = $zip.Entries | Where-Object { $_.FullName -eq \"word/document.xml\" }; $stream = $entry.Open\\(\\); $reader = New-Object System.IO.StreamReader\\($stream\\); $xml = $reader.ReadToEnd\\(\\); $reader.Close\\(\\); $zip.Dispose\\(\\); $text = [regex]::Replace\\($xml, '<[^>]+>', ' '\\); $text = [regex]::Replace\\($text, '\\\\s+', ' '\\); $text)",
+      "Bash(node ./node_modules/npm/bin/npm-cli.js install docx --no-audit --no-fund)",
+      "PowerShell($npm = \\(Get-Command npm.cmd -ErrorAction SilentlyContinue\\).Source; if\\(!$npm\\){$npm=\\(Get-Command npm -ErrorAction SilentlyContinue\\).Source}; \"npm: $npm\"; & $npm install docx --no-audit --no-fund 2>&1 | Select-Object -Last 15)",
+      "Bash(mkdir -p \"app/\\(app\\)/entrevista/[id]/imprimir\" \"app/api/entrevista/[id]/docx\")",
+      "Bash(git stash *)",
+      "Bash(git checkout *)",
+      "Bash(npm run *)"
     ]
   }
 }

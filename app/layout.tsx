@@ -1,10 +1,7 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import { Toaster } from 'sonner';
 import { Providers } from './providers';
 import './globals.css';
-
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
 
 export const metadata: Metadata = {
   title: 'RH G&G — Perlog',
@@ -14,9 +11,14 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" className={inter.variable}>
-      <body className="min-h-screen font-sans antialiased">
-        <Providers>{children}</Providers>
+    <html lang="pt-BR">
+      <body className="min-h-screen font-sans antialiased flex flex-col">
+        <div className="flex-1 flex flex-col">
+          <Providers>{children}</Providers>
+        </div>
+        <footer className="border-t border-slate-200 bg-white py-3 px-6 text-center text-xs text-perlog-slate">
+          Desenvolvido por <span className="font-semibold text-perlog-navy">Juliano Patrick</span> · Grupo Perlog — Gente &amp; Gestão
+        </footer>
         <Toaster position="top-right" richColors closeButton />
       </body>
     </html>

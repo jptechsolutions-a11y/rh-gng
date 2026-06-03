@@ -17,7 +17,7 @@ import { Step3Roteiro } from './Step3Roteiro';
 import { Step4Avaliacao } from './Step4Avaliacao';
 
 type Criterio = { id: string; nome: string; escalaMax: number; peso: string; ativo: boolean; ordem: number };
-type RoteiroItem = { id: string; cargo: string; ordem: number; pergunta: string; tipo: string; ativo: boolean };
+type RoteiroItem = { id: string; cargo: string; ordem: number; pergunta: string; tipo: string; opcoes?: string[] | null; ativo: boolean };
 type Inicial = Record<string, unknown> | null;
 
 const STEPS = [
@@ -46,37 +46,53 @@ export function EntrevistaWizard({
     defaultValues: {
       cpf: (inicial?.cpf as string) ?? '',
       nome: (inicial?.nome as string) ?? '',
+      recrutador: (inicial?.recrutador as string) ?? '',
+      gestorAprovador: (inicial?.gestorAprovador as string) ?? '',
+      aprovadoPeloGg: Boolean(inicial?.aprovadoPeloGg),
       respostasRoteiro: (inicial?.respostasRoteiro as Record<string, string | number | boolean>) ?? {},
       notasCriterios: (inicial?.notasCriterios as Record<string, number>) ?? {},
-      consentimentoLgpd: Boolean(inicial),
+      consentimentoLgpd: Boolean(inicial?.id),
       status: (inicial?.status as EntrevistaInput['status']) ?? 'Em análise',
     } as Partial<EntrevistaInput>,
   });
 
   const goNext = async () => {
     const fieldsByStep: Record<number, (keyof EntrevistaInput)[]> = {
-      1: ['cpf', 'nome'],
+      1: ['cpf', 'nome', 'recrutador'],
       2: ['cargoPretendido'],
       3: [],
-      4: ['consentimentoLgpd'],
+      4: ['consentimentoLgpd', 'gestorAprovador'],
     };
     const ok = await methods.trigger(fieldsByStep[step]);
     if (ok) setStep((s) => Math.min(4, s + 1));
   };
 
-  const onSubmit = methods.handleSubmit((data) => {
-    startTransition(async () => {
-      try {
-        const idExistente = (inicial?.id as string | undefined);
-        const res = await salvarEntrevista(data, idExistente);
-        toast.success(idExistente ? 'Entrevista atualizada' : 'Entrevista salva');
-        router.push(`/entrevista/${res.id}`);
-        router.refresh();
-      } catch (e) {
-        toast.error(e instanceof Error ? e.message : 'Erro ao salvar');
+  const onSubmit = methods.handleSubmit(
+    (data) => {
+      startTransition(async () => {
+        try {
+          const idExistente = (inicial?.id as string | undefined);
+          const res = await salvarEntrevista(data, idExistente);
+          toast.success(idExistente ? 'Entrevista atualizada' : 'Entrevista salva');
+          router.push(`/entrevista/${res.id}`);
+          router.refresh();
+        } catch (e) {
+          toast.error(e instanceof Error ? e.message : 'Erro ao salvar');
+        }
+      });
+    },
+    (errors) => {
+      // Validação falhou — mostra ao usuário em qual campo
+      const first = Object.entries(errors)[0];
+      if (first) {
+        const [campo, err] = first;
+        const msg = (err as { message?: string })?.message ?? 'Verifique os campos preenchidos';
+        toast.error(`${campo}: ${msg}`);
+      } else {
+        toast.error('Verifique os campos preenchidos');
       }
-    });
-  });
+    },
+  );
 
   // Bloqueia submit via Enter exceto no último step (evita salvar entrevista incompleta).
   const onKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
@@ -92,7 +108,7 @@ export function EntrevistaWizard({
 
         <Card>
           <CardContent className="p-6">
-            {step === 1 && <Step1Identificacao />}
+            {step === 1 && <Step1Identificacao entrevistaIdAtual={(inicial?.id as string | undefined)} />}
             {step === 2 && <Step2Perfil cargos={cargos} opcoes={opcoes} />}
             {step === 3 && <Step3Roteiro roteiro={roteiro} />}
             {step === 4 && <Step4Avaliacao criterios={criterios} opcoes={opcoes} />}

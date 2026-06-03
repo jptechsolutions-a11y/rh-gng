@@ -6,63 +6,76 @@ export const cpfSchema = z
   .string()
   .transform(onlyDigits)
   .refine((cpf) => cpf.length === 11, 'CPF deve ter 11 dígitos')
-  .refine((cpf) => !/^(\d)\1{10}$/.test(cpf), 'CPF inválido')
-  .refine((cpf) => {
-    let s = 0;
-    for (let i = 0; i < 9; i++) s += Number(cpf[i]) * (10 - i);
-    let d1 = (s * 10) % 11;
-    if (d1 === 10) d1 = 0;
-    if (d1 !== Number(cpf[9])) return false;
-    s = 0;
-    for (let i = 0; i < 10; i++) s += Number(cpf[i]) * (11 - i);
-    let d2 = (s * 10) % 11;
-    if (d2 === 10) d2 = 0;
-    return d2 === Number(cpf[10]);
-  }, 'CPF inválido');
+  .refine((cpf) => !/^(\d)\1{10}$/.test(cpf), 'CPF inválido');
 
 export const loginSchema = z.object({
   usuario: z.string().trim().optional(),
   senha: z.string().min(1, 'Senha obrigatória').max(200),
 });
 
+// Converte "" → null (campos opcionais vindo de inputs HTML)
+const emptyToNull = (v: unknown) => (v === '' || v === undefined ? null : v);
+// Converte string/number → number|null (inputs type=number retornam string)
+const toNumberOrNull = (v: unknown) => {
+  if (v === '' || v === null || v === undefined) return null;
+  const n = typeof v === 'string' ? Number(v) : v;
+  return typeof n === 'number' && !Number.isNaN(n) ? n : null;
+};
+
+const optDateStr = z.preprocess(emptyToNull, z.string().date().nullable().optional());
+const optStr = z.preprocess(emptyToNull, z.string().nullable().optional());
+const optNumber = z.preprocess(toNumberOrNull, z.number().nullable().optional());
+const optBool = z.preprocess((v) => (v === '' ? null : v), z.boolean().nullable().optional());
+
 export const entrevistaInputSchema = z.object({
   cpf: cpfSchema,
   nome: z.string().trim().min(3).max(200),
-  dataNasc: z.string().date().optional().nullable(),
-  rg: z.string().max(30).optional().nullable(),
-  telefone: z.string().max(30).optional().nullable(),
-  email: z.string().email().optional().nullable().or(z.literal('')),
-  cidade: z.string().max(120).optional().nullable(),
-  cargoPretendido: z.string().max(120).optional().nullable(),
-  pretensaoSalarial: z.number().nonnegative().optional().nullable(),
-  experiencias: z.string().max(5000).optional().nullable(),
-  linkedin: z.string().url().optional().nullable().or(z.literal('')),
-  escolaridade: z.string().optional().nullable(),
-  estadoCivil: z.string().optional().nullable(),
-  temFilhos: z.boolean().optional().nullable(),
-  possuiCnh: z.string().optional().nullable(),
-  veiculoProprio: z.boolean().optional().nullable(),
+  dataNasc: optDateStr,
+  rg: z.preprocess(emptyToNull, z.string().max(30).nullable().optional()),
+  telefone: z.preprocess(emptyToNull, z.string().max(30).nullable().optional()),
+  email: z.preprocess(emptyToNull, z.string().email().nullable().optional()),
+  cidade: z.preprocess(emptyToNull, z.string().max(120).nullable().optional()),
+  cargoPretendido: z.preprocess(emptyToNull, z.string().max(120).nullable().optional()),
+  pretensaoSalarial: z.preprocess(toNumberOrNull, z.number().nonnegative().nullable().optional()),
+  experiencias: z.preprocess(emptyToNull, z.string().max(5000).nullable().optional()),
+  linkedin: z.preprocess(emptyToNull, z.string().url().nullable().optional()),
+  escolaridade: optStr,
+  estadoCivil: optStr,
+  temFilhos: optBool,
+  possuiCnh: optStr,
+  veiculoProprio: optBool,
   disponibilidadeTurnos: z.array(z.string()).optional().nullable(),
-  disponibilidadeInicio: z.string().date().optional().nullable(),
-  disponibilidadeViagem: z.boolean().optional().nullable(),
-  pcd: z.boolean().optional().nullable(),
-  pcdTipo: z.string().optional().nullable(),
-  indicacao: z.boolean().optional().nullable(),
-  indicadoPorNome: z.string().optional().nullable(),
-  indicadoPorCargo: z.string().optional().nullable(),
-  fumante: z.boolean().optional().nullable(),
-  jaTrabalhouGrupo: z.boolean().optional().nullable(),
-  jaTrabalhouQuando: z.string().optional().nullable(),
+  disponibilidadeInicio: optDateStr,
+  disponibilidadeViagem: optBool,
+  pcd: optBool,
+  pcdTipo: optStr,
+  indicacao: optBool,
+  indicadoPorNome: optStr,
+  indicadoPorCargo: optStr,
+  fumante: optBool,
+  jaTrabalhouGrupo: optBool,
+  jaTrabalhouQuando: optStr,
   respostasRoteiro: z.record(z.string(), z.union([z.string(), z.number(), z.boolean()])).optional().default({}),
   notasCriterios: z.record(z.string(), z.number().min(0).max(10)).optional().default({}),
-  observacoes: z.string().max(5000).optional().nullable(),
-  notaGeral: z.number().min(0).max(10).optional().nullable(),
+  observacoes: z.preprocess(emptyToNull, z.string().max(5000).nullable().optional()),
+  notaGeral: optNumber,
   status: z.enum(['Em análise', 'Aprovado', 'Reprovado', 'Banco de Talentos', 'Contratado']).optional(),
-  motivoDecisao: z.string().optional().nullable(),
-  proximaEtapa: z.string().optional().nullable(),
-  dataRetorno: z.string().date().optional().nullable(),
-  recrutador: z.string().optional().nullable(),
+  motivoDecisao: optStr,
+  proximaEtapa: optStr,
+  dataRetorno: optDateStr,
+  recrutador: z.string().trim().min(2, 'Informe o entrevistador').max(120),
+  gestorAprovador: optStr,
+  aprovadoPeloGg: optBool,
   consentimentoLgpd: z.boolean().refine((v) => v === true, 'Consentimento LGPD obrigatório'),
+}).superRefine((data, ctx) => {
+  // Se status é Aprovado ou Reprovado, gestorAprovador é obrigatório
+  if ((data.status === 'Aprovado' || data.status === 'Reprovado') && (!data.gestorAprovador || data.gestorAprovador.trim().length < 2)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['gestorAprovador'],
+      message: 'Informe o gestor que aprovou/reprovou',
+    });
+  }
 });
 
 export type EntrevistaInput = z.infer<typeof entrevistaInputSchema>;

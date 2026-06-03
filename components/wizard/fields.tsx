@@ -7,14 +7,47 @@ import type { EntrevistaInput } from '@/lib/validators';
 
 type FieldName = keyof EntrevistaInput;
 
+function maskCpf(v: string) {
+  const d = v.replace(/\D/g, '').slice(0, 11);
+  return d
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d)/, '$1.$2')
+    .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+}
+
+function maskTel(v: string) {
+  const d = v.replace(/\D/g, '').slice(0, 11);
+  if (d.length <= 10) {
+    return d.replace(/(\d{2})(\d)/, '($1) $2').replace(/(\d{4})(\d)/, '$1-$2');
+  }
+  return d.replace(/(\d{2})(\d)/, '($1) $2').replace(/(\d{5})(\d)/, '$1-$2');
+}
+
 export function TextField({ name, label, type = 'text', placeholder, required, className }:
   { name: FieldName; label: string; type?: string; placeholder?: string; required?: boolean; className?: string }) {
-  const { register, formState: { errors } } = useFormContext<EntrevistaInput>();
+  const { register, formState: { errors }, setValue, watch } = useFormContext<EntrevistaInput>();
   const err = errors[name]?.message as string | undefined;
+  const reg = register(name);
+  const isCpf = name === 'cpf';
+  const isTel = name === 'telefone';
+  const val = (watch(name) as string | undefined) ?? '';
   return (
     <div className={cn('space-y-1.5', className)}>
       <Label htmlFor={String(name)}>{label}{required && <span className="text-perlog-orange ml-0.5">*</span>}</Label>
-      <Input id={String(name)} type={type} placeholder={placeholder} {...register(name)} />
+      <Input
+        id={String(name)}
+        type={type}
+        placeholder={placeholder}
+        {...reg}
+        value={isCpf || isTel ? val : undefined}
+        onChange={(e) => {
+          if (isCpf) setValue(name, maskCpf(e.target.value) as never, { shouldValidate: true, shouldDirty: true });
+          else if (isTel) setValue(name, maskTel(e.target.value) as never, { shouldValidate: true, shouldDirty: true });
+          else reg.onChange(e);
+        }}
+        aria-invalid={err ? true : undefined}
+        className={err ? 'border-red-400 focus-visible:ring-red-300' : undefined}
+      />
       {err && <p className="text-xs text-red-600">{err}</p>}
     </div>
   );

@@ -2,7 +2,7 @@
 import { useFormContext } from 'react-hook-form';
 import { ShieldCheck } from 'lucide-react';
 import { Label } from '@/components/ui/label';
-import { SelectField, TextareaField } from './fields';
+import { SelectField, TextField, TextareaField } from './fields';
 import type { EntrevistaInput } from '@/lib/validators';
 
 type Criterio = { id: string; nome: string; escalaMax: number };
@@ -13,6 +13,7 @@ export function Step4Avaliacao({
   const { register, watch, setValue, formState: { errors } } = useFormContext<EntrevistaInput>();
   const notas = watch('notasCriterios') ?? {};
   const consent = watch('consentimentoLgpd');
+  const statusAtual = watch('status');
 
   const media = (() => {
     const ns = Object.values(notas).map((v) => Number(v)).filter((n) => !Number.isNaN(n) && n > 0);
@@ -62,8 +63,40 @@ export function Step4Avaliacao({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <SelectField name="status" label="Status final" options={opcoes.status ?? []} required />
-        <SelectField name="proximaEtapa" label="Próxima etapa" options={['Aguardando retorno', 'Entrevista técnica', 'Proposta', 'Encerrado']} />
+        <TextField
+          name="dataRetorno"
+          label="Data de retorno"
+          type="date"
+          placeholder="Quando dar retorno ao candidato"
+        />
       </div>
+
+      <label className="flex gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3 cursor-pointer">
+        <input
+          type="checkbox"
+          {...register('aprovadoPeloGg')}
+          className="mt-0.5 h-4 w-4 rounded border-slate-300 text-perlog-orange focus:ring-perlog-orange/40"
+        />
+        <span className="text-sm text-perlog-navy">
+          <span className="font-semibold block">Avaliado pelo Gente &amp; Gestão</span>
+          <span className="text-xs text-perlog-slate">Marque se o G&amp;G já fez a avaliação inicial — aguardando decisão do gestor.</span>
+        </span>
+      </label>
+
+      {(statusAtual === 'Aprovado' || statusAtual === 'Reprovado') && (
+        <div className="rounded-lg border border-perlog-orange/30 bg-perlog-orange/5 p-4 space-y-3">
+          <p className="text-sm font-semibold text-perlog-navy">
+            Decisão final — {statusAtual.toLowerCase()}
+          </p>
+          <TextField
+            name="gestorAprovador"
+            label={statusAtual === 'Aprovado' ? 'Gestor que aprovou' : 'Gestor que reprovou'}
+            required
+            placeholder="Nome do gestor responsável pela decisão"
+          />
+        </div>
+      )}
+
       <TextareaField name="motivoDecisao" label="Motivo da decisão" rows={3} />
       <TextareaField name="observacoes" label="Observações gerais" rows={3} />
 

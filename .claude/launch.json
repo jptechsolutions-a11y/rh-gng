@@ -4,7 +4,7 @@
     {
       "name": "rh-gng-dev",
       "runtimeExecutable": "node",
-      "runtimeArgs": ["node_modules/next/dist/bin/next", "dev", "--hostname", "127.0.0.1"]
+      "runtimeArgs": ["node_modules/next/dist/bin/next", "dev", "--turbopack", "--hostname", "127.0.0.1"]
     }
   ]
 }

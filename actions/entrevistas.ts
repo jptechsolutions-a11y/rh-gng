@@ -37,26 +37,54 @@ export async function salvarEntrevista(input: EntrevistaInput, idExistente?: str
   const s = await requireSession('filial');
   const parsed = entrevistaInputSchema.parse(input);
 
+  const usuarioLabel = `filial:${s.filialCodigo}`;
+  const isDecisaoFinal = parsed.status === 'Aprovado' || parsed.status === 'Reprovado';
+
+  // Para updates, precisamos saber o status anterior para decidir se gravamos decisaoEm
+  let statusAnterior: string | null = null;
+  let decisaoEmAtual: Date | null = null;
+  if (idExistente) {
+    const prev = await db.select({ status: schema.entrevistas.status, decisaoEm: schema.entrevistas.decisaoEm })
+      .from(schema.entrevistas)
+      .where(and(eq(schema.entrevistas.id, idExistente), eq(schema.entrevistas.filialId, s.filialId)))
+      .limit(1);
+    statusAnterior = prev[0]?.status ?? null;
+    decisaoEmAtual = prev[0]?.decisaoEm ?? null;
+  }
+
+  // Calcula decisaoEm:
+  // - Se virou Aprovado/Reprovado e ainda não tinha → agora
+  // - Se já era Aprovado/Reprovado → mantém a data original
+  // - Se não é decisão final → null
+  let decisaoEm: Date | null = null;
+  let decisaoPor: string | null = null;
+  if (isDecisaoFinal) {
+    if (decisaoEmAtual && (statusAnterior === 'Aprovado' || statusAnterior === 'Reprovado')) {
+      decisaoEm = decisaoEmAtual;
+      // mantém decisaoPor existente (não sobrescreve)
+    } else {
+      decisaoEm = new Date();
+      decisaoPor = usuarioLabel;
+    }
+  }
+
   const baseSemConsentimento = {
     filialId: s.filialId,
     cpf: parsed.cpf,
     nome: parsed.nome,
     dataNasc: parsed.dataNasc || null,
-    rg: parsed.rg || null,
     telefone: parsed.telefone || null,
     email: parsed.email || null,
     cidade: parsed.cidade || null,
     cargoPretendido: parsed.cargoPretendido || null,
     pretensaoSalarial: parsed.pretensaoSalarial != null ? String(parsed.pretensaoSalarial) : null,
     experiencias: parsed.experiencias || null,
-    linkedin: parsed.linkedin || null,
     escolaridade: parsed.escolaridade || null,
     estadoCivil: parsed.estadoCivil || null,
     temFilhos: parsed.temFilhos ?? null,
     possuiCnh: parsed.possuiCnh || null,
     veiculoProprio: parsed.veiculoProprio ?? null,
     disponibilidadeTurnos: parsed.disponibilidadeTurnos ?? null,
-    disponibilidadeInicio: parsed.disponibilidadeInicio || null,
     disponibilidadeViagem: parsed.disponibilidadeViagem ?? null,
     pcd: parsed.pcd ?? null,
     pcdTipo: parsed.pcdTipo || null,
@@ -72,31 +100,145 @@ export async function salvarEntrevista(input: EntrevistaInput, idExistente?: str
     notaGeral: parsed.notaGeral != null ? String(parsed.notaGeral) : null,
     status: parsed.status || 'Em análise',
     motivoDecisao: parsed.motivoDecisao || null,
-    proximaEtapa: parsed.proximaEtapa || null,
     dataRetorno: parsed.dataRetorno || null,
     recrutador: parsed.recrutador || s.filialCodigo,
-    atualizadoPor: `filial:${s.filialCodigo}`,
+    gestorAprovador: parsed.gestorAprovador || null,
+    aprovadoPeloGg: parsed.aprovadoPeloGg ?? false,
+    decisaoEm,
+    decisaoPor: decisaoPor ?? (isDecisaoFinal && idExistente ? undefined : null),
+    atualizadoPor: usuarioLabel,
   };
 
+  // Remove decisaoPor undefined para não sobrescrever em update
+  const baseFinal = { ...baseSemConsentimento };
+  if (baseFinal.decisaoPor === undefined) {
+    delete (baseFinal as { decisaoPor?: string | null }).decisaoPor;
+  }
+
   if (idExistente) {
-    // No update, NÃO sobrescrevemos consentimentoLgpdEm: a data original deve ser preservada.
-    await db.update(schema.entrevistas).set(baseSemConsentimento)
+    await db.update(schema.entrevistas).set(baseFinal)
       .where(and(eq(schema.entrevistas.id, idExistente), eq(schema.entrevistas.filialId, s.filialId)));
+    if (statusAnterior && statusAnterior !== baseFinal.status) {
+      await db.insert(schema.logHistorico).values({
+        entrevistaId: idExistente, deStatus: statusAnterior, paraStatus: baseFinal.status,
+        usuario: usuarioLabel, motivo: parsed.motivoDecisao ?? null,
+      });
+    }
     revalidatePath('/painel');
+    revalidatePath('/historico');
     revalidatePath('/banco-talentos');
     return { id: idExistente };
   }
 
-  const base = { ...baseSemConsentimento, consentimentoLgpdEm: new Date() };
+  const base = { ...baseFinal, consentimentoLgpdEm: new Date() };
   const [row] = await db.insert(schema.entrevistas).values(base).returning({ id: schema.entrevistas.id });
   if (!row) throw new Error('Falha ao salvar');
   await db.insert(schema.logHistorico).values({
     entrevistaId: row.id, deStatus: null, paraStatus: base.status,
-    usuario: `filial:${s.filialCodigo}`, motivo: 'criação',
+    usuario: usuarioLabel, motivo: 'criação',
   });
   revalidatePath('/painel');
+  revalidatePath('/historico');
   revalidatePath('/banco-talentos');
   return { id: row.id };
+}
+
+/**
+ * Atualiza APENAS os campos de decisão/status de uma entrevista.
+ * Usado pelo histórico — preserva todos os demais dados.
+ * Regras:
+ *  - Se status virou Aprovado/Reprovado e gestorAprovador vazio → erro
+ *  - decisaoEm é gravado quando o status passa para Aprovado/Reprovado
+ *    (preserva data original se já estava nesse estado)
+ */
+export async function atualizarDecisao(input: {
+  entrevistaId: string;
+  status: string;
+  gestorAprovador?: string;
+  motivoDecisao?: string;
+  dataRetorno?: string;
+  aprovadoPeloGg?: boolean;
+}) {
+  const s = await requireSession('filial');
+  const { entrevistaId, status: novoStatus } = input;
+  const isDecisaoFinal = novoStatus === 'Aprovado' || novoStatus === 'Reprovado';
+
+  if (isDecisaoFinal && (!input.gestorAprovador || input.gestorAprovador.trim().length < 2)) {
+    throw new Error('Informe o gestor que aprovou/reprovou');
+  }
+
+  const prev = await db.select({
+    status: schema.entrevistas.status,
+    decisaoEm: schema.entrevistas.decisaoEm,
+    decisaoPor: schema.entrevistas.decisaoPor,
+  })
+    .from(schema.entrevistas)
+    .where(and(eq(schema.entrevistas.id, entrevistaId), eq(schema.entrevistas.filialId, s.filialId)))
+    .limit(1);
+
+  const atual = prev[0];
+  if (!atual) throw new Error('Entrevista não encontrada');
+
+  const usuarioLabel = `filial:${s.filialCodigo}`;
+
+  // Calcula decisaoEm / decisaoPor
+  let decisaoEm: Date | null;
+  let decisaoPor: string | null;
+  if (isDecisaoFinal) {
+    const jaTinhaDecisao = atual.status === 'Aprovado' || atual.status === 'Reprovado';
+    decisaoEm = jaTinhaDecisao && atual.decisaoEm ? atual.decisaoEm : new Date();
+    decisaoPor = jaTinhaDecisao ? (atual.decisaoPor ?? usuarioLabel) : usuarioLabel;
+  } else {
+    // Status não-final → limpa decisão
+    decisaoEm = null;
+    decisaoPor = null;
+  }
+
+  await db.update(schema.entrevistas).set({
+    status: novoStatus,
+    gestorAprovador: input.gestorAprovador?.trim() || null,
+    motivoDecisao: input.motivoDecisao?.trim() || null,
+    dataRetorno: input.dataRetorno || null,
+    aprovadoPeloGg: input.aprovadoPeloGg ?? false,
+    decisaoEm,
+    decisaoPor,
+    atualizadoPor: usuarioLabel,
+  }).where(and(eq(schema.entrevistas.id, entrevistaId), eq(schema.entrevistas.filialId, s.filialId)));
+
+  if (atual.status !== novoStatus) {
+    await db.insert(schema.logHistorico).values({
+      entrevistaId,
+      deStatus: atual.status,
+      paraStatus: novoStatus,
+      usuario: usuarioLabel,
+      motivo: input.motivoDecisao?.trim() || null,
+    });
+  }
+
+  revalidatePath('/painel');
+  revalidatePath('/historico');
+  revalidatePath('/banco-talentos');
+  revalidatePath(`/entrevista/${entrevistaId}`);
+  return { ok: true };
+}
+
+/** Busca entrevistas com mesmo CPF (na mesma filial), para alerta de duplicata. */
+export async function listarPorCpfMesmaFilial(cpf: string, excluirId?: string) {
+  const s = await requireSession('filial');
+  const digits = cpf.replace(/\D/g, '');
+  if (digits.length !== 11) return [];
+  const rows = await db.select({
+    id: schema.entrevistas.id,
+    nome: schema.entrevistas.nome,
+    status: schema.entrevistas.status,
+    cargoPretendido: schema.entrevistas.cargoPretendido,
+    dataHora: schema.entrevistas.dataHora,
+  })
+    .from(schema.entrevistas)
+    .where(and(eq(schema.entrevistas.cpf, digits), eq(schema.entrevistas.filialId, s.filialId)))
+    .orderBy(desc(schema.entrevistas.dataHora))
+    .limit(20);
+  return excluirId ? rows.filter((r) => r.id !== excluirId) : rows;
 }
 
 export async function atualizarStatus(input: { entrevistaId: string; novoStatus: string; motivo?: string }) {

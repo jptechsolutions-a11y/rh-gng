@@ -1,11 +1,11 @@
 import Link from 'next/link';
-import { Plus, Search, Users, ClipboardList, TrendingUp } from 'lucide-react';
+import { Plus, Search, Users, ClipboardList, TrendingUp, History, BookmarkCheck } from 'lucide-react';
 import { TopBar } from '@/components/layout/TopBar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardTitle } from '@/components/ui/card';
-import { Badge, statusVariant } from '@/components/ui/badge';
 import { requireSession } from '@/lib/auth/session';
 import { listarEntrevistasFilial } from '@/actions/entrevistas';
+import { PainelRecentesBusca, WeeklyChart } from './PainelClient';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,7 +16,21 @@ export default async function PainelPage() {
   const total = entrevistas.length;
   const ultimaSemana = entrevistas.filter((e) => e.dataHora.getTime() > Date.now() - 7 * 86400000).length;
   const aprovados = entrevistas.filter((e) => e.status === 'Aprovado' || e.status === 'Contratado').length;
-  const recentes = entrevistas.slice(0, 8);
+  const bancoTalentos = entrevistas.filter((e) => e.status === 'Banco de Talentos').length;
+
+  // Gráfico — entrevistas por semana (últimas 8)
+  const chartData: Array<{ label: string; value: number; date: string }> = [];
+  const now = Date.now();
+  const fmtDM = new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit' });
+  for (let i = 7; i >= 0; i--) {
+    const inicio = now - (i + 1) * 7 * 86400000;
+    const fim = now - i * 7 * 86400000;
+    const count = entrevistas.filter((e) => e.dataHora.getTime() >= inicio && e.dataHora.getTime() < fim).length;
+    const semanaLabel = i === 0 ? 'esta' : `−${i}s`;
+    const ini = fmtDM.format(new Date(inicio));
+    const f = fmtDM.format(new Date(fim - 86400000));
+    chartData.push({ label: semanaLabel, value: count, date: `${ini}–${f}` });
+  }
 
   return (
     <>
@@ -27,60 +41,55 @@ export default async function PainelPage() {
       />
 
       <div className="p-6 space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <StatCard icon={ClipboardList} label="Total de entrevistas" value={total} />
           <StatCard icon={TrendingUp} label="Últimos 7 dias" value={ultimaSemana} />
           <StatCard icon={Users} label="Aprovados/Contratados" value={aprovados} />
+          <StatCard icon={BookmarkCheck} label="Banco de talentos" value={bancoTalentos} />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <Card className="lg:col-span-2">
+            <CardContent className="p-5">
+              <CardDescription className="text-xs uppercase tracking-wider mb-2">Entrevistas por semana</CardDescription>
+              <WeeklyChart data={chartData} />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-5 flex flex-col gap-2">
+              <CardDescription className="text-xs uppercase tracking-wider">Atalhos</CardDescription>
+              <Button asChild className="w-full justify-start" size="sm">
+                <Link href="/entrevista/nova"><Plus className="h-4 w-4" />Nova entrevista</Link>
+              </Button>
+              <Button asChild variant="outline" size="sm" className="w-full justify-start">
+                <Link href="/historico"><History className="h-4 w-4" />Histórico</Link>
+              </Button>
+              <Button asChild variant="outline" size="sm" className="w-full justify-start">
+                <Link href="/banco-talentos"><Search className="h-4 w-4" />Banco de talentos</Link>
+              </Button>
+              <Button asChild variant="outline" size="sm" className="w-full justify-start">
+                <Link href="/agenda"><BookmarkCheck className="h-4 w-4" />Agenda de retornos</Link>
+              </Button>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
           <h2 className="text-sm font-semibold uppercase tracking-wider text-perlog-slate">
             Entrevistas recentes
           </h2>
-          <div className="flex gap-2">
-            <Button asChild variant="outline" size="sm">
-              <Link href="/banco-talentos"><Search className="h-4 w-4" />Banco de talentos</Link>
-            </Button>
-            <Button asChild size="sm">
-              <Link href="/entrevista/nova"><Plus className="h-4 w-4" />Nova entrevista</Link>
-            </Button>
-          </div>
         </div>
 
         <Card>
-          <CardContent className="p-0">
-            {recentes.length === 0 ? (
+          <CardContent className="p-4 space-y-3">
+            {entrevistas.length === 0 ? (
               <div className="p-12 text-center text-perlog-slate">
                 <ClipboardList className="mx-auto h-10 w-10 text-slate-300 mb-3" />
                 <p className="font-medium text-perlog-navy">Nenhuma entrevista ainda</p>
                 <p className="text-sm">Clique em &ldquo;Nova entrevista&rdquo; para começar.</p>
               </div>
             ) : (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-perlog-slate">
-                    <th scope="col" className="px-6 py-3 font-medium">Candidato</th>
-                    <th scope="col" className="px-6 py-3 font-medium">Cargo</th>
-                    <th scope="col" className="px-6 py-3 font-medium">Status</th>
-                    <th scope="col" className="px-6 py-3 font-medium">Data</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentes.map((e) => (
-                    <tr key={e.id} className="border-b border-slate-50 hover:bg-slate-50/60 transition-colors">
-                      <td className="px-6 py-3">
-                        <Link href={`/entrevista/${e.id}`} className="font-medium text-perlog-navy hover:text-perlog-orange">
-                          {e.nome}
-                        </Link>
-                        <div className="text-xs text-perlog-slate">{maskCpf(e.cpf)}</div>
-                      </td>
-                      <td className="px-6 py-3 text-perlog-slate">{e.cargoPretendido ?? '—'}</td>
-                      <td className="px-6 py-3"><Badge variant={statusVariant(e.status)}>{e.status}</Badge></td>
-                      <td className="px-6 py-3 text-perlog-slate">{formatDate(e.dataHora)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <PainelRecentesBusca entrevistas={entrevistas} />
             )}
           </CardContent>
         </Card>
@@ -105,10 +114,3 @@ function StatCard({ icon: Icon, label, value }: { icon: React.ComponentType<{ cl
   );
 }
 
-function maskCpf(cpf: string) {
-  const d = cpf.replace(/\D/g, '');
-  return `***.${d.slice(3, 6)}.${d.slice(6, 9)}-**`;
-}
-function formatDate(d: Date) {
-  return new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }).format(d);
-}

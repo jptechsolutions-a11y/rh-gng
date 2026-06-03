@@ -2,7 +2,11 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Users, FileText, Settings, LogOut, ShieldCheck, ClipboardList } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import {
+  LayoutDashboard, Users, FileText, Settings, LogOut, ShieldCheck, ClipboardList, History, CalendarClock,
+  PanelLeftClose, PanelLeftOpen, Home,
+} from 'lucide-react';
 import { PerlogLogo } from '@/components/brand/PerlogLogo';
 import { cn } from '@/lib/cn';
 import { logoutAction } from '@/actions/auth';
@@ -10,12 +14,16 @@ import { logoutAction } from '@/actions/auth';
 type NavItem = { href: string; label: string; icon: React.ComponentType<{ className?: string }> };
 
 const FILIAL_NAV: NavItem[] = [
+  { href: '/inicio',          label: 'Início',          icon: Home },
   { href: '/painel',          label: 'Painel',          icon: LayoutDashboard },
   { href: '/entrevista/nova', label: 'Nova entrevista', icon: ClipboardList },
+  { href: '/historico',       label: 'Histórico',       icon: History },
+  { href: '/agenda',          label: 'Agenda',          icon: CalendarClock },
   { href: '/banco-talentos',  label: 'Banco de talentos', icon: Users },
 ];
 
 const ADMIN_NAV: NavItem[] = [
+  { href: '/inicio',          label: 'Início',          icon: Home },
   { href: '/admin',           label: 'Dashboard',       icon: LayoutDashboard },
   { href: '/admin/busca',     label: 'Busca global',    icon: Users },
   { href: '/admin/relatorios', label: 'Relatórios',     icon: FileText },
@@ -23,52 +31,97 @@ const ADMIN_NAV: NavItem[] = [
   { href: '/admin/seguranca', label: 'Segurança',       icon: ShieldCheck },
 ];
 
+const STORAGE_KEY = 'sidebar:collapsed';
+
 export function Sidebar({
   perfil, nome, subtitulo,
 }: { perfil: 'filial' | 'admin'; nome: string; subtitulo: string }) {
   const pathname = usePathname();
   const nav = perfil === 'admin' ? ADMIN_NAV : FILIAL_NAV;
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    const saved = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
+    if (saved === '1') setCollapsed(true);
+  }, []);
+
+  const toggle = () => {
+    setCollapsed((c) => {
+      const next = !c;
+      try { localStorage.setItem(STORAGE_KEY, next ? '1' : '0'); } catch {}
+      return next;
+    });
+  };
 
   return (
-    <aside className="hidden md:flex md:w-64 lg:w-72 flex-col bg-perlog-navy text-white">
-      <div className="px-6 py-6 border-b border-white/10">
-        <PerlogLogo className="h-8 w-auto" />
-        <div className="mt-4 text-[11px] uppercase tracking-widest text-white/50">RH G&G</div>
-        <div className="mt-0.5 text-sm font-semibold truncate">{nome}</div>
-        <div className="text-xs text-white/60 truncate">{subtitulo}</div>
+    <aside
+      className={cn(
+        'hidden sm:flex flex-col bg-perlog-navy text-white transition-[width] duration-200 ease-out shrink-0',
+        collapsed ? 'w-16' : 'w-64 lg:w-72',
+      )}
+    >
+      <div className={cn('border-b border-white/10', collapsed ? 'px-2 py-4' : 'px-6 py-6')}>
+        <div className={cn('flex items-center', collapsed ? 'justify-center' : 'justify-between')}>
+          {!collapsed && <PerlogLogo className="h-8 w-auto" />}
+          <button
+            type="button"
+            onClick={toggle}
+            aria-label={collapsed ? 'Expandir menu' : 'Recolher menu'}
+            title={collapsed ? 'Expandir' : 'Recolher'}
+            className="grid place-items-center h-8 w-8 rounded-md text-white/70 hover:text-white hover:bg-white/10"
+          >
+            {collapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+          </button>
+        </div>
+        {!collapsed && (
+          <>
+            <div className="mt-4 text-[11px] uppercase tracking-widest text-white/50">RH G&amp;G</div>
+            <div className="mt-0.5 text-sm font-semibold truncate">{nome}</div>
+            <div className="text-xs text-white/60 truncate">{subtitulo}</div>
+          </>
+        )}
       </div>
 
-      <nav className="flex-1 px-3 py-4 space-y-1">
+      <nav className={cn('flex-1 py-4 space-y-1', collapsed ? 'px-2' : 'px-3')}>
         {nav.map(({ href, label, icon: Icon }) => {
-          // Match exato para rotas-raiz ('/admin', '/painel'); prefixo para subrotas.
           const isRoot = href === '/admin' || href === '/painel';
           const active = isRoot ? pathname === href : (pathname === href || pathname.startsWith(href + '/'));
           return (
             <Link
               key={href}
               href={href}
+              title={collapsed ? label : undefined}
               className={cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
+                'flex items-center rounded-lg text-sm transition-colors',
+                collapsed ? 'justify-center px-0 py-2 h-10' : 'gap-3 px-3 py-2',
                 active
                   ? 'bg-perlog-orange/15 text-perlog-orange'
                   : 'text-white/75 hover:bg-white/5 hover:text-white',
               )}
             >
               <Icon className="h-4 w-4 shrink-0" />
-              <span className="truncate">{label}</span>
-              {active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-perlog-orange" />}
+              {!collapsed && <span className="truncate">{label}</span>}
+              {!collapsed && active && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-perlog-orange" />}
             </Link>
           );
         })}
       </nav>
 
-      <form action={logoutAction} className="p-3 border-t border-white/10">
+      <form
+        action={logoutAction}
+        onSubmit={(e) => { if (!confirm('Deseja realmente sair? Será necessário fazer login novamente.')) e.preventDefault(); }}
+        className={cn('border-t border-white/10', collapsed ? 'p-2' : 'p-3')}
+      >
         <button
           type="submit"
-          className="w-full flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-white/75 hover:bg-white/5 hover:text-white transition-colors"
+          title={collapsed ? 'Sair' : undefined}
+          className={cn(
+            'w-full flex items-center rounded-lg text-sm text-white/75 hover:bg-white/5 hover:text-white transition-colors',
+            collapsed ? 'justify-center px-0 py-2 h-10' : 'gap-3 px-3 py-2',
+          )}
         >
           <LogOut className="h-4 w-4" />
-          Sair
+          {!collapsed && <span>Sair</span>}
         </button>
       </form>
     </aside>

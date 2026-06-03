@@ -1,7 +1,7 @@
 'use server';
 
 import { db, schema } from '@/db/client';
-import { and, eq, asc } from 'drizzle-orm';
+import { and, eq, asc, desc, sql } from 'drizzle-orm';
 import { requireSession } from '@/lib/auth/session';
 import { checkRateLimit } from '@/lib/auth/rate-limit';
 import {
@@ -142,4 +142,70 @@ export async function atualizarPlanoDesenvolvimento(input: unknown) {
   const usuario = s.perfil === 'admin' ? `admin:${s.usuario}` : `filial:${s.filialCodigo}`;
   await logAcao(usuario, 'avaliacao.atualizar_pdi', avaliacaoId);
   revalidatePath(`/avaliacao/${avaliacaoId}`);
+}
+
+export async function obterAvaliacao(id: string) {
+  const s = await requireSession();
+  const av = await db
+    .select({
+      av: schema.avaliacoesDesempenho,
+      avaliado: schema.pessoas,
+    })
+    .from(schema.avaliacoesDesempenho)
+    .leftJoin(schema.pessoas, eq(schema.pessoas.id, schema.avaliacoesDesempenho.avaliadoId))
+    .where(eq(schema.avaliacoesDesempenho.id, id))
+    .limit(1);
+  if (!av[0]) return null;
+  if (s.perfil === 'filial' && av[0].av.filialId !== s.filialId) {
+    throw new Error('Sem permissão');
+  }
+  const [gestor] = await db
+    .select()
+    .from(schema.pessoas)
+    .where(eq(schema.pessoas.id, av[0].av.gestorId))
+    .limit(1);
+  const [filial] = await db
+    .select()
+    .from(schema.filiais)
+    .where(eq(schema.filiais.id, av[0].av.filialId))
+    .limit(1);
+  const detalhes = await db
+    .select({
+      d: schema.avaliacoesDetalhes,
+      fator: schema.fatoresAvaliacao,
+      competencia: schema.competencias,
+    })
+    .from(schema.avaliacoesDetalhes)
+    .leftJoin(
+      schema.fatoresAvaliacao,
+      eq(schema.fatoresAvaliacao.id, schema.avaliacoesDetalhes.fatorId),
+    )
+    .leftJoin(
+      schema.competencias,
+      eq(schema.competencias.id, schema.avaliacoesDetalhes.competenciaId),
+    )
+    .where(eq(schema.avaliacoesDetalhes.avaliacaoId, id))
+    .orderBy(asc(schema.competencias.ordem), asc(schema.fatoresAvaliacao.ordem));
+
+  const anteriores = await db
+    .select({ p: schema.avaliacoesDesempenho.pontuacaoFinal })
+    .from(schema.avaliacoesDesempenho)
+    .where(
+      and(
+        eq(schema.avaliacoesDesempenho.avaliadoId, av[0].av.avaliadoId),
+        sql`${schema.avaliacoesDesempenho.dataAvaliacao} < ${av[0].av.dataAvaliacao}`,
+      ),
+    )
+    .orderBy(desc(schema.avaliacoesDesempenho.dataAvaliacao))
+    .limit(1);
+  const anterior = anteriores[0]?.p ? Number(anteriores[0].p) : null;
+
+  return {
+    avaliacao: av[0].av,
+    avaliado: av[0].avaliado,
+    gestor: gestor ?? null,
+    filial: filial ?? null,
+    detalhes,
+    anterior,
+  };
 }

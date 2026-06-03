@@ -12,7 +12,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "seed": "tsx scripts/seed.ts"
+    "seed": "tsx scripts/seed.ts",
+    "seed:avaliacao": "tsx scripts/seed-avaliacao.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

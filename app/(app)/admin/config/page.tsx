@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { TopBar } from '@/components/layout/TopBar';
 import { Card, CardContent, CardDescription, CardTitle } from '@/components/ui/card';
-import { Settings, Users, ClipboardList, Star, ListChecks, ArrowRight } from 'lucide-react';
+import { Settings, Users, ClipboardList, Star, ListChecks, ArrowRight, UserCog, Target } from 'lucide-react';
 import { requireSession } from '@/lib/auth/session';
 
 export default async function ConfigPage() {
@@ -12,6 +12,8 @@ export default async function ConfigPage() {
     { icon: Star,          title: 'Critérios',        desc: 'Critérios de avaliação, escalas e pesos.', href: '/admin/config/criterios' },
     { icon: ListChecks,    title: 'Roteiro',          desc: 'Perguntas por cargo (texto, sim/não, escala, seleção).', href: '/admin/config/roteiro' },
     { icon: Settings,      title: 'Opções de listas', desc: 'Escolaridade, turnos, CNH, status, etc.', href: '/admin/config/opcoes' },
+    { icon: UserCog,       title: 'Pessoas',          desc: 'Cadastro de colaboradores/gestores para avaliação.', href: '/admin/config/pessoas' },
+    { icon: Target,        title: 'Competências e fatores', desc: 'Catálogo de competências e fatores avaliados.', href: '/admin/config/competencias' },
   ];
   return (
     <>

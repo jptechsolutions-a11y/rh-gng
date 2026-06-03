@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
   LayoutDashboard, Users, FileText, Settings, LogOut, ShieldCheck, ClipboardList, History, CalendarClock,
-  PanelLeftClose, PanelLeftOpen, Home,
+  PanelLeftClose, PanelLeftOpen, Home, Target,
 } from 'lucide-react';
 import { PerlogLogo } from '@/components/brand/PerlogLogo';
 import { cn } from '@/lib/cn';
@@ -20,6 +20,7 @@ const FILIAL_NAV: NavItem[] = [
   { href: '/historico',       label: 'Histórico',       icon: History },
   { href: '/agenda',          label: 'Agenda',          icon: CalendarClock },
   { href: '/banco-talentos',  label: 'Banco de talentos', icon: Users },
+  { href: '/avaliacao',       label: 'Avaliação de desempenho', icon: Target },
 ];
 
 const ADMIN_NAV: NavItem[] = [
@@ -27,6 +28,7 @@ const ADMIN_NAV: NavItem[] = [
   { href: '/admin',           label: 'Dashboard',       icon: LayoutDashboard },
   { href: '/admin/busca',     label: 'Busca global',    icon: Users },
   { href: '/admin/relatorios', label: 'Relatórios',     icon: FileText },
+  { href: '/avaliacao',       label: 'Avaliação de desempenho', icon: Target },
   { href: '/admin/config',    label: 'Configuração',    icon: Settings },
   { href: '/admin/seguranca', label: 'Segurança',       icon: ShieldCheck },
 ];

@@ -209,3 +209,112 @@ export async function obterAvaliacao(id: string) {
     anterior,
   };
 }
+
+export type HistoricoFiltros = {
+  classificacao?: string;
+  filialId?: string;
+  dataInicio?: string;
+  dataFim?: string;
+  nomeAvaliado?: string;
+  nomeGestor?: string;
+  evolucao?: 'positiva' | 'negativa' | 'estavel' | 'primeira' | '';
+  page?: number;
+  perPage?: number;
+};
+
+export type HistoricoRow = {
+  id: string;
+  data_avaliacao: string;
+  pontuacao_final: string | null;
+  classificacao: string | null;
+  anterior: string | null;
+  avaliado_nome: string | null;
+  avaliado_matricula: string | null;
+  gestor_nome: string | null;
+  gestor_matricula: string | null;
+  filial_codigo: string | null;
+  filial_nome: string | null;
+};
+
+export async function listarHistorico(f: HistoricoFiltros = {}): Promise<HistoricoRow[]> {
+  const s = await requireSession();
+  const perPage = Math.min(f.perPage ?? 25, 100);
+  const page = Math.max(f.page ?? 1, 1);
+
+  const filialScopeSql =
+    s.perfil === 'filial' && s.filialId ? sql`AND filial_id = ${s.filialId}` : sql``;
+  const filialFilterSql =
+    f.filialId && s.perfil === 'admin' ? sql`AND filial_id = ${f.filialId}` : sql``;
+  const classifSql = f.classificacao
+    ? sql`AND classificacao = ${f.classificacao}`
+    : sql``;
+  const dataIniSql = f.dataInicio
+    ? sql`AND data_avaliacao >= ${f.dataInicio}::date`
+    : sql``;
+  const dataFimSql = f.dataFim ? sql`AND data_avaliacao <= ${f.dataFim}::date` : sql``;
+  const nomeAvSql = f.nomeAvaliado
+    ? sql`AND avaliado_nome ILIKE ${'%' + f.nomeAvaliado + '%'}`
+    : sql``;
+  const nomeGeSql = f.nomeGestor
+    ? sql`AND gestor_nome ILIKE ${'%' + f.nomeGestor + '%'}`
+    : sql``;
+
+  const rows = await db.execute(sql`
+    WITH base AS (
+      SELECT a.*,
+             av.nome AS avaliado_nome, av.matricula AS avaliado_matricula,
+             g.nome AS gestor_nome,    g.matricula AS gestor_matricula,
+             f.codigo AS filial_codigo, f.nome AS filial_nome,
+             LAG(a.pontuacao_final) OVER (PARTITION BY a.avaliado_id ORDER BY a.data_avaliacao) AS anterior
+      FROM avaliacoes_desempenho a
+      LEFT JOIN pessoas av ON av.id = a.avaliado_id
+      LEFT JOIN pessoas g  ON g.id  = a.gestor_id
+      LEFT JOIN filiais f  ON f.id  = a.filial_id
+    )
+    SELECT * FROM base
+    WHERE 1=1
+      ${filialScopeSql}
+      ${filialFilterSql}
+      ${classifSql}
+      ${dataIniSql}
+      ${dataFimSql}
+      ${nomeAvSql}
+      ${nomeGeSql}
+    ORDER BY data_avaliacao DESC, created_at DESC
+    LIMIT ${perPage} OFFSET ${(page - 1) * perPage}
+  `);
+
+  let lista = rows as unknown as HistoricoRow[];
+  if (f.evolucao) {
+    lista = lista.filter((r) => {
+      const ant = r.anterior !== null ? Number(r.anterior) : null;
+      const atual = Number(r.pontuacao_final ?? 0);
+      if (ant === null) return f.evolucao === 'primeira';
+      const d = atual - ant;
+      if (f.evolucao === 'positiva') return d >= 0.3;
+      if (f.evolucao === 'negativa') return d <= -0.3;
+      return Math.abs(d) < 0.3;
+    });
+  }
+  return lista;
+}
+
+export async function statsHistorico() {
+  const s = await requireSession();
+  const filialFilter =
+    s.perfil === 'filial' && s.filialId ? sql`WHERE filial_id = ${s.filialId}` : sql``;
+  const res = await db.execute(sql`
+    SELECT
+      COUNT(*)::int AS total,
+      ROUND(AVG(pontuacao_final)::numeric, 2) AS media,
+      SUM(CASE WHEN classificacao = 'EXCELENTE' THEN 1 ELSE 0 END)::int AS excelentes,
+      SUM(CASE WHEN classificacao = 'PRECISA MELHORAR' THEN 1 ELSE 0 END)::int AS precisam_melhorar
+    FROM avaliacoes_desempenho ${filialFilter}
+  `);
+  return (res as unknown as Array<Record<string, unknown>>)[0] as unknown as {
+    total: number;
+    media: string | null;
+    excelentes: number;
+    precisam_melhorar: number;
+  };
+}

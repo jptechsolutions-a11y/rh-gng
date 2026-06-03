@@ -3,7 +3,7 @@
 import { db, schema } from '@/db/client';
 import { eq, and, ilike, asc } from 'drizzle-orm';
 import { requireSession } from '@/lib/auth/session';
-import { PessoaSchema, type PessoaInput } from '@/lib/avaliacao/validators';
+import { PessoaSchema, type PessoaInput, CompetenciaSchema, FatorSchema } from '@/lib/avaliacao/validators';
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 
@@ -122,4 +122,73 @@ export async function listarFiliaisParaSelect() {
     .from(schema.filiais)
     .where(eq(schema.filiais.ativa, true))
     .orderBy(asc(schema.filiais.codigo));
+}
+
+export async function listarCompetenciasComFatores() {
+  await requireSession();
+  const comps = await db.select().from(schema.competencias).orderBy(asc(schema.competencias.ordem));
+  const fatores = await db.select().from(schema.fatoresAvaliacao).orderBy(asc(schema.fatoresAvaliacao.ordem));
+  return comps.map((c) => ({ ...c, fatores: fatores.filter((f) => f.competenciaId === c.id) }));
+}
+
+export async function criarCompetencia(input: unknown) {
+  const s = await requireSession('admin');
+  const data = CompetenciaSchema.parse(input);
+  const [r] = await db.insert(schema.competencias).values({
+    nome: data.nome,
+    descricao: data.descricao ?? null,
+    ordem: data.ordem,
+    peso: String(data.peso),
+    ativo: data.ativo,
+  }).returning({ id: schema.competencias.id });
+  if (!r) throw new Error('Falha ao criar competência');
+  await logAcao(s.usuario, 'avaliacao.config.competencias.criar', data.nome);
+  revalidatePath('/admin/config/competencias');
+  return r.id;
+}
+
+export async function atualizarCompetencia(id: string, input: unknown) {
+  const s = await requireSession('admin');
+  const data = CompetenciaSchema.parse(input);
+  await db.update(schema.competencias).set({
+    nome: data.nome,
+    descricao: data.descricao ?? null,
+    ordem: data.ordem,
+    peso: String(data.peso),
+    ativo: data.ativo,
+  }).where(eq(schema.competencias.id, id));
+  await logAcao(s.usuario, 'avaliacao.config.competencias.atualizar', `${id}|${data.nome}`);
+  revalidatePath('/admin/config/competencias');
+}
+
+export async function inativarCompetencia(id: string) {
+  const s = await requireSession('admin');
+  await db.update(schema.competencias).set({ ativo: false }).where(eq(schema.competencias.id, id));
+  await logAcao(s.usuario, 'avaliacao.config.competencias.inativar', id);
+  revalidatePath('/admin/config/competencias');
+}
+
+export async function criarFator(input: unknown) {
+  const s = await requireSession('admin');
+  const data = FatorSchema.parse(input);
+  const [r] = await db.insert(schema.fatoresAvaliacao).values(data).returning({ id: schema.fatoresAvaliacao.id });
+  if (!r) throw new Error('Falha ao criar fator');
+  await logAcao(s.usuario, 'avaliacao.config.fatores.criar', data.texto.slice(0, 80));
+  revalidatePath('/admin/config/competencias');
+  return r.id;
+}
+
+export async function atualizarFator(id: string, input: unknown) {
+  const s = await requireSession('admin');
+  const data = FatorSchema.parse(input);
+  await db.update(schema.fatoresAvaliacao).set(data).where(eq(schema.fatoresAvaliacao.id, id));
+  await logAcao(s.usuario, 'avaliacao.config.fatores.atualizar', id);
+  revalidatePath('/admin/config/competencias');
+}
+
+export async function inativarFator(id: string) {
+  const s = await requireSession('admin');
+  await db.update(schema.fatoresAvaliacao).set({ ativo: false }).where(eq(schema.fatoresAvaliacao.id, id));
+  await logAcao(s.usuario, 'avaliacao.config.fatores.inativar', id);
+  revalidatePath('/admin/config/competencias');
 }

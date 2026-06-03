@@ -1,127 +1,141 @@
 import Link from 'next/link';
-import { BarChart3, Wrench, ArrowLeft, Target, Users2, MessageSquare, ScrollText, TrendingUp, Calendar } from 'lucide-react';
-import { TopBar } from '@/components/layout/TopBar';
-import { Card, CardContent, CardDescription, CardTitle } from '@/components/ui/card';
+import { ClipboardList, History, BarChart3, Plus } from 'lucide-react';
 import { requireSession } from '@/lib/auth/session';
+import { listarHistorico, statsHistorico } from '@/actions/avaliacao';
+import { TopBar } from '@/components/layout/TopBar';
+import { Card, CardContent, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { ClassificacaoBadge } from '@/components/avaliacao/ClassificacaoBadge';
+import type { Classificacao } from '@/lib/avaliacao/calculos';
 
 export const dynamic = 'force-dynamic';
 
-const ETAPAS = [
-  {
-    icon: Calendar,
-    title: '1. Ciclos de avaliação',
-    desc: 'Trimestral, semestral ou anual — admin define o ciclo, prazo de auto-avaliação e prazo de avaliação do gestor.',
-  },
-  {
-    icon: Users2,
-    title: '2. Cadastro de colaboradores',
-    desc: 'Lista de colaboradores ativos por filial, ligada ao cargo e ao gestor responsável.',
-  },
-  {
-    icon: Target,
-    title: '3. Metas e competências',
-    desc: 'Metas SMART por colaborador (até 5/ciclo) + matriz de competências comportamentais/técnicas (peso configurável).',
-  },
-  {
-    icon: ScrollText,
-    title: '4. Auto-avaliação',
-    desc: 'Colaborador preenche notas em si mesmo + comentários. Gestor preenche notas do colaborador.',
-  },
-  {
-    icon: MessageSquare,
-    title: '5. Feedback e 1:1',
-    desc: 'Reunião 1:1 registrada, feedback do gestor e plano de desenvolvimento individual (PDI) acordado.',
-  },
-  {
-    icon: TrendingUp,
-    title: '6. Acompanhamento',
-    desc: 'Painel comparativo histórico do colaborador (evolução por ciclo), dashboards por filial e por cargo.',
-  },
-] as const;
-
-export default async function AvaliacaoPage() {
+export default async function AvaliacaoHome() {
   await requireSession();
-
+  const [stats, ultimas] = await Promise.all([
+    statsHistorico(),
+    listarHistorico({ perPage: 5 }),
+  ]);
   return (
     <>
-      <TopBar titulo="Avaliação de Desempenho" subtitulo="Módulo em desenvolvimento" />
-      <div className="p-6 space-y-6">
-        <Link href="/inicio" className="inline-flex items-center gap-2 text-sm text-perlog-slate hover:text-perlog-navy">
-          <ArrowLeft className="h-4 w-4" /> Voltar para o início
-        </Link>
-
-        {/* Banner em desenvolvimento */}
-        <Card className="border-amber-200 bg-amber-50/50">
-          <CardContent className="p-6 flex items-start gap-4">
-            <div className="grid place-items-center h-12 w-12 rounded-lg bg-amber-100 text-amber-700 shrink-0">
-              <Wrench className="h-6 w-6" />
-            </div>
-            <div className="flex-1">
-              <h2 className="text-lg font-semibold text-amber-900">Em desenvolvimento</h2>
-              <p className="text-sm text-amber-800 mt-1">
-                O módulo de Avaliação de Desempenho está sendo planejado. Abaixo está a estrutura prevista para você validar e priorizar antes da implementação.
-              </p>
-              <p className="text-xs text-amber-700/80 mt-2">
-                Quer ajustar algo na proposta? Cite os pontos e adapto antes de começar a desenvolver.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Estrutura proposta */}
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-            <BarChart3 className="h-4 w-4 text-perlog-orange" />
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-perlog-slate">
-              Estrutura proposta
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {ETAPAS.map(({ icon: Icon, title, desc }) => (
-              <Card key={title} className="hover:shadow-elev transition-shadow">
-                <CardContent className="p-5">
-                  <div className="grid place-items-center h-10 w-10 rounded-lg bg-perlog-orange/10 text-perlog-orange mb-3">
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <CardTitle className="text-base mb-1">{title}</CardTitle>
-                  <CardDescription className="text-sm leading-relaxed">{desc}</CardDescription>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+      <TopBar titulo="Avaliação de desempenho" subtitulo="Visão geral" />
+      <div className="space-y-6 p-6">
+        <div className="flex justify-end">
+          <Link href="/avaliacao/nova">
+            <Button>
+              <Plus className="mr-1 h-4 w-4" />
+              Nova avaliação
+            </Button>
+          </Link>
         </div>
-
-        {/* Dados que ainda precisam ser definidos */}
+        <div className="grid gap-3 md:grid-cols-4">
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-xs text-perlog-slate">Total de avaliações</p>
+              <p className="text-2xl font-bold">{stats?.total ?? 0}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-xs text-perlog-slate">Média geral</p>
+              <p className="text-2xl font-bold">{stats?.media ?? '—'}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-xs text-perlog-slate">Excelentes</p>
+              <p className="text-2xl font-bold text-emerald-600">{stats?.excelentes ?? 0}</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-xs text-perlog-slate">Precisam melhorar</p>
+              <p className="text-2xl font-bold text-rose-600">{stats?.precisam_melhorar ?? 0}</p>
+            </CardContent>
+          </Card>
+        </div>
+        <div className="grid gap-3 md:grid-cols-3">
+          <Link href="/avaliacao/nova">
+            <Card className="h-full transition-shadow hover:shadow-elev">
+              <CardContent className="flex items-center gap-3 pt-6">
+                <ClipboardList className="h-5 w-5 text-perlog-orange" />
+                <div>
+                  <p className="font-medium">Nova avaliação</p>
+                  <p className="text-xs text-perlog-slate">Wizard com as 6 competências</p>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+          <Link href="/avaliacao/historico">
+            <Card className="h-full transition-shadow hover:shadow-elev">
+              <CardContent className="flex items-center gap-3 pt-6">
+                <History className="h-5 w-5 text-perlog-orange" />
+                <div>
+                  <p className="font-medium">Histórico</p>
+                  <p className="text-xs text-perlog-slate">Filtros + evolução</p>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+          <Link href="/avaliacao/relatorios">
+            <Card className="h-full transition-shadow hover:shadow-elev">
+              <CardContent className="flex items-center gap-3 pt-6">
+                <BarChart3 className="h-5 w-5 text-perlog-orange" />
+                <div>
+                  <p className="font-medium">Relatórios</p>
+                  <p className="text-xs text-perlog-slate">Agregados por filial e competência</p>
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+        </div>
         <Card>
-          <CardContent className="p-5">
-            <h3 className="text-sm font-semibold uppercase tracking-wider text-perlog-slate mb-3">Definições pendentes</h3>
-            <ul className="space-y-2 text-sm text-perlog-navy">
-              <li className="flex items-start gap-2">
-                <span className="text-perlog-orange font-bold mt-0.5">·</span>
-                <span><strong>Ciclo padrão:</strong> trimestral, semestral ou anual?</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-perlog-orange font-bold mt-0.5">·</span>
-                <span><strong>Escala de notas:</strong> 1–5, 0–10 ou A/B/C/D?</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-perlog-orange font-bold mt-0.5">·</span>
-                <span><strong>Peso das competências:</strong> fixo (50% metas + 50% competências) ou configurável por cargo?</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-perlog-orange font-bold mt-0.5">·</span>
-                <span><strong>Auto-avaliação:</strong> obrigatória ou opcional? Visível para o gestor antes ou depois da avaliação dele?</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-perlog-orange font-bold mt-0.5">·</span>
-                <span><strong>Quem cadastra colaboradores:</strong> admin RH central ou filial?</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="text-perlog-orange font-bold mt-0.5">·</span>
-                <span><strong>PDI:</strong> texto livre ou estruturado por trilha (cursos, prazos, mentor)?</span>
-              </li>
-            </ul>
+          <CardContent className="pt-6">
+            <CardTitle className="mb-3 text-base">Últimas avaliações</CardTitle>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs text-perlog-slate">
+                  <th className="pb-2">Data</th>
+                  <th className="pb-2">Avaliado</th>
+                  <th className="pb-2">Pontuação</th>
+                  <th className="pb-2">Classificação</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {ultimas.map((r) => (
+                  <tr key={r.id} className="border-t">
+                    <td className="py-1 pr-2">{r.data_avaliacao}</td>
+                    <td className="py-1 pr-2">{r.avaliado_nome}</td>
+                    <td className="py-1 pr-2 font-semibold">
+                      {Number(r.pontuacao_final ?? 0).toFixed(2)}
+                    </td>
+                    <td className="py-1 pr-2">
+                      <ClassificacaoBadge
+                        value={(r.classificacao ?? 'PRECISA MELHORAR') as Classificacao}
+                      />
+                    </td>
+                    <td className="py-1">
+                      <Link
+                        className="text-perlog-orange underline"
+                        href={`/avaliacao/${r.id}`}
+                      >
+                        Ver
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {ultimas.length === 0 && (
+              <p className="py-4 text-center text-sm text-perlog-slate">
+                Nenhuma avaliação ainda.{' '}
+                <Link className="text-perlog-orange underline" href="/avaliacao/nova">
+                  Crie a primeira
+                </Link>
+                .
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>

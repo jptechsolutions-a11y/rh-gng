@@ -141,7 +141,9 @@ export function WeeklyChart({ data }: { data: Array<{ label: string; value: numb
   }));
 
   const linhaPath = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
-  const areaPath = `M ${pts[0].x} ${padT + innerH} ${pts.map((p) => `L ${p.x} ${p.y}`).join(' ')} L ${pts[pts.length - 1].x} ${padT + innerH} Z`;
+  const areaPath = pts.length
+    ? `M ${pts[0]!.x} ${padT + innerH} ${pts.map((p) => `L ${p.x} ${p.y}`).join(' ')} L ${pts[pts.length - 1]!.x} ${padT + innerH} Z`
+    : '';
   const yLinhas = [0, 0.25, 0.5, 0.75, 1].map((p) => ({
     y: padT + innerH - p * innerH,
     label: Math.round(p * yMax),

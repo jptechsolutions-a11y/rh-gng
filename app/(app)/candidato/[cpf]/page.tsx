@@ -50,7 +50,7 @@ export default async function CandidatoPage({ params }: { params: Promise<{ cpf:
     logsPorEntrevista.get(l.entrevistaId)!.push(l);
   }
 
-  const candidato = rows[0];
+  const candidato = rows[0]!;
   const totais = {
     total: rows.length,
     aprovadas: rows.filter((r) => r.status === 'Aprovado').length,

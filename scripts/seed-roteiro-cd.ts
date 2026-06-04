@@ -4,7 +4,7 @@ try {
   const content = readFileSync(resolve(process.cwd(), '.env.local'), 'utf-8');
   for (const line of content.split(/\r?\n/)) {
     const m = line.match(/^\s*([A-Z_][A-Z0-9_]*)\s*=\s*(.*)$/i);
-    if (m && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^"|"$/g, '');
+    if (m && m[1] && m[2] !== undefined && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^"|"$/g, '');
   }
 } catch {}
 

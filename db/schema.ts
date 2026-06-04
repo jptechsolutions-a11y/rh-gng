@@ -119,6 +119,8 @@ export const entrevistas = pgTable('entrevistas', {
   filialStatusIdx: index('entrevistas_filial_status_idx').on(t.filialId, t.status),
   cpfIdx: index('entrevistas_cpf_idx').on(t.cpf),
   dataIdx: index('entrevistas_data_idx').on(t.dataHora),
+  // Suporta a query do painel: filial fixa, ordenação por data desc.
+  filialDataIdx: index('entrevistas_filial_data_idx').on(t.filialId, t.dataHora.desc()),
 }));
 
 export const logHistorico = pgTable('log_historico', {

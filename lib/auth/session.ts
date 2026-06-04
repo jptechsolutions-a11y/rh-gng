@@ -52,10 +52,26 @@ export async function createSession(opts:
   return token;
 }
 
+// Cache in-memory por instance da function. Sessão expira em 8h–30d;
+// um TTL de 60s no cache poupa um lookup no banco em CADA navegação sem
+// abrir janela perceptível para sessão revogada. Em destroySession invalidamos
+// localmente — em outras instances a stale window fica limitada ao TTL.
+const SESSION_CACHE_TTL_MS = 60_000;
+type CacheEntry = { value: Session | null; expiresAt: number };
+declare global {
+  // eslint-disable-next-line no-var
+  var __sessionCache: Map<string, CacheEntry> | undefined;
+}
+const sessionCache: Map<string, CacheEntry> =
+  globalThis.__sessionCache ?? (globalThis.__sessionCache = new Map());
+
 export async function destroySession() {
   const c = await cookies();
   const token = c.get(SESSION_COOKIE)?.value;
-  if (token) await db.delete(schema.sessoes).where(eq(schema.sessoes.token, token));
+  if (token) {
+    sessionCache.delete(token);
+    await db.delete(schema.sessoes).where(eq(schema.sessoes.token, token));
+  }
   c.delete(SESSION_COOKIE);
 }
 
@@ -63,6 +79,10 @@ export const getSession = cache(async (): Promise<Session | null> => {
   const c = await cookies();
   const token = c.get(SESSION_COOKIE)?.value;
   if (!token) return null;
+
+  const cached = sessionCache.get(token);
+  const now = Date.now();
+  if (cached && cached.expiresAt > now) return cached.value;
 
   const rows = await db
     .select({
@@ -83,25 +103,31 @@ export const getSession = cache(async (): Promise<Session | null> => {
     .limit(1);
 
   const s = rows[0];
-  if (!s) return null;
-  if (s.expiraEm.getTime() < Date.now()) {
+  const cacheTtl = Math.min(SESSION_CACHE_TTL_MS, Math.max(0, (s?.expiraEm.getTime() ?? 0) - now));
+  const store = (value: Session | null) => {
+    sessionCache.set(token, { value, expiresAt: now + (value ? cacheTtl : SESSION_CACHE_TTL_MS) });
+    return value;
+  };
+  if (!s) return store(null);
+  if (s.expiraEm.getTime() < now) {
+    sessionCache.delete(token);
     await db.delete(schema.sessoes).where(eq(schema.sessoes.token, token));
     return null;
   }
 
   if (s.perfil === 'filial' && s.filialId && s.filialCodigo && s.filialNome) {
-    return {
+    return store({
       perfil: 'filial', token: s.token,
       filialId: s.filialId, filialCodigo: s.filialCodigo, filialNome: s.filialNome,
-    };
+    });
   }
   if (s.perfil === 'admin' && s.adminId && s.adminUsuario) {
-    return {
+    return store({
       perfil: 'admin', token: s.token,
       adminId: s.adminId, usuario: s.adminUsuario, nome: s.adminNome,
-    };
+    });
   }
-  return null;
+  return store(null);
 });
 
 export async function requireSession(perfilEsperado: 'filial'): Promise<FilialSession>;

@@ -16,9 +16,12 @@ function build(): PostgresJsDatabase<typeof schema> {
   // Supavisor pooler (transaction mode) → prepared OFF.
   // max_lifetime força reciclagem antes do pooler matar a conexão por idle,
   // evitando ECONNRESET em sockets cacheados entre hot-reloads no dev.
+  // Supavisor transaction-mode aceita várias conexões por function instance.
+  // Subir para 3 evita que prefetch do Next + queries concorrentes fiquem
+  // serializados num único socket (causa principal de travamento percebido).
   const client = globalThis.__pgClient ?? postgres(url, {
     prepare: false,
-    max: process.env.NODE_ENV === 'production' ? 1 : 5,
+    max: process.env.NODE_ENV === 'production' ? 3 : 5,
     idle_timeout: 20,
     max_lifetime: 60 * 5,
     connect_timeout: 10,

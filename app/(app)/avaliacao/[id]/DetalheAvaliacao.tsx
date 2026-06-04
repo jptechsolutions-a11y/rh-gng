@@ -4,7 +4,11 @@ import { Card, CardContent, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { ClassificacaoBadge } from '@/components/avaliacao/ClassificacaoBadge';
-import { RadarCompetencias } from '@/components/avaliacao/RadarCompetencias';
+import dynamic from 'next/dynamic';
+const RadarCompetencias = dynamic(
+  () => import('@/components/avaliacao/RadarCompetencias').then((m) => m.RadarCompetencias),
+  { ssr: false, loading: () => <div className="h-72 w-full animate-pulse rounded-lg bg-slate-100" /> },
+);
 import { EvolucaoIndicator } from '@/components/avaliacao/EvolucaoIndicator';
 import { calcularEvolucao, type Classificacao } from '@/lib/avaliacao/calculos';
 import { atualizarPlanoDesenvolvimento } from '@/actions/avaliacao';

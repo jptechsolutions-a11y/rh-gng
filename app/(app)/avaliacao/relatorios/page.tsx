@@ -4,7 +4,7 @@ import {
   relatorioPorCompetencia,
   relatorioRanking,
 } from '@/actions/avaliacao';
-import { RelatoriosCharts } from './RelatoriosCharts';
+import { RelatoriosCharts } from './RelatoriosChartsLazy';
 import { TopBar } from '@/components/layout/TopBar';
 
 export const dynamic = 'force-dynamic';

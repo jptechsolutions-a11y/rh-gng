@@ -173,7 +173,7 @@ export default async function InicioPage() {
                   Escuta G&amp;G
                 </h2>
                 <p className="text-[13px] text-conecta-muted mt-1 leading-snug">
-                  Reunião periódica de escuta com a turma: roteiro, formulário e percepção.
+                  Reunião periódica de escuta com recém admitidos, formulário e percepção.
                 </p>
                 <div className="inline-flex items-center gap-2 text-[13px] font-display font-semibold text-conecta-accent group-hover:gap-3 transition-all mt-3">
                   Acessar

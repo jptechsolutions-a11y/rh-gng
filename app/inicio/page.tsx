@@ -22,13 +22,13 @@ export default async function InicioPage() {
   const sub = s.perfil === 'filial' ? `Filial ${s.filialCodigo}` : `@${s.usuario}`;
 
   return (
-    <div className="relative h-screen w-full overflow-hidden bg-conecta-dark text-white flex flex-col">
-      {/* ===== Camada de fundo: gradiente Conecta + blobs animados ===== */}
-      <div className="conecta-hero-bg absolute inset-0 z-0" aria-hidden />
+    <div className="relative h-screen w-full overflow-hidden bg-white text-conecta-text flex flex-col">
+      {/* ===== Camada de fundo: branco + sombras animadas azul/laranja ===== */}
       <div className="absolute inset-0 z-0 pointer-events-none" aria-hidden>
-        <div className="cg-blob cg-blob-orange absolute -top-32 -left-20 h-[480px] w-[480px] rounded-full" />
-        <div className="cg-blob cg-blob-navy absolute top-1/4 right-0 h-[420px] w-[420px] rounded-full translate-x-1/4" />
-        <div className="cg-blob cg-blob-mid absolute bottom-0 left-1/3 h-[360px] w-[360px] rounded-full" />
+        <div className="cg-blob cg-blob-orange-soft absolute -top-40 -left-32 h-[560px] w-[560px] rounded-full" />
+        <div className="cg-blob cg-blob-navy-soft absolute top-1/4 -right-32 h-[520px] w-[520px] rounded-full" />
+        <div className="cg-blob cg-blob-orange-mini absolute bottom-[-120px] left-1/3 h-[420px] w-[420px] rounded-full" />
+        <div className="cg-blob cg-blob-navy-soft absolute top-1/2 left-[-100px] h-[360px] w-[360px] rounded-full" />
       </div>
 
       {/* Linha decorativa lateral laranja */}
@@ -40,15 +40,13 @@ export default async function InicioPage() {
 
       {/* ===== Topbar minimal ===== */}
       <header className="relative z-20 px-6 lg:px-10 py-4 flex items-center justify-between gap-3 shrink-0">
-        <ConectaLogo variant="mono" withSubtitle={false} className="scale-90 origin-left" />
+        <ConectaLogo variant="full" withSubtitle={false} className="scale-90 origin-left" />
         <div className="flex items-center gap-3">
           <div className="text-right hidden sm:block">
-            <div className="text-sm font-display font-semibold leading-tight">{nome}</div>
-            <div className="text-[11px] text-white/55">{sub}</div>
+            <div className="text-sm font-display font-semibold leading-tight text-conecta-primary">{nome}</div>
+            <div className="text-[11px] text-conecta-muted">{sub}</div>
           </div>
-          <div className="[&_button]:!bg-white/10 [&_button]:!text-white [&_button]:!border-white/20 [&_button:hover]:!bg-conecta-accent/20 [&_button:hover]:!text-conecta-accent [&_button:hover]:!border-conecta-accent/30">
-            <LogoutButton />
-          </div>
+          <LogoutButton />
         </div>
       </header>
 
@@ -61,14 +59,14 @@ export default async function InicioPage() {
             Bem-vindo de volta · {nome.split(' ')[0]}
           </p>
 
-          <h1 className="font-display text-3xl lg:text-[40px] font-extrabold tracking-tight leading-[1.02]">
+          <h1 className="font-display text-3xl lg:text-[40px] font-extrabold tracking-tight leading-[1.02] text-conecta-primary">
             Para onde você quer ir{' '}
             <span className="text-conecta-accent">hoje?</span>
           </h1>
 
           <div className="flex items-center gap-3">
             <span className="h-[2px] w-10 bg-conecta-accent/70" />
-            <span className="font-display text-[11px] uppercase tracking-[0.32em] text-white/55">
+            <span className="font-display text-[11px] uppercase tracking-[0.32em] text-conecta-muted">
               Conecta G&amp;G · Perlog
             </span>
             <span className="h-[2px] w-10 bg-conecta-accent/70" />
@@ -189,7 +187,7 @@ export default async function InicioPage() {
         {/* Acessos admin */}
         {s.perfil === 'admin' && (
           <div className="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs">
-            <span className="font-display uppercase tracking-[0.22em] text-white/45 text-[10px] mr-2">
+            <span className="font-display uppercase tracking-[0.22em] text-conecta-muted/70 text-[10px] mr-2">
               Admin
             </span>
             {[
@@ -200,7 +198,7 @@ export default async function InicioPage() {
               <Link
                 key={href}
                 href={href}
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 hover:bg-conecta-accent/20 text-white/75 hover:text-conecta-accent border border-white/15 hover:border-conecta-accent/30 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white hover:bg-conecta-accent/10 text-conecta-muted hover:text-conecta-accent border border-conecta-primary/15 hover:border-conecta-accent/40 transition-colors"
               >
                 <Icon className="h-3 w-3" />
                 {label}
@@ -210,20 +208,20 @@ export default async function InicioPage() {
         )}
       </main>
 
-      {/* ===== Barra inferior fina espelhando a splash ===== */}
+      {/* ===== Barra inferior fina ===== */}
       <footer
         className="relative z-20 mt-4 mx-6 lg:mx-12 mb-6 rounded-xl flex items-center justify-between gap-4 px-6 py-3 backdrop-blur-sm text-[11px]"
         style={{
-          background: 'rgba(7, 24, 64, 0.55)',
-          border: '1px solid rgba(232, 98, 26, 0.22)',
+          background: 'rgba(255, 255, 255, 0.75)',
+          border: '1px solid rgba(13, 43, 107, 0.12)',
         }}
       >
-        <span className="font-display uppercase tracking-[0.22em] text-white/55">
+        <span className="font-display uppercase tracking-[0.22em] text-conecta-primary/70">
           Conexão que gera valor · Pessoas que movem a nossa jornada
         </span>
-        <span className="text-white/45 hidden sm:inline">
+        <span className="text-conecta-muted hidden sm:inline">
           © {new Date().getFullYear()} Conecta G&amp;G · Perlog · Desenvolvido por{' '}
-          <span className="font-semibold text-conecta-accentLight">Juliano Patrick</span>
+          <span className="font-semibold text-conecta-accent">Juliano Patrick</span>
         </span>
       </footer>
     </div>

@@ -16,7 +16,7 @@ import { logoutAction } from '@/actions/auth';
 type NavItem = { href: string; label: string; icon: React.ComponentType<{ className?: string }> };
 
 const FILIAL_NAV: NavItem[] = [
-  { href: '/inicio',          label: 'Início',          icon: Home },
+  { href: '/inicio',          label: 'Voltar ao início', icon: ArrowLeft },
   { href: '/painel',          label: 'Painel',          icon: LayoutDashboard },
   { href: '/entrevista/nova', label: 'Nova entrevista', icon: ClipboardList },
   { href: '/historico',       label: 'Histórico',       icon: History },
@@ -25,7 +25,7 @@ const FILIAL_NAV: NavItem[] = [
 ];
 
 const ADMIN_NAV: NavItem[] = [
-  { href: '/inicio',          label: 'Início',          icon: Home },
+  { href: '/inicio',          label: 'Voltar ao início', icon: ArrowLeft },
   { href: '/admin',           label: 'Dashboard',       icon: LayoutDashboard },
   { href: '/admin/busca',     label: 'Busca global',    icon: Users },
   { href: '/admin/relatorios', label: 'Relatórios',     icon: FileText },

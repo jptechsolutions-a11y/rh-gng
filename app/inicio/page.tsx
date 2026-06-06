@@ -155,15 +155,15 @@ export default async function InicioPage() {
             <span
               aria-hidden
               className="absolute top-0 left-0 h-1 w-full"
-              style={{ background: 'linear-gradient(90deg, #0D2B6B 0%, #E8621A 100%)' }}
+              style={{ background: '#E8621A' }}
             />
-            <div className="absolute top-4 right-4 h-24 w-24 rounded-full blur-3xl bg-gradient-to-br from-conecta-primary/10 to-conecta-accent/10 group-hover:from-conecta-primary/20 group-hover:to-conecta-accent/20 transition-colors" />
+            <div className="absolute top-4 right-4 h-24 w-24 bg-conecta-accent/10 rounded-full blur-3xl group-hover:bg-conecta-accent/20 transition-colors" />
             <div className="relative flex items-start gap-4">
               <div
                 className="grid place-items-center h-12 w-12 rounded-xl text-white shrink-0"
                 style={{
-                  background: 'linear-gradient(135deg, #0D2B6B 0%, #E8621A 100%)',
-                  boxShadow: '0 10px 22px -8px rgba(13,43,107,0.45)',
+                  background: '#E8621A',
+                  boxShadow: '0 10px 22px -8px rgba(232,98,26,0.5)',
                 }}
               >
                 <MessagesSquare className="h-6 w-6" />

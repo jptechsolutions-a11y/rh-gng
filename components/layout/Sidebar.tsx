@@ -1,11 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
   LayoutDashboard, Users, FileText, Settings, LogOut, ShieldCheck, ClipboardList, History, CalendarClock,
   PanelLeftClose, PanelLeftOpen, Home, Target, Plus, BarChart3, UserCog, ArrowLeft, MessagesSquare,
+  BookOpen, Printer, ClipboardCheck,
 } from 'lucide-react';
 import { ConectaLogo } from '@/components/brand/ConectaLogo';
 import { ConectaSymbol } from '@/components/brand/ConectaSymbol';
@@ -19,7 +20,6 @@ const FILIAL_NAV: NavItem[] = [
   { href: '/painel',          label: 'Painel',          icon: LayoutDashboard },
   { href: '/entrevista/nova', label: 'Nova entrevista', icon: ClipboardList },
   { href: '/historico',       label: 'Histórico',       icon: History },
-  { href: '/escuta',          label: 'Escuta G&G',      icon: MessagesSquare },
   { href: '/agenda',          label: 'Agenda',          icon: CalendarClock },
   { href: '/banco-talentos',  label: 'Banco de talentos', icon: Users },
 ];
@@ -28,7 +28,6 @@ const ADMIN_NAV: NavItem[] = [
   { href: '/inicio',          label: 'Início',          icon: Home },
   { href: '/admin',           label: 'Dashboard',       icon: LayoutDashboard },
   { href: '/admin/busca',     label: 'Busca global',    icon: Users },
-  { href: '/escuta',          label: 'Escuta G&G',      icon: MessagesSquare },
   { href: '/admin/relatorios', label: 'Relatórios',     icon: FileText },
   { href: '/admin/config',    label: 'Configuração',    icon: Settings },
   { href: '/admin/seguranca', label: 'Segurança',       icon: ShieldCheck },
@@ -46,25 +45,50 @@ const AVALIACAO_NAV_ADMIN_EXTRAS: NavItem[] = [
   { href: '/admin/config/competencias',  label: 'Competências e fatores', icon: Target },
 ];
 
+const ESCUTA_NAV_BASE: NavItem[] = [
+  { href: '/inicio',                 label: 'Voltar ao início',  icon: ArrowLeft },
+  { href: '/escuta?tab=roteiro',     label: 'Roteiro',           icon: BookOpen },
+  { href: '/escuta?tab=formulario',  label: 'Formulário',        icon: Printer },
+  { href: '/escuta?tab=percepcao',   label: 'Percepção',         icon: ClipboardCheck },
+  { href: '/escuta/historico',       label: 'Histórico',         icon: History },
+];
+const ESCUTA_NAV_ADMIN_EXTRAS: NavItem[] = [
+  { href: '/admin/config/escuta',    label: 'Configuração',      icon: Settings },
+];
+
 const STORAGE_KEY = 'sidebar:collapsed';
 
 export function Sidebar({
   perfil, nome, subtitulo,
 }: { perfil: 'filial' | 'admin'; nome: string; subtitulo: string }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentTab = searchParams.get('tab');
   const inAvaliacao =
     pathname === '/avaliacao' ||
     pathname.startsWith('/avaliacao/') ||
     pathname.startsWith('/admin/config/pessoas') ||
     pathname.startsWith('/admin/config/competencias');
-  const nav = inAvaliacao
+  const inEscuta =
+    pathname === '/escuta' ||
+    pathname.startsWith('/escuta/') ||
+    pathname.startsWith('/admin/config/escuta');
+  const nav = inEscuta
     ? perfil === 'admin'
-      ? [...AVALIACAO_NAV_BASE, ...AVALIACAO_NAV_ADMIN_EXTRAS]
-      : AVALIACAO_NAV_BASE
-    : perfil === 'admin'
-      ? ADMIN_NAV
-      : FILIAL_NAV;
-  const moduleLabel = inAvaliacao ? 'Avaliação de Desempenho' : 'Conecta G&G';
+      ? [...ESCUTA_NAV_BASE, ...ESCUTA_NAV_ADMIN_EXTRAS]
+      : ESCUTA_NAV_BASE
+    : inAvaliacao
+      ? perfil === 'admin'
+        ? [...AVALIACAO_NAV_BASE, ...AVALIACAO_NAV_ADMIN_EXTRAS]
+        : AVALIACAO_NAV_BASE
+      : perfil === 'admin'
+        ? ADMIN_NAV
+        : FILIAL_NAV;
+  const moduleLabel = inEscuta
+    ? 'Escuta G&G'
+    : inAvaliacao
+      ? 'Avaliação de Desempenho'
+      : 'Conecta G&G';
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
@@ -155,7 +179,20 @@ export function Sidebar({
       <nav className={cn('relative z-10 flex-1 py-4 space-y-0.5 overflow-y-auto', collapsed ? 'px-2' : 'px-3')}>
         {nav.map(({ href, label, icon: Icon }) => {
           const isRoot = href === '/admin' || href === '/painel' || href === '/avaliacao' || href === '/inicio';
-          const active = isRoot ? pathname === href : (pathname === href || pathname.startsWith(href + '/'));
+          const [hrefPath, hrefQuery] = href.split('?');
+          let active: boolean;
+          if (hrefQuery) {
+            // Item da sidebar usa query (?tab=...): ativo só se a tab atual bate.
+            const tabValue = new URLSearchParams(hrefQuery).get('tab');
+            active = pathname === hrefPath && (currentTab ?? 'roteiro') === tabValue;
+          } else if (isRoot) {
+            active = pathname === hrefPath;
+          } else if (hrefPath === '/escuta') {
+            // /escuta sem query nunca aparece na nav atual, mas mantemos o caso por segurança.
+            active = pathname === '/escuta' && !currentTab;
+          } else {
+            active = pathname === hrefPath || pathname.startsWith(hrefPath + '/');
+          }
           return (
             <Link
               key={href}

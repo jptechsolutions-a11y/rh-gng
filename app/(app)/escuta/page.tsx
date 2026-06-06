@@ -1,7 +1,8 @@
 import { requireSession } from '@/lib/auth/session';
 import { carregarRoteiro, carregarPilares } from '@/lib/escuta/data';
 import { EscutaHeader } from '@/components/escuta/EscutaHeader';
-import { EscutaTabs, parseTab } from '@/components/escuta/EscutaTabs';
+import { EscutaTabs } from '@/components/escuta/EscutaTabs';
+import { parseTab } from '@/components/escuta/escuta-tabs.shared';
 import { RoteiroView } from '@/components/escuta/RoteiroView';
 import { FormularioImpressao } from '@/components/escuta/FormularioImpressao';
 import { PercepcaoForm } from '@/components/escuta/PercepcaoForm';

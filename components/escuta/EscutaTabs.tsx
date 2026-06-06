@@ -2,8 +2,7 @@
 import Link from 'next/link';
 import { BookOpen, Printer, ClipboardCheck } from 'lucide-react';
 import { cn } from '@/lib/cn';
-
-type TabKey = 'roteiro' | 'formulario' | 'percepcao';
+import type { TabKey } from './escuta-tabs.shared';
 
 const TABS: { key: TabKey; label: string; Icon: typeof BookOpen }[] = [
   { key: 'roteiro',    label: 'Roteiro',    Icon: BookOpen },
@@ -44,7 +43,3 @@ export function EscutaTabs({ active }: { active: TabKey }) {
   );
 }
 
-export function parseTab(value: string | undefined | null): TabKey {
-  if (value === 'formulario' || value === 'percepcao') return value;
-  return 'roteiro';
-}

@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm';
 import {
   pgTable, uuid, text, boolean, timestamp, integer, numeric, jsonb, date,
-  bigserial, primaryKey, index, check,
+  bigserial, primaryKey, index, check, smallint,
 } from 'drizzle-orm/pg-core';
 
 export const filiais = pgTable('filiais', {
@@ -220,4 +220,50 @@ export const avaliacoesDetalhes = pgTable('avaliacoes_detalhes', {
   avaliacaoIdx: index('avaliacoes_detalhes_avaliacao_idx').on(t.avaliacaoId),
   uniqFator: index('avaliacoes_detalhes_uniq_fator').on(t.avaliacaoId, t.fatorId),
   notaCheck: check('avaliacoes_detalhes_nota_check', sql`nota BETWEEN 1 AND 5`),
+}));
+
+// ============================================================
+// Escuta G&G
+// ============================================================
+
+export type EscutaEtapa = { ordem: number; titulo: string; descricao: string };
+export type EscutaPergunta = string;
+export type EscutaFoto = { path: string; size: number };
+export type EscutaPresencaItem = { nome: string; funcao: string; presente: boolean };
+export type EscutaPercepcoes = Record<string, string>;
+
+export const escutaRoteiro = pgTable('escuta_roteiro', {
+  id:            smallint('id').primaryKey().default(1),
+  heroTitulo:    text('hero_titulo').notNull().default('Gente e Gestão'),
+  heroSubtitulo: text('hero_subtitulo').notNull().default('SUA ORGANIZAÇÃO FAZ TODA A DIFERENÇA'),
+  heroFrase:     text('hero_frase').notNull(),
+  bannerTexto:   text('banner_texto').notNull(),
+  etapas:        jsonb('etapas').$type<EscutaEtapa[]>().notNull().default([]),
+  atualizadoEm:  timestamp('atualizado_em', { withTimezone: true }).notNull().defaultNow(),
+  atualizadoPor: text('atualizado_por'),
+});
+
+export const escutaPilares = pgTable('escuta_pilares', {
+  id:        smallint('id').primaryKey(),
+  ordem:     smallint('ordem').notNull(),
+  nome:      text('nome').notNull(),
+  icone:     text('icone').notNull(),
+  perguntas: jsonb('perguntas').$type<EscutaPergunta[]>().notNull().default([]),
+});
+
+export const escutaReunioes = pgTable('escuta_reunioes', {
+  id:              uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  filialCodigo:    text('filial_codigo').notNull(),
+  filialNome:      text('filial_nome'),
+  turma:           text('turma').notNull(),
+  dataReuniao:     date('data_reuniao').notNull(),
+  responsavel:     text('responsavel').notNull(),
+  percepcoes:      jsonb('percepcoes').$type<EscutaPercepcoes>().notNull().default({}),
+  percepcaoFinal:  text('percepcao_final').notNull(),
+  fotos:           jsonb('fotos').$type<EscutaFoto[]>().notNull().default([]),
+  presenca:        jsonb('presenca').$type<EscutaPresencaItem[]>().notNull().default([]),
+  criadoEm:        timestamp('criado_em', { withTimezone: true }).notNull().defaultNow(),
+  criadoPor:       text('criado_por'),
+}, (t) => ({
+  filialDataIdx: index('escuta_reunioes_filial_data_idx').on(t.filialCodigo, t.dataReuniao),
 }));

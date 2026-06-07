@@ -2,7 +2,6 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { carregarReuniao, urlsAssinadasFotos } from '@/actions/escuta';
-import { carregarPilares } from '@/lib/escuta/data';
 import { EscutaHeader } from '@/components/escuta/EscutaHeader';
 import { ReuniaoLeitura } from './ReuniaoLeitura';
 
@@ -19,10 +18,9 @@ export default async function ReuniaoPage({
   const reuniao = await carregarReuniao(id);
   if (!reuniao) notFound();
 
-  const [pilares, fotoUrls] = await Promise.all([
-    carregarPilares(),
-    urlsAssinadasFotos((reuniao.fotos as Array<{ path: string }>).map((f) => f.path)),
-  ]);
+  const fotoUrls = await urlsAssinadasFotos(
+    (reuniao.fotos as Array<{ path: string }>).map((f) => f.path),
+  );
 
   return (
     <div className="space-y-5 p-4 lg:p-6">
@@ -45,11 +43,9 @@ export default async function ReuniaoPage({
           responsavel: reuniao.responsavel,
           filialNome: reuniao.filialNome,
           filialCodigo: reuniao.filialCodigo,
-          percepcoes: (reuniao.percepcoes ?? {}) as Record<string, string>,
           percepcaoFinal: reuniao.percepcaoFinal,
           presenca: (reuniao.presenca ?? []) as Array<{ nome: string; funcao: string; presente: boolean }>,
         }}
-        pilares={pilares}
         fotoUrls={fotoUrls}
       />
     </div>

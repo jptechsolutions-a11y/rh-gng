@@ -7,7 +7,7 @@ import { PilarPercepcaoCard } from './PilarPercepcaoCard';
 import { PresencaDigitada } from './PresencaDigitada';
 import { EvidenciaUploader, type FotoEnviada } from './EvidenciaUploader';
 
-type Pilar = { id: number; ordem: number; nome: string; icone: string };
+type Pilar = { id: number; ordem: number; nome: string; icone: string; perguntas: string[] };
 
 const hoje = () => new Date().toISOString().slice(0, 10);
 
@@ -15,16 +15,11 @@ export function PercepcaoForm({ pilares }: { pilares: Pilar[] }) {
   const [turma, setTurma] = useState('');
   const [data, setData] = useState(hoje());
   const [responsavel, setResponsavel] = useState('');
-  const [percepcoes, setPercepcoes] = useState<Record<string, string>>({});
   const [percepcaoFinal, setPercepcaoFinal] = useState('');
   const [fotos, setFotos] = useState<FotoEnviada[]>([]);
   const [presenca, setPresenca] = useState<EscutaPresencaItem[]>([]);
   const [erro, setErro] = useState<string | null>(null);
   const [pending, start] = useTransition();
-
-  function setPilar(id: number, v: string) {
-    setPercepcoes((m) => ({ ...m, [String(id)]: v }));
-  }
 
   function submit() {
     setErro(null);
@@ -39,7 +34,8 @@ export function PercepcaoForm({ pilares }: { pilares: Pilar[] }) {
       try {
         await salvarReuniao({
           turma, dataReuniao: data, responsavel,
-          percepcoes, percepcaoFinal,
+          percepcoes: {},
+          percepcaoFinal,
           fotos: fotos.map((f) => ({ path: f.path, size: f.size })),
           presenca: presValida,
         });
@@ -69,15 +65,17 @@ export function PercepcaoForm({ pilares }: { pilares: Pilar[] }) {
         </Field>
       </div>
 
-      {/* Seção 2: percepção por pilar */}
+      {/* Seção 2: pilares (referência informativa) */}
       <div>
-        <SectionTitle>Percepção por pilar</SectionTitle>
+        <SectionTitle>Pilares de avaliação</SectionTitle>
+        <p className="text-xs text-conecta-muted mt-1">
+          Referência das perguntas conduzidas em cada pilar. A síntese da turma vai no campo <strong>Percepção Final</strong> abaixo.
+        </p>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-3">
           {pilares.map((p) => (
             <PilarPercepcaoCard key={p.id}
               ordem={p.ordem} nome={p.nome} icone={p.icone}
-              value={percepcoes[String(p.id)] ?? ''}
-              onChange={(v) => setPilar(p.id, v)} />
+              perguntas={p.perguntas} />
           ))}
         </div>
       </div>

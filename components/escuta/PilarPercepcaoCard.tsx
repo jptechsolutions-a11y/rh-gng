@@ -1,10 +1,12 @@
 import { PilarIcone } from './PilarIcone';
 
 export function PilarPercepcaoCard({
-  ordem, nome, icone, value, onChange,
+  ordem, nome, icone, perguntas,
 }: {
-  ordem: number; nome: string; icone: string;
-  value: string; onChange: (v: string) => void;
+  ordem: number;
+  nome: string;
+  icone: string;
+  perguntas: string[];
 }) {
   return (
     <div className="relative rounded-2xl bg-white border border-conecta-primary/10 p-5 overflow-hidden">
@@ -22,17 +24,13 @@ export function PilarPercepcaoCard({
           </div>
         </div>
       </div>
-      <label className="block text-[11px] uppercase tracking-[0.18em] font-semibold text-conecta-primary mb-1.5">
-        Percepção do grupo
-      </label>
-      <textarea
-        rows={3}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder="O que a turma compartilhou sobre este pilar?"
-        className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm text-conecta-text placeholder-conecta-muted/60 focus:outline-none focus:border-conecta-accent focus:ring-2 focus:ring-conecta-accent/25 transition-colors"
-        maxLength={2000}
-      />
+      {perguntas.length > 0 && (
+        <ul className="space-y-1.5 text-sm text-conecta-text/85 list-disc pl-5 marker:text-conecta-accent">
+          {perguntas.map((q, i) => (
+            <li key={i}>{q}</li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

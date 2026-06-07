@@ -1,18 +1,14 @@
-import { PilarIcone } from '@/components/escuta/PilarIcone';
 import type { EscutaPresencaItem } from '@/db/schema';
 
-type Pilar = { id: number; ordem: number; nome: string; icone: string };
-
 export function ReuniaoLeitura({
-  reuniao, pilares, fotoUrls,
+  reuniao, fotoUrls,
 }: {
   reuniao: {
     turma: string; dataReuniao: string; responsavel: string;
     filialNome: string | null; filialCodigo: string;
-    percepcoes: Record<string, string>; percepcaoFinal: string;
+    percepcaoFinal: string;
     presenca: EscutaPresencaItem[];
   };
-  pilares: Pilar[];
   fotoUrls: string[];
 }) {
   return (
@@ -22,24 +18,6 @@ export function ReuniaoLeitura({
         <Info label="Turma" value={reuniao.turma} />
         <Info label="Data" value={new Date(reuniao.dataReuniao).toLocaleDateString('pt-BR')} />
         <Info label="Responsável" value={reuniao.responsavel} />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {pilares.map((p) => (
-          <div key={p.id} className="rounded-2xl bg-white border border-conecta-primary/10 p-5">
-            <div className="flex items-center gap-3 mb-2">
-              <span className="grid place-items-center h-9 w-9 rounded-lg bg-conecta-primary text-white">
-                <PilarIcone chave={p.icone} className="h-4 w-4" />
-              </span>
-              <div className="font-display font-extrabold text-conecta-primary">{p.ordem}. {p.nome}</div>
-            </div>
-            <p className="text-sm text-conecta-text whitespace-pre-wrap">
-              {reuniao.percepcoes[String(p.id)]?.trim() || (
-                <span className="text-conecta-muted italic">Sem registro.</span>
-              )}
-            </p>
-          </div>
-        ))}
       </div>
 
       <div className="rounded-2xl bg-white border border-conecta-accent/30 p-5">

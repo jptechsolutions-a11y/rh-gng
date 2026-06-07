@@ -5,8 +5,12 @@ import { db, schema } from '@/db/client';
 const WINDOW_MS = 15 * 60 * 1000;
 const MAX_TRIES = 5;
 
-export async function checkRateLimit(chave: string): Promise<{ ok: boolean; restantes: number }> {
-  const janela = new Date(Math.floor(Date.now() / WINDOW_MS) * WINDOW_MS);
+export async function checkRateLimit(
+  chave: string,
+  max = MAX_TRIES,
+  windowMs = WINDOW_MS,
+): Promise<{ ok: boolean; restantes: number }> {
+  const janela = new Date(Math.floor(Date.now() / windowMs) * windowMs);
 
   // Cleanup oportunista (1% das chamadas): remove janelas com >1h.
   if (Math.random() < 0.01) {
@@ -24,5 +28,5 @@ export async function checkRateLimit(chave: string): Promise<{ ok: boolean; rest
     .returning({ contagem: schema.rateLimits.contagem });
 
   const c = row?.contagem ?? 1;
-  return { ok: c <= MAX_TRIES, restantes: Math.max(0, MAX_TRIES - c) };
+  return { ok: c <= max, restantes: Math.max(0, max - c) };
 }

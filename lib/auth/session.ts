@@ -1,7 +1,7 @@
 import 'server-only';
 import { cache } from 'react';
 import { cookies, headers } from 'next/headers';
-import { randomBytes } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
 import { eq, lt } from 'drizzle-orm';
 import { db, schema } from '@/db/client';
 
@@ -18,6 +18,10 @@ function genToken() {
   return randomBytes(48).toString('base64url'); // 64 chars
 }
 
+// No banco guardamos apenas o SHA-256 do token; o cookie carrega o token bruto.
+// Assim, um vazamento do dump de `sessoes` não permite sequestrar sessões ativas.
+const hashToken = (t: string) => createHash('sha256').update(t).digest('hex');
+
 export async function createSession(opts:
   | { perfil: 'filial'; filialId: string; lembrar?: boolean }
   | { perfil: 'admin'; adminId: string; lembrar?: boolean }
@@ -30,7 +34,7 @@ export async function createSession(opts:
   const ua = h.get('user-agent') ?? null;
 
   await db.insert(schema.sessoes).values({
-    token,
+    token: hashToken(token),
     perfil: opts.perfil,
     filialId: opts.perfil === 'filial' ? opts.filialId : null,
     adminId:  opts.perfil === 'admin'  ? opts.adminId  : null,
@@ -70,7 +74,7 @@ export async function destroySession() {
   const token = c.get(SESSION_COOKIE)?.value;
   if (token) {
     sessionCache.delete(token);
-    await db.delete(schema.sessoes).where(eq(schema.sessoes.token, token));
+    await db.delete(schema.sessoes).where(eq(schema.sessoes.token, hashToken(token)));
   }
   c.delete(SESSION_COOKIE);
 }
@@ -99,7 +103,7 @@ export const getSession = cache(async (): Promise<Session | null> => {
     .from(schema.sessoes)
     .leftJoin(schema.filiais, eq(schema.filiais.id, schema.sessoes.filialId))
     .leftJoin(schema.admins,  eq(schema.admins.id,  schema.sessoes.adminId))
-    .where(eq(schema.sessoes.token, token))
+    .where(eq(schema.sessoes.token, hashToken(token)))
     .limit(1);
 
   const s = rows[0];
@@ -111,19 +115,19 @@ export const getSession = cache(async (): Promise<Session | null> => {
   if (!s) return store(null);
   if (s.expiraEm.getTime() < now) {
     sessionCache.delete(token);
-    await db.delete(schema.sessoes).where(eq(schema.sessoes.token, token));
+    await db.delete(schema.sessoes).where(eq(schema.sessoes.token, hashToken(token)));
     return null;
   }
 
   if (s.perfil === 'filial' && s.filialId && s.filialCodigo && s.filialNome) {
     return store({
-      perfil: 'filial', token: s.token,
+      perfil: 'filial', token,
       filialId: s.filialId, filialCodigo: s.filialCodigo, filialNome: s.filialNome,
     });
   }
   if (s.perfil === 'admin' && s.adminId && s.adminUsuario) {
     return store({
-      perfil: 'admin', token: s.token,
+      perfil: 'admin', token,
       adminId: s.adminId, usuario: s.adminUsuario, nome: s.adminNome,
     });
   }

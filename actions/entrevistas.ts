@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { and, desc, eq, ilike, or } from 'drizzle-orm';
 import { db, schema } from '@/db/client';
 import { requireSession } from '@/lib/auth/session';
+import { checkRateLimit } from '@/lib/auth/rate-limit';
 import { atualizarStatusSchema, entrevistaInputSchema, type EntrevistaInput } from '@/lib/validators';
 
 export async function listarEntrevistasFilial(filtroStatus?: string) {
@@ -339,7 +340,10 @@ function escapeLike(s: string) {
 }
 
 export async function buscaGlobal(termo: string) {
-  await requireSession('admin');
+  const s = await requireSession('admin');
+  // Rate-limit por admin: 60 buscas/min — barra scraping sem atrapalhar uso normal.
+  const rl = await checkRateLimit(`busca:${s.usuario}`, 60, 60_000);
+  if (!rl.ok) throw new Error('Muitas buscas em sequência. Aguarde um instante.');
   const q = termo.trim();
   if (q.length < 2) return [];
   const digits = q.replace(/\D/g, '');

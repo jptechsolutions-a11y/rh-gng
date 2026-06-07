@@ -1,10 +1,11 @@
 'use client';
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { ChevronLeft, ChevronRight, Save, CheckCircle2, UserCircle, Star, MessageSquare } from 'lucide-react';
+import { ConectaCard, SectionHeader } from '@/components/ui/conecta-card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/cn';
 import { toast } from 'sonner';
 import { CompetenciaCard } from '@/components/avaliacao/CompetenciaCard';
 import { FatorRatingRow } from '@/components/avaliacao/FatorRatingRow';
@@ -32,8 +33,71 @@ function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
     <textarea
       {...rest}
-      className={`w-full rounded-md border border-slate-200 bg-white text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-perlog-orange/40 ${className}`}
+      className={`w-full rounded-lg border border-conecta-primary/15 bg-white text-sm px-3 py-2 focus:outline-none focus:ring-2 focus:ring-conecta-accent/25 focus:border-conecta-accent ${className}`}
     />
+  );
+}
+
+const STEPS = [
+  { id: 1 as const, label: 'Identificação', icon: UserCircle },
+  { id: 2 as const, label: 'Avaliação', icon: Star },
+  { id: 3 as const, label: 'Feedback', icon: MessageSquare },
+];
+
+function Stepper({ step }: { step: 1 | 2 | 3 }) {
+  return (
+    <div className="flex items-center gap-1 overflow-x-auto pb-2">
+      {STEPS.map((s, i) => {
+        const Icon = s.icon;
+        const active = step === s.id;
+        const done = step > s.id;
+        return (
+          <div key={s.id} className="flex items-center gap-1 shrink-0">
+            <div
+              className={cn(
+                'relative flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-display font-semibold transition-all overflow-hidden',
+                active
+                  ? 'text-white shadow-[0_8px_22px_-8px_rgba(232,98,26,0.55)]'
+                  : done
+                    ? 'bg-conecta-accent/12 text-conecta-accent border border-conecta-accent/25'
+                    : 'bg-white text-conecta-muted border border-conecta-primary/10',
+              )}
+              style={active ? { background: '#E8621A' } : undefined}
+            >
+              {active && (
+                <span
+                  aria-hidden
+                  className="absolute inset-y-0 left-0 w-[3px]"
+                  style={{ background: '#FF8C42' }}
+                />
+              )}
+              <span
+                className={cn(
+                  'grid place-items-center h-5 w-5 rounded-full text-[10px] font-extrabold shrink-0',
+                  active
+                    ? 'bg-white text-conecta-accent'
+                    : done
+                      ? 'bg-conecta-accent text-white'
+                      : 'bg-conecta-primary/8 text-conecta-muted',
+                )}
+              >
+                {done ? <CheckCircle2 className="h-3 w-3" /> : s.id}
+              </span>
+              <Icon className="h-3.5 w-3.5 shrink-0" />
+              <span className="whitespace-nowrap text-[13px]">{s.label}</span>
+            </div>
+            {i < STEPS.length - 1 && (
+              <div
+                className={cn(
+                  'h-px w-4 sm:w-8 transition-colors',
+                  done ? 'bg-conecta-accent/40' : 'bg-conecta-primary/15',
+                )}
+              />
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -98,87 +162,87 @@ export function NovaAvaliacaoWizard({ competencias }: { competencias: Competenci
     });
   }
 
+  const btnSecondary =
+    'inline-flex items-center gap-2 h-10 px-4 rounded-lg text-sm font-display font-medium border border-conecta-primary/15 text-conecta-primary bg-white hover:border-conecta-accent/40 hover:text-conecta-accent hover:bg-conecta-accent/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
+
+  const inputClass =
+    'border-conecta-primary/15 focus-visible:ring-conecta-accent/30 focus-visible:border-conecta-accent';
+
   return (
-    <div className="space-y-6">
-      <div className="flex gap-2">
-        {[1, 2, 3].map((n) => (
-          <div
-            key={n}
-            className={`flex-1 rounded-md border px-3 py-2 text-center text-sm ${
-              step === n
-                ? 'bg-perlog-navy text-white border-perlog-navy'
-                : 'bg-white text-perlog-slate border-slate-200'
-            }`}
-          >
-            {n}. {n === 1 ? 'Identificação' : n === 2 ? 'Avaliação' : 'Feedback'}
-          </div>
-        ))}
-      </div>
+    <div className="space-y-5">
+      <Stepper step={step} />
 
       {step === 1 && (
-        <Card>
-          <CardContent className="space-y-4 pt-6">
-            <CardTitle className="text-base">Identificação</CardTitle>
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <Label>Matrícula do avaliado *</Label>
-                <div className="flex gap-2 mt-1">
-                  <Input
-                    value={matAv}
-                    onChange={(e) => setMatAv(e.target.value)}
-                    onBlur={() => buscar('colaborador')}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => buscar('colaborador')}
-                    disabled={pending}
-                  >
-                    Buscar
-                  </Button>
-                </div>
-                {avaliado && (
-                  <p className="mt-1 text-xs text-perlog-slate">
-                    {avaliado.nome}
-                    {avaliado.funcao ? ` — ${avaliado.funcao}` : ''}
-                  </p>
-                )}
+        <ConectaCard>
+          <SectionHeader label="Identificação" icon={UserCircle} />
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            <div>
+              <Label className="font-display text-conecta-primary">
+                Matrícula do avaliado *
+              </Label>
+              <div className="flex gap-2 mt-1.5">
+                <Input
+                  value={matAv}
+                  onChange={(e) => setMatAv(e.target.value)}
+                  onBlur={() => buscar('colaborador')}
+                  className={inputClass}
+                />
+                <button
+                  type="button"
+                  onClick={() => buscar('colaborador')}
+                  disabled={pending}
+                  className={btnSecondary}
+                >
+                  Buscar
+                </button>
               </div>
-              <div>
-                <Label>Matrícula do gestor *</Label>
-                <div className="flex gap-2 mt-1">
-                  <Input
-                    value={matGe}
-                    onChange={(e) => setMatGe(e.target.value)}
-                    onBlur={() => buscar('gestor')}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => buscar('gestor')}
-                    disabled={pending}
-                  >
-                    Buscar
-                  </Button>
-                </div>
-                {gestor && (
-                  <p className="mt-1 text-xs text-perlog-slate">
-                    {gestor.nome}
-                    {gestor.funcao ? ` — ${gestor.funcao}` : ''}
-                  </p>
-                )}
+              {avaliado && (
+                <p className="mt-2 text-xs text-conecta-muted bg-conecta-accent/8 border border-conecta-accent/20 rounded-md px-2 py-1.5">
+                  <strong className="text-conecta-primary">{avaliado.nome}</strong>
+                  {avaliado.funcao ? ` — ${avaliado.funcao}` : ''}
+                </p>
+              )}
+            </div>
+            <div>
+              <Label className="font-display text-conecta-primary">
+                Matrícula do gestor *
+              </Label>
+              <div className="flex gap-2 mt-1.5">
+                <Input
+                  value={matGe}
+                  onChange={(e) => setMatGe(e.target.value)}
+                  onBlur={() => buscar('gestor')}
+                  className={inputClass}
+                />
+                <button
+                  type="button"
+                  onClick={() => buscar('gestor')}
+                  disabled={pending}
+                  className={btnSecondary}
+                >
+                  Buscar
+                </button>
               </div>
+              {gestor && (
+                <p className="mt-2 text-xs text-conecta-muted bg-conecta-accent/8 border border-conecta-accent/20 rounded-md px-2 py-1.5">
+                  <strong className="text-conecta-primary">{gestor.nome}</strong>
+                  {gestor.funcao ? ` — ${gestor.funcao}` : ''}
+                </p>
+              )}
             </div>
-            <div className="flex justify-end">
-              <Button
-                onClick={() => setStep(2)}
-                disabled={!avaliado || !gestor || avaliado.id === gestor.id}
-              >
-                Continuar
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+          <div className="flex justify-end mt-6">
+            <button
+              type="button"
+              onClick={() => setStep(2)}
+              disabled={!avaliado || !gestor || avaliado.id === gestor.id}
+              className="conecta-btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Continuar
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+        </ConectaCard>
       )}
 
       {step === 2 && (
@@ -199,55 +263,74 @@ export function NovaAvaliacaoWizard({ competencias }: { competencias: Competenci
             </CompetenciaCard>
           ))}
           <div className="flex justify-between">
-            <Button variant="outline" onClick={() => setStep(1)}>
+            <button type="button" onClick={() => setStep(1)} className={btnSecondary}>
+              <ChevronLeft className="h-4 w-4" />
               Voltar
-            </Button>
-            <Button onClick={() => setStep(3)} disabled={!completo}>
+            </button>
+            <button
+              type="button"
+              onClick={() => setStep(3)}
+              disabled={!completo}
+              className="conecta-btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
               Continuar
-            </Button>
+              <ChevronRight className="h-4 w-4" />
+            </button>
           </div>
         </>
       )}
 
       {step === 3 && (
         <>
-          <Card>
-            <CardContent className="space-y-3 pt-6">
-              <CardTitle className="text-base">Feedback</CardTitle>
+          <ConectaCard>
+            <SectionHeader label="Feedback" icon={MessageSquare} />
+            <div className="mt-5 space-y-4">
               <div>
-                <Label>Pontos fortes</Label>
+                <Label className="font-display text-conecta-primary">Pontos fortes</Label>
                 <Textarea
                   rows={4}
                   value={pontosFortes}
                   onChange={(e) => setPontosFortes(e.target.value)}
+                  className="mt-1.5"
                 />
               </div>
               <div>
-                <Label>Oportunidades de desenvolvimento</Label>
+                <Label className="font-display text-conecta-primary">
+                  Oportunidades de desenvolvimento
+                </Label>
                 <Textarea
                   rows={4}
                   value={oportunidades}
                   onChange={(e) => setOportunidades(e.target.value)}
+                  className="mt-1.5"
                 />
               </div>
               <div>
-                <Label>Comentários gerais</Label>
+                <Label className="font-display text-conecta-primary">Comentários gerais</Label>
                 <Textarea
                   rows={4}
                   value={comentarios}
                   onChange={(e) => setComentarios(e.target.value)}
+                  className="mt-1.5"
                 />
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </ConectaCard>
           <ResultadoCard pontuacao={pontuacao} classificacao={classif} />
           <div className="flex justify-between">
-            <Button variant="outline" onClick={() => setStep(2)}>
+            <button type="button" onClick={() => setStep(2)} className={btnSecondary}>
+              <ChevronLeft className="h-4 w-4" />
               Voltar
-            </Button>
-            <Button onClick={salvar} disabled={pending || !completo}>
-              Salvar avaliação
-            </Button>
+            </button>
+            <button
+              type="button"
+              onClick={salvar}
+              disabled={pending || !completo}
+              className="conecta-btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {pending ? <Save className="h-4 w-4 animate-pulse" /> : <CheckCircle2 className="h-4 w-4" />}
+              {pending ? 'Salvando...' : 'Salvar avaliação'}
+            </button>
           </div>
         </>
       )}

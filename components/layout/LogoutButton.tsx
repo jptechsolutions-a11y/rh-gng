@@ -14,7 +14,7 @@ export function LogoutButton() {
       <button
         type="submit"
         title="Sair"
-        className="inline-flex items-center gap-1.5 text-xs font-medium text-perlog-slate hover:text-red-700 hover:bg-red-50 px-3 py-1.5 rounded-full border border-slate-200 hover:border-red-200 transition-colors"
+        className="inline-flex items-center gap-1.5 text-[11px] font-display font-semibold uppercase tracking-[0.14em] text-conecta-muted hover:text-conecta-accent hover:bg-conecta-accent/10 px-3 py-1.5 rounded-full border border-slate-200 hover:border-conecta-accent/30 transition-colors"
       >
         <LogOut className="h-3.5 w-3.5" />
         Sair

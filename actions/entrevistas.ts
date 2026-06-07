@@ -14,6 +14,69 @@ export async function listarEntrevistasFilial(filtroStatus?: string) {
   return db.select().from(schema.entrevistas).where(where).orderBy(desc(schema.entrevistas.dataHora)).limit(500);
 }
 
+// Projeção enxuta usada pelas páginas de listagem (painel/agenda/histórico/banco-talentos).
+// Evita transferir os JSONB pesados (`respostasRoteiro`, `notasCriterios`) e o texto longo de
+// `experiencias` em cada navegação — esses só são necessários no detalhe da entrevista.
+export async function listarEntrevistasFilialSlim(filtroStatus?: string) {
+  const s = await requireSession('filial');
+  const where = filtroStatus
+    ? and(eq(schema.entrevistas.filialId, s.filialId), eq(schema.entrevistas.status, filtroStatus))
+    : eq(schema.entrevistas.filialId, s.filialId);
+  return db
+    .select({
+      id: schema.entrevistas.id,
+      filialId: schema.entrevistas.filialId,
+      dataHora: schema.entrevistas.dataHora,
+      cpf: schema.entrevistas.cpf,
+      nome: schema.entrevistas.nome,
+      email: schema.entrevistas.email,
+      telefone: schema.entrevistas.telefone,
+      cidade: schema.entrevistas.cidade,
+      cargoPretendido: schema.entrevistas.cargoPretendido,
+      status: schema.entrevistas.status,
+      dataRetorno: schema.entrevistas.dataRetorno,
+      recrutador: schema.entrevistas.recrutador,
+      gestorAprovador: schema.entrevistas.gestorAprovador,
+      decisaoEm: schema.entrevistas.decisaoEm,
+      decisaoPor: schema.entrevistas.decisaoPor,
+      motivoDecisao: schema.entrevistas.motivoDecisao,
+      aprovadoPeloGg: schema.entrevistas.aprovadoPeloGg,
+      notaGeral: schema.entrevistas.notaGeral,
+    })
+    .from(schema.entrevistas)
+    .where(where)
+    .orderBy(desc(schema.entrevistas.dataHora))
+    .limit(500);
+}
+
+// Variante para a tela de comparar: filtra por cargo no SQL e traz só os 6 mais recentes,
+// com as colunas necessárias para a tabela comparativa (inclui notasCriterios — único caso
+// em que o JSONB realmente é usado pela listagem).
+export async function listarPorCargoFilial(cargo: string, limite = 6) {
+  const s = await requireSession('filial');
+  return db
+    .select({
+      id: schema.entrevistas.id,
+      dataHora: schema.entrevistas.dataHora,
+      nome: schema.entrevistas.nome,
+      cargoPretendido: schema.entrevistas.cargoPretendido,
+      status: schema.entrevistas.status,
+      cidade: schema.entrevistas.cidade,
+      escolaridade: schema.entrevistas.escolaridade,
+      possuiCnh: schema.entrevistas.possuiCnh,
+      pretensaoSalarial: schema.entrevistas.pretensaoSalarial,
+      disponibilidadeTurnos: schema.entrevistas.disponibilidadeTurnos,
+      aprovadoPeloGg: schema.entrevistas.aprovadoPeloGg,
+      recrutador: schema.entrevistas.recrutador,
+      gestorAprovador: schema.entrevistas.gestorAprovador,
+      notasCriterios: schema.entrevistas.notasCriterios,
+    })
+    .from(schema.entrevistas)
+    .where(and(eq(schema.entrevistas.filialId, s.filialId), eq(schema.entrevistas.cargoPretendido, cargo)))
+    .orderBy(desc(schema.entrevistas.dataHora))
+    .limit(limite);
+}
+
 export async function buscarPorCpf(cpf: string) {
   const s = await requireSession();
   const digits = cpf.replace(/\D/g, '');

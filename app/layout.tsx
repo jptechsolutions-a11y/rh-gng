@@ -12,13 +12,8 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="pt-BR">
-      <body className="min-h-screen font-sans antialiased flex flex-col">
-        <div className="flex-1 flex flex-col">
-          <Providers>{children}</Providers>
-        </div>
-        <footer className="border-t border-slate-200 bg-white py-3 px-6 text-center text-xs text-perlog-slate">
-          Desenvolvido por <span className="font-semibold text-perlog-navy">Juliano Patrick</span> · Grupo Perlog — Gente &amp; Gestão
-        </footer>
+      <body className="min-h-screen font-sans antialiased">
+        <Providers>{children}</Providers>
         <Toaster position="top-right" richColors closeButton />
       </body>
     </html>

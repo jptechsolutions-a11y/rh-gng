@@ -16,12 +16,14 @@ function build(): PostgresJsDatabase<typeof schema> {
   // Supavisor pooler (transaction mode) → prepared OFF.
   // max_lifetime força reciclagem antes do pooler matar a conexão por idle,
   // evitando ECONNRESET em sockets cacheados entre hot-reloads no dev.
-  // Supavisor transaction-mode aceita várias conexões por function instance.
-  // Subir para 3 evita que prefetch do Next + queries concorrentes fiquem
-  // serializados num único socket (causa principal de travamento percebido).
+  // Supavisor transaction-mode aceita muitas conexões simultâneas por function instance:
+  // o pooler já cuida do multiplex contra o Postgres real. Manter `max` baixo (3) causava
+  // serialização visível — toda navegação da sidebar dispara prefetch + render, e cada
+  // requisição ainda faz 2 queries (sessão + dados da página). Com 10 cobrimos prefetch
+  // de vários links + render concorrente sem virar gargalo perceptível.
   const client = globalThis.__pgClient ?? postgres(url, {
     prepare: false,
-    max: process.env.NODE_ENV === 'production' ? 3 : 5,
+    max: process.env.NODE_ENV === 'production' ? 10 : 5,
     idle_timeout: 20,
     max_lifetime: 60 * 5,
     connect_timeout: 10,

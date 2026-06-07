@@ -1,11 +1,10 @@
 import Link from 'next/link';
 import { History, Plus, FileSpreadsheet, Scale } from 'lucide-react';
 import { TopBar } from '@/components/layout/TopBar';
-import { Card, CardContent } from '@/components/ui/card';
+import { ConectaCard } from '@/components/ui/conecta-card';
 import { Badge, statusVariant } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { requireSession } from '@/lib/auth/session';
-import { listarEntrevistasFilial } from '@/actions/entrevistas';
+import { listarEntrevistasFilialSlim } from '@/actions/entrevistas';
 import { getCargosAtivos } from '@/db/queries/config';
 import { FiltrosHistorico } from './FiltrosHistorico';
 import { EditarDecisaoButton } from './EditarDecisaoButton';
@@ -32,7 +31,7 @@ function maskCpf(cpf: string) {
 export default async function HistoricoPage({ searchParams }: { searchParams: Promise<SP> }) {
   const s = await requireSession('filial');
   const sp = await searchParams;
-  const [all, cargos] = await Promise.all([listarEntrevistasFilial(), getCargosAtivos()]);
+  const [all, cargos] = await Promise.all([listarEntrevistasFilialSlim(), getCargosAtivos()]);
 
   const q = (sp.q ?? '').trim().toLowerCase();
   const qDigits = q.replace(/\D/g, '');
@@ -68,99 +67,130 @@ export default async function HistoricoPage({ searchParams }: { searchParams: Pr
         badge={`Filial ${s.filialCodigo}`}
       />
 
-      <div className="p-6 space-y-4">
+      <div className="p-6 space-y-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <FiltrosHistorico initial={sp} cargos={cargos.map((c) => c.nome)} />
           <div className="flex gap-2">
             <Link
               href={`/comparar${sp.cargo ? `?cargo=${encodeURIComponent(sp.cargo)}` : ''}`}
-              className="inline-flex items-center gap-2 h-9 px-3 rounded-md text-sm font-medium border border-slate-200 hover:bg-slate-50"
+              className="inline-flex items-center gap-2 h-9 px-3 rounded-lg text-sm font-display font-medium border border-conecta-primary/15 text-conecta-primary bg-white hover:border-conecta-accent/40 hover:text-conecta-accent hover:bg-conecta-accent/5 transition-colors"
             >
               <Scale className="h-4 w-4" /> Comparar
             </Link>
             <a
               href={`/api/historico/export?${exportQs.toString()}`}
-              className="inline-flex items-center gap-2 h-9 px-3 rounded-md text-sm font-medium border border-slate-200 hover:bg-slate-50"
+              className="inline-flex items-center gap-2 h-9 px-3 rounded-lg text-sm font-display font-medium border border-conecta-primary/15 text-conecta-primary bg-white hover:border-conecta-accent/40 hover:text-conecta-accent hover:bg-conecta-accent/5 transition-colors"
             >
               <FileSpreadsheet className="h-4 w-4" /> Exportar Excel
             </a>
-            <Button asChild size="sm">
-              <Link href="/entrevista/nova"><Plus className="h-4 w-4" />Nova</Link>
-            </Button>
+            <Link
+              href="/entrevista/nova"
+              className="conecta-btn-primary text-sm"
+            >
+              <Plus className="h-4 w-4" /> Nova
+            </Link>
           </div>
         </div>
 
-        <Card>
-          <CardContent className="p-0">
-            {filtradas.length === 0 ? (
-              <div className="p-12 text-center text-perlog-slate">
-                <History className="mx-auto h-10 w-10 text-slate-300 mb-3" />
-                <p className="font-medium text-perlog-navy">Nenhuma entrevista corresponde aos filtros</p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-perlog-slate">
-                      <th className="px-4 py-3 font-medium">Candidato</th>
-                      <th className="px-4 py-3 font-medium">Cargo proposto</th>
-                      <th className="px-4 py-3 font-medium">Entrevistador</th>
-                      <th className="px-4 py-3 font-medium">Status</th>
-                      <th className="px-4 py-3 font-medium">Retorno</th>
-                      <th className="px-4 py-3 font-medium">Entrevista</th>
-                      <th className="px-4 py-3 font-medium">Decisão</th>
-                      <th className="px-4 py-3 font-medium text-right">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtradas.map((e) => {
-                      const ret = retornoDe(e);
-                      return (
-                        <tr key={e.id} className="border-b border-slate-50 hover:bg-slate-50/60">
-                          <td className="px-4 py-3">
-                            <Link href={`/entrevista/${e.id}`} className="font-medium text-perlog-navy hover:text-perlog-orange">{e.nome}</Link>
-                            <div className="text-xs text-perlog-slate font-mono">{maskCpf(e.cpf)}</div>
-                            <Link href={`/candidato/${e.cpf}`} className="text-[11px] text-perlog-slate underline hover:text-perlog-orange">timeline</Link>
-                          </td>
-                          <td className="px-4 py-3 text-perlog-slate">{e.cargoPretendido ?? '—'}</td>
-                          <td className="px-4 py-3 text-perlog-slate text-xs">{e.recrutador ?? '—'}</td>
-                          <td className="px-4 py-3"><Badge variant={statusVariant(e.status)}>{e.status}</Badge></td>
-                          <td className="px-4 py-3">
-                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                              ret === 'Aprovado' ? 'bg-emerald-100 text-emerald-800' :
-                              ret === 'Reprovado' ? 'bg-red-100 text-red-800' :
-                              'bg-amber-100 text-amber-800'
-                            }`}>{ret}</span>
-                          </td>
-                          <td className="px-4 py-3 text-perlog-slate text-xs">{fmt(e.dataHora)}</td>
-                          <td className="px-4 py-3 text-perlog-slate text-xs">
-                            {(e.status === 'Aprovado' || e.status === 'Reprovado') && e.decisaoEm ? (
-                              <>
-                                <div>{fmt(e.decisaoEm)}</div>
-                                <div className="text-[11px] text-perlog-navy/70">por {e.gestorAprovador ?? '—'}</div>
-                              </>
-                            ) : '—'}
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <EditarDecisaoButton
-                              entrevistaId={e.id}
-                              candidatoNome={e.nome}
-                              status={e.status}
-                              gestorAprovador={e.gestorAprovador}
-                              motivoDecisao={e.motivoDecisao}
-                              dataRetorno={e.dataRetorno}
-                              aprovadoPeloGg={e.aprovadoPeloGg}
-                            />
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <ConectaCard noPadding>
+          {filtradas.length === 0 ? (
+            <div className="p-12 text-center">
+              <History className="mx-auto h-10 w-10 text-conecta-primary/20 mb-3" />
+              <p className="font-display font-semibold text-conecta-primary">
+                Nenhuma entrevista corresponde aos filtros
+              </p>
+              <p className="text-sm text-conecta-muted mt-1">
+                Ajuste a busca ou crie uma nova entrevista.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="conecta-table">
+                <thead>
+                  <tr>
+                    <th>Candidato</th>
+                    <th>Cargo proposto</th>
+                    <th>Entrevistador</th>
+                    <th>Status</th>
+                    <th>Retorno</th>
+                    <th>Entrevista</th>
+                    <th>Decisão</th>
+                    <th className="text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtradas.map((e) => {
+                    const ret = retornoDe(e);
+                    return (
+                      <tr key={e.id}>
+                        <td>
+                          <Link
+                            href={`/entrevista/${e.id}`}
+                            className="font-display font-semibold text-conecta-primary hover:text-conecta-accent transition-colors"
+                          >
+                            {e.nome}
+                          </Link>
+                          <div className="text-xs text-conecta-muted font-mono mt-0.5">
+                            {maskCpf(e.cpf)}
+                          </div>
+                          <Link
+                            href={`/candidato/${e.cpf}`}
+                            className="text-[11px] text-conecta-accent hover:underline"
+                          >
+                            timeline
+                          </Link>
+                        </td>
+                        <td className="text-conecta-text">{e.cargoPretendido ?? '—'}</td>
+                        <td className="text-conecta-muted text-xs">{e.recrutador ?? '—'}</td>
+                        <td>
+                          <Badge variant={statusVariant(e.status)}>{e.status}</Badge>
+                        </td>
+                        <td>
+                          <span
+                            className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-display font-semibold ${
+                              ret === 'Aprovado'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : ret === 'Reprovado'
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-amber-100 text-amber-800'
+                            }`}
+                          >
+                            {ret}
+                          </span>
+                        </td>
+                        <td className="text-conecta-muted text-xs">{fmt(e.dataHora)}</td>
+                        <td className="text-conecta-muted text-xs">
+                          {(e.status === 'Aprovado' || e.status === 'Reprovado') &&
+                          e.decisaoEm ? (
+                            <>
+                              <div>{fmt(e.decisaoEm)}</div>
+                              <div className="text-[11px] text-conecta-primary/70">
+                                por {e.gestorAprovador ?? '—'}
+                              </div>
+                            </>
+                          ) : (
+                            '—'
+                          )}
+                        </td>
+                        <td className="text-right">
+                          <EditarDecisaoButton
+                            entrevistaId={e.id}
+                            candidatoNome={e.nome}
+                            status={e.status}
+                            gestorAprovador={e.gestorAprovador}
+                            motivoDecisao={e.motivoDecisao}
+                            dataRetorno={e.dataRetorno}
+                            aprovadoPeloGg={e.aprovadoPeloGg}
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </ConectaCard>
       </div>
     </>
   );

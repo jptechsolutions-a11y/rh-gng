@@ -16,3 +16,5 @@ coverage
 .clasprc.json
 # nunca commitar seed gerado (contém hashes de senhas)
 scripts/seed-output.sql
+
+.vercel

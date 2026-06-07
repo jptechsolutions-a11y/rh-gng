@@ -6,8 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { ChevronLeft, ChevronRight, Save, CheckCircle2, UserCircle, Briefcase, MessageSquare, Star } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { ConectaCard } from '@/components/ui/conecta-card';
 import { cn } from '@/lib/cn';
 import { entrevistaInputSchema, type EntrevistaInput } from '@/lib/validators';
 import { salvarEntrevista } from '@/actions/entrevistas';
@@ -106,31 +105,42 @@ export function EntrevistaWizard({
       <form onSubmit={onSubmit} onKeyDown={onKeyDown} className="space-y-6">
         <Stepper step={step} />
 
-        <Card>
-          <CardContent className="p-6">
-            {step === 1 && <Step1Identificacao entrevistaIdAtual={(inicial?.id as string | undefined)} />}
-            {step === 2 && <Step2Perfil cargos={cargos} opcoes={opcoes} />}
-            {step === 3 && <Step3Roteiro roteiro={roteiro} />}
-            {step === 4 && <Step4Avaliacao criterios={criterios} opcoes={opcoes} />}
-          </CardContent>
-        </Card>
+        <ConectaCard>
+          {step === 1 && <Step1Identificacao entrevistaIdAtual={(inicial?.id as string | undefined)} />}
+          {step === 2 && <Step2Perfil cargos={cargos} opcoes={opcoes} />}
+          {step === 3 && <Step3Roteiro roteiro={roteiro} />}
+          {step === 4 && <Step4Avaliacao criterios={criterios} opcoes={opcoes} />}
+        </ConectaCard>
 
-        <div className="flex items-center justify-between">
-          <Button type="button" variant="outline" onClick={() => setStep((s) => Math.max(1, s - 1))} disabled={step === 1}>
+        <div className="flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={() => setStep((s) => Math.max(1, s - 1))}
+            disabled={step === 1}
+            className="inline-flex items-center gap-2 h-10 px-4 rounded-lg text-sm font-display font-medium border border-conecta-primary/15 text-conecta-primary bg-white hover:border-conecta-accent/40 hover:text-conecta-accent hover:bg-conecta-accent/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-conecta-primary/15 disabled:hover:text-conecta-primary disabled:hover:bg-white"
+          >
             <ChevronLeft className="h-4 w-4" />
             Voltar
-          </Button>
+          </button>
 
           {step < 4 ? (
-            <Button type="button" onClick={goNext}>
+            <button
+              type="button"
+              onClick={goNext}
+              className="conecta-btn-primary text-sm"
+            >
               Avançar
               <ChevronRight className="h-4 w-4" />
-            </Button>
+            </button>
           ) : (
-            <Button type="submit" disabled={pending}>
+            <button
+              type="submit"
+              disabled={pending}
+              className="conecta-btn-primary text-sm disabled:opacity-60 disabled:cursor-wait"
+            >
               {pending ? <Save className="h-4 w-4 animate-pulse" /> : <CheckCircle2 className="h-4 w-4" />}
               {pending ? 'Salvando...' : 'Salvar entrevista'}
-            </Button>
+            </button>
           )}
         </div>
       </form>
@@ -140,24 +150,57 @@ export function EntrevistaWizard({
 
 function Stepper({ step }: { step: number }) {
   return (
-    <div className="flex items-center gap-2 overflow-x-auto pb-2">
+    <div className="flex items-center gap-1 overflow-x-auto pb-2">
       {STEPS.map((s, i) => {
         const Icon = s.icon;
         const active = step === s.id;
         const done = step > s.id;
         return (
-          <div key={s.id} className="flex items-center gap-2 shrink-0">
-            <div className={cn(
-              'flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors',
-              active && 'bg-perlog-orange text-white border-perlog-orange shadow-sm',
-              done && 'bg-perlog-orange/10 text-perlog-orange border-perlog-orange/20',
-              !active && !done && 'bg-white text-perlog-slate border-slate-200',
-            )}>
-              <Icon className="h-4 w-4" />
-              <span className="font-medium whitespace-nowrap">{s.id}. {s.label}</span>
+          <div key={s.id} className="flex items-center gap-1 shrink-0">
+            <div
+              className={cn(
+                'relative flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-display font-semibold transition-all overflow-hidden',
+                active
+                  ? 'text-white shadow-[0_8px_22px_-8px_rgba(232,98,26,0.55)]'
+                  : done
+                    ? 'bg-conecta-accent/12 text-conecta-accent border border-conecta-accent/25'
+                    : 'bg-white text-conecta-muted border border-conecta-primary/10',
+              )}
+              style={
+                active
+                  ? { background: '#E8621A' }
+                  : undefined
+              }
+            >
+              {active && (
+                <span
+                  aria-hidden
+                  className="absolute inset-y-0 left-0 w-[3px]"
+                  style={{ background: '#FF8C42' }}
+                />
+              )}
+              <span
+                className={cn(
+                  'grid place-items-center h-5 w-5 rounded-full text-[10px] font-extrabold shrink-0',
+                  active
+                    ? 'bg-white text-conecta-accent'
+                    : done
+                      ? 'bg-conecta-accent text-white'
+                      : 'bg-conecta-primary/8 text-conecta-muted',
+                )}
+              >
+                {done ? <CheckCircle2 className="h-3 w-3" /> : s.id}
+              </span>
+              <Icon className="h-3.5 w-3.5 shrink-0" />
+              <span className="whitespace-nowrap text-[13px]">{s.label}</span>
             </div>
             {i < STEPS.length - 1 && (
-              <div className={cn('h-px w-6 sm:w-12', done ? 'bg-perlog-orange/40' : 'bg-slate-200')} />
+              <div
+                className={cn(
+                  'h-px w-4 sm:w-8 transition-colors',
+                  done ? 'bg-conecta-accent/40' : 'bg-conecta-primary/15',
+                )}
+              />
             )}
           </div>
         );

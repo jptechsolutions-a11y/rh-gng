@@ -1,13 +1,13 @@
 import { TopBar } from '@/components/layout/TopBar';
 import { requireSession } from '@/lib/auth/session';
-import { listarEntrevistasFilial } from '@/actions/entrevistas';
+import { listarEntrevistasFilialSlim } from '@/actions/entrevistas';
 import { BancoTalentosClient } from './BancoTalentosClient';
 
 export const dynamic = 'force-dynamic';
 
 export default async function BancoTalentosPage() {
   const s = await requireSession('filial');
-  const rows = await listarEntrevistasFilial('Banco de Talentos');
+  const rows = await listarEntrevistasFilialSlim('Banco de Talentos');
 
   const lite = rows.map((r) => ({
     id: r.id,

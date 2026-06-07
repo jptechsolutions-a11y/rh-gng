@@ -1,17 +1,25 @@
 import Link from 'next/link';
-import { Plus, Search, Users, ClipboardList, TrendingUp, History, BookmarkCheck } from 'lucide-react';
+import {
+  Plus,
+  Search,
+  Users,
+  ClipboardList,
+  TrendingUp,
+  History,
+  BookmarkCheck,
+  ArrowRight,
+} from 'lucide-react';
 import { TopBar } from '@/components/layout/TopBar';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { requireSession } from '@/lib/auth/session';
-import { listarEntrevistasFilial } from '@/actions/entrevistas';
+import { listarEntrevistasFilialSlim } from '@/actions/entrevistas';
 import { PainelRecentesBusca, WeeklyChart } from './PainelClient';
 
 export const dynamic = 'force-dynamic';
 
 export default async function PainelPage() {
   const s = await requireSession('filial');
-  const entrevistas = await listarEntrevistasFilial();
+  const entrevistas = await listarEntrevistasFilialSlim();
 
   const total = entrevistas.length;
   const ultimaSemana = entrevistas.filter((e) => e.dataHora.getTime() > Date.now() - 7 * 86400000).length;
@@ -40,77 +48,198 @@ export default async function PainelPage() {
         badge={`Filial ${s.filialCodigo}`}
       />
 
-      <div className="p-6 space-y-6">
+      <div className="p-6 lg:p-8 space-y-6">
+        {/* ===== KPIs ===== */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard icon={ClipboardList} label="Total de entrevistas" value={total} />
+          <StatCard icon={ClipboardList} label="Total de entrevistas" value={total} accent />
           <StatCard icon={TrendingUp} label="Últimos 7 dias" value={ultimaSemana} />
-          <StatCard icon={Users} label="Aprovados/Contratados" value={aprovados} />
+          <StatCard icon={Users} label="Aprovados / Contratados" value={aprovados} />
           <StatCard icon={BookmarkCheck} label="Banco de talentos" value={bancoTalentos} />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <Card className="lg:col-span-2">
-            <CardContent className="p-5">
-              <CardDescription className="text-xs uppercase tracking-wider mb-2">Entrevistas por semana</CardDescription>
-              <WeeklyChart data={chartData} />
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-5 flex flex-col gap-2">
-              <CardDescription className="text-xs uppercase tracking-wider">Atalhos</CardDescription>
-              <Button asChild className="w-full justify-start" size="sm">
-                <Link href="/entrevista/nova"><Plus className="h-4 w-4" />Nova entrevista</Link>
-              </Button>
-              <Button asChild variant="outline" size="sm" className="w-full justify-start">
-                <Link href="/historico"><History className="h-4 w-4" />Histórico</Link>
-              </Button>
-              <Button asChild variant="outline" size="sm" className="w-full justify-start">
-                <Link href="/banco-talentos"><Search className="h-4 w-4" />Banco de talentos</Link>
-              </Button>
-              <Button asChild variant="outline" size="sm" className="w-full justify-start">
-                <Link href="/agenda"><BookmarkCheck className="h-4 w-4" />Agenda de retornos</Link>
-              </Button>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          {/* ===== Gráfico ===== */}
+          <ConectaCard className="lg:col-span-2">
+            <div className="flex items-end justify-between mb-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="h-[2px] w-6 bg-conecta-accent" />
+                  <span className="font-display text-[10px] uppercase tracking-[0.32em] text-conecta-accent font-semibold">
+                    Entrevistas por semana
+                  </span>
+                </div>
+                <h3 className="font-display text-xl font-extrabold text-conecta-primary mt-1.5">
+                  Tendência das últimas 8 semanas
+                </h3>
+              </div>
+            </div>
+            <WeeklyChart data={chartData} />
+          </ConectaCard>
+
+          {/* ===== Atalhos ===== */}
+          <ConectaCard>
+            <div className="flex items-center gap-2 mb-4">
+              <span className="h-[2px] w-6 bg-conecta-accent" />
+              <span className="font-display text-[10px] uppercase tracking-[0.32em] text-conecta-accent font-semibold">
+                Atalhos
+              </span>
+            </div>
+            <div className="flex flex-col gap-2">
+              <Shortcut href="/entrevista/nova" icon={Plus} label="Nova entrevista" primary />
+              <Shortcut href="/historico" icon={History} label="Histórico" />
+              <Shortcut href="/banco-talentos" icon={Search} label="Banco de talentos" />
+              <Shortcut href="/agenda" icon={BookmarkCheck} label="Agenda de retornos" />
+            </div>
+          </ConectaCard>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-perlog-slate">
+        {/* ===== Recentes ===== */}
+        <div className="flex items-center gap-3">
+          <span className="h-[2px] w-8 bg-conecta-accent" />
+          <h2 className="font-display text-[11px] uppercase tracking-[0.32em] text-conecta-primary font-semibold">
             Entrevistas recentes
           </h2>
+          <span className="flex-1 h-px bg-conecta-primary/8" />
         </div>
 
-        <Card>
-          <CardContent className="p-4 space-y-3">
+        <ConectaCard noPadding>
+          <div className="p-4 space-y-3">
             {entrevistas.length === 0 ? (
-              <div className="p-12 text-center text-perlog-slate">
-                <ClipboardList className="mx-auto h-10 w-10 text-slate-300 mb-3" />
-                <p className="font-medium text-perlog-navy">Nenhuma entrevista ainda</p>
-                <p className="text-sm">Clique em &ldquo;Nova entrevista&rdquo; para começar.</p>
+              <div className="p-12 text-center text-conecta-muted">
+                <ClipboardList className="mx-auto h-10 w-10 text-conecta-primary/20 mb-3" />
+                <p className="font-display font-semibold text-conecta-primary">
+                  Nenhuma entrevista ainda
+                </p>
+                <p className="text-sm mt-1">
+                  Clique em &ldquo;Nova entrevista&rdquo; para começar.
+                </p>
               </div>
             ) : (
               <PainelRecentesBusca entrevistas={entrevistas} />
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </ConectaCard>
       </div>
     </>
   );
 }
 
-function StatCard({ icon: Icon, label, value }: { icon: React.ComponentType<{ className?: string }>; label: string; value: number }) {
+/* ============ Componentes do padrão visual Conecta ============ */
+
+function ConectaCard({
+  children,
+  className = '',
+  noPadding = false,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  noPadding?: boolean;
+}) {
   return (
-    <Card>
+    <Card
+      className={`relative overflow-hidden border-conecta-primary/8 ${className}`}
+      style={{ boxShadow: '0 4px 24px -8px rgba(13,43,107,0.10)' }}
+    >
+      {/* Tarja superior gradiente laranja (assinatura do padrão Conecta) */}
+      <span
+        aria-hidden
+        className="absolute top-0 left-0 right-0 h-1"
+        style={{
+          background: 'linear-gradient(90deg, #E8621A 0%, #FF8C42 100%)',
+        }}
+      />
+      <CardContent className={noPadding ? 'p-0' : 'p-6'}>{children}</CardContent>
+    </Card>
+  );
+}
+
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  accent = false,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: number;
+  accent?: boolean;
+}) {
+  return (
+    <Card
+      className="relative overflow-hidden border-conecta-primary/8 group hover:-translate-y-0.5 transition-transform"
+      style={{ boxShadow: '0 4px 24px -10px rgba(13,43,107,0.10)' }}
+    >
+      <span
+        aria-hidden
+        className="absolute top-0 left-0 h-full w-1"
+        style={{
+          background: accent
+            ? 'linear-gradient(180deg, #E8621A 0%, #FF8C42 100%)'
+            : 'linear-gradient(180deg, #0D2B6B 0%, #1A3F8F 100%)',
+        }}
+      />
       <CardContent className="p-5 flex items-center gap-4">
-        <div className="grid place-items-center h-12 w-12 rounded-lg bg-perlog-orange/10 text-perlog-orange shrink-0">
+        <div
+          className="grid place-items-center h-12 w-12 rounded-xl shrink-0 text-white shadow-md"
+          style={{
+            background: accent
+              ? 'linear-gradient(135deg, #E8621A 0%, #FF8C42 100%)'
+              : 'linear-gradient(135deg, #0D2B6B 0%, #1A3F8F 100%)',
+            boxShadow: accent
+              ? '0 10px 22px -8px rgba(232,98,26,0.45)'
+              : '0 10px 22px -8px rgba(13,43,107,0.45)',
+          }}
+        >
           <Icon className="h-5 w-5" />
         </div>
-        <div>
-          <CardDescription className="text-xs uppercase tracking-wider">{label}</CardDescription>
-          <CardTitle className="text-3xl tabular-nums">{value}</CardTitle>
+        <div className="min-w-0">
+          <div className="font-display text-[10px] uppercase tracking-[0.22em] text-conecta-muted">
+            {label}
+          </div>
+          <div className="font-display text-[28px] font-extrabold text-conecta-primary tabular-nums leading-tight">
+            {value}
+          </div>
         </div>
       </CardContent>
     </Card>
   );
 }
 
+function Shortcut({
+  href,
+  icon: Icon,
+  label,
+  primary = false,
+}: {
+  href: string;
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  primary?: boolean;
+}) {
+  if (primary) {
+    return (
+      <Link
+        href={href}
+        className="group conecta-btn-primary justify-between w-full text-sm"
+      >
+        <span className="inline-flex items-center gap-2">
+          <Icon className="h-4 w-4" />
+          {label}
+        </span>
+        <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+      </Link>
+    );
+  }
+  return (
+    <Link
+      href={href}
+      className="group flex items-center justify-between rounded-lg border border-conecta-primary/10 bg-white px-3 py-2 text-sm font-display text-conecta-primary hover:border-conecta-accent/40 hover:bg-conecta-accent/5 transition-colors"
+    >
+      <span className="inline-flex items-center gap-2">
+        <Icon className="h-4 w-4 text-conecta-accent" />
+        {label}
+      </span>
+      <ArrowRight className="h-3.5 w-3.5 text-conecta-muted group-hover:text-conecta-accent group-hover:translate-x-0.5 transition-all" />
+    </Link>
+  );
+}

@@ -5,18 +5,20 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { KeyRound, Power, X, CheckCircle2 } from 'lucide-react';
 import { trocarSenhaFilial, alternarFilialAtiva } from '@/actions/admin';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 type Filial = { id: string; codigo: string; nome: string; ativa: boolean };
 
 export function FiliaisClient({ filiais }: { filiais: Filial[] }) {
   const router = useRouter();
+  const confirmar = useConfirm();
   const [editando, setEditando] = useState<Filial | null>(null);
   const [novaSenha, setNovaSenha] = useState('');
   const [confSenha, setConfSenha] = useState('');
   const [pending, start] = useTransition();
 
-  const toggleAtiva = (f: Filial) => {
-    if (!confirm(`${f.ativa ? 'Desativar' : 'Ativar'} a filial ${f.codigo} ${f.nome}?`)) return;
+  const toggleAtiva = async (f: Filial) => {
+    if (!(await confirmar({ titulo: `${f.ativa ? 'Desativar' : 'Ativar'} filial`, descricao: `${f.ativa ? 'Desativar' : 'Ativar'} a filial ${f.codigo} ${f.nome}?`, confirmLabel: f.ativa ? 'Desativar' : 'Ativar' }))) return;
     start(async () => {
       try {
         await alternarFilialAtiva(f.id, !f.ativa);

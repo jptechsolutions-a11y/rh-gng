@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Plus, Trash2, Save } from 'lucide-react';
 import { salvarOpcoes, removerOpcao } from '@/actions/admin';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 type Opcao = { chave: string; valores: string[] };
 
@@ -18,6 +19,7 @@ const SUGESTOES: Array<{ chave: string; label: string }> = [
 
 export function OpcoesClient({ opcoes }: { opcoes: Opcao[] }) {
   const router = useRouter();
+  const confirmar = useConfirm();
   const [novaChave, setNovaChave] = useState('');
   const [edits, setEdits] = useState<Record<string, string>>(
     Object.fromEntries(opcoes.map((o) => [o.chave, o.valores.join('\n')]))
@@ -53,8 +55,8 @@ export function OpcoesClient({ opcoes }: { opcoes: Opcao[] }) {
     });
   };
 
-  const excluir = (chave: string) => {
-    if (!confirm(`Excluir a lista "${chave}"? Campos do wizard que usam essa chave ficarão sem opções.`)) return;
+  const excluir = async (chave: string) => {
+    if (!(await confirmar({ titulo: 'Excluir lista', descricao: `Excluir a lista "${chave}"? Campos do wizard que usam essa chave ficarão sem opções.`, perigo: true, confirmLabel: 'Excluir' }))) return;
     start(async () => {
       try {
         await removerOpcao(chave);

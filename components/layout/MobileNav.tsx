@@ -3,25 +3,11 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, LayoutDashboard, Users, FileText, Settings, LogOut, ShieldCheck, ClipboardList } from 'lucide-react';
+import { Menu, X, LogOut } from 'lucide-react';
 import { ConectaLogo } from '@/components/brand/ConectaLogo';
 import { cn } from '@/lib/cn';
 import { logoutAction } from '@/actions/auth';
-
-type Item = { href: string; label: string; icon: React.ComponentType<{ className?: string }> };
-
-const FILIAL_NAV: Item[] = [
-  { href: '/painel',          label: 'Painel',          icon: LayoutDashboard },
-  { href: '/entrevista/nova', label: 'Nova entrevista', icon: ClipboardList },
-  { href: '/banco-talentos',  label: 'Banco de talentos', icon: Users },
-];
-const ADMIN_NAV: Item[] = [
-  { href: '/admin',            label: 'Dashboard',    icon: LayoutDashboard },
-  { href: '/admin/busca',      label: 'Busca global', icon: Users },
-  { href: '/admin/relatorios', label: 'Relatórios',   icon: FileText },
-  { href: '/admin/config',     label: 'Configuração', icon: Settings },
-  { href: '/admin/seguranca',  label: 'Segurança',    icon: ShieldCheck },
-];
+import { FILIAL_NAV, ADMIN_NAV } from './nav-config';
 
 export function MobileNav({ perfil, nome, subtitulo }: { perfil: 'filial' | 'admin'; nome: string; subtitulo: string }) {
   const [open, setOpen] = useState(false);

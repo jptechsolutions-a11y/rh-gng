@@ -5,11 +5,13 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Plus, Trash2, Save, Pencil, X } from 'lucide-react';
 import { criarCargo, atualizarCargo, removerCargo } from '@/actions/admin';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 type Cargo = { id: string; nome: string; ativo: boolean };
 
 export function CargosClient({ cargos }: { cargos: Cargo[] }) {
   const router = useRouter();
+  const confirmar = useConfirm();
   const [novo, setNovo] = useState('');
   const [editId, setEditId] = useState<string | null>(null);
   const [editNome, setEditNome] = useState('');
@@ -46,8 +48,8 @@ export function CargosClient({ cargos }: { cargos: Cargo[] }) {
     });
   };
 
-  const excluir = (c: Cargo) => {
-    if (!confirm(`Excluir o cargo "${c.nome}"? Entrevistas existentes mantêm o cargo gravado.`)) return;
+  const excluir = async (c: Cargo) => {
+    if (!(await confirmar({ titulo: 'Excluir cargo', descricao: `Excluir o cargo "${c.nome}"? Entrevistas existentes mantêm o cargo gravado.`, perigo: true, confirmLabel: 'Excluir' }))) return;
     start(async () => {
       try {
         await removerCargo(c.id);

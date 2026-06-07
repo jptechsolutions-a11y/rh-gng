@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Plus, Pencil, Power, X, Save, Search } from 'lucide-react';
 import { criarPessoa, atualizarPessoa, inativarPessoa } from '@/actions/avaliacao-admin';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 type Filial = { id: string; codigo: string; nome: string };
 
@@ -42,6 +43,7 @@ export function PessoasTable({
   pessoas, filiais, filtrosIniciais,
 }: { pessoas: Pessoa[]; filiais: Filial[]; filtrosIniciais: FiltrosUI }) {
   const router = useRouter();
+  const confirmar = useConfirm();
   const [pending, start] = useTransition();
   const [filtros, setFiltros] = useState<FiltrosUI>(filtrosIniciais);
 
@@ -131,8 +133,8 @@ export function PessoasTable({
     });
   };
 
-  const inativar = (p: Pessoa) => {
-    if (!confirm(`Inativar "${p.nome}"? A pessoa não aparecerá em novas avaliações.`)) return;
+  const inativar = async (p: Pessoa) => {
+    if (!(await confirmar({ titulo: 'Inativar pessoa', descricao: `Inativar "${p.nome}"? A pessoa não aparecerá em novas avaliações.`, confirmLabel: 'Inativar' }))) return;
     start(async () => {
       try {
         await inativarPessoa(p.id);

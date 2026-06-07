@@ -8,6 +8,7 @@ import {
   criarCompetencia, atualizarCompetencia, inativarCompetencia,
   criarFator, atualizarFator, inativarFator,
 } from '@/actions/avaliacao-admin';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 type Fator = {
   id: string;
@@ -38,6 +39,7 @@ const emptyFator = (competenciaId: string, ordem = 0): FatorForm => ({
 
 export function CompetenciasEditor({ competencias }: { competencias: Competencia[] }) {
   const router = useRouter();
+  const confirmar = useConfirm();
   const [pending, start] = useTransition();
 
   const [compOpen, setCompOpen] = useState(false);
@@ -95,8 +97,8 @@ export function CompetenciasEditor({ competencias }: { competencias: Competencia
     });
   };
 
-  const inativarComp = (c: Competencia) => {
-    if (!confirm(`Inativar competência "${c.nome}"? Os fatores não aparecerão em novas avaliações.`)) return;
+  const inativarComp = async (c: Competencia) => {
+    if (!(await confirmar({ titulo: 'Inativar competência', descricao: `Inativar competência "${c.nome}"? Os fatores não aparecerão em novas avaliações.`, confirmLabel: 'Inativar' }))) return;
     start(async () => {
       try {
         await inativarCompetencia(c.id);
@@ -155,8 +157,8 @@ export function CompetenciasEditor({ competencias }: { competencias: Competencia
     });
   };
 
-  const inativarFatorAcao = (f: Fator) => {
-    if (!confirm('Inativar este fator? Não aparecerá em novas avaliações.')) return;
+  const inativarFatorAcao = async (f: Fator) => {
+    if (!(await confirmar({ titulo: 'Inativar fator', descricao: 'Inativar este fator? Não aparecerá em novas avaliações.', confirmLabel: 'Inativar' }))) return;
     start(async () => {
       try {
         await inativarFator(f.id);

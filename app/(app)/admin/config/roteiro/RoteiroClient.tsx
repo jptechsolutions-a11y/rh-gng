@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Plus, Trash2, Save, Pencil, X } from 'lucide-react';
 import { criarPergunta, atualizarPergunta, removerPergunta } from '@/actions/admin';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 type Pergunta = {
   id: string; cargo: string; ordem: number; pergunta: string;
@@ -25,6 +26,7 @@ function emptyDraft(cargo = 'TODOS'): Draft {
 
 export function RoteiroClient({ perguntas, cargos }: { perguntas: Pergunta[]; cargos: string[] }) {
   const router = useRouter();
+  const confirmar = useConfirm();
   const [novo, setNovo] = useState<Draft>(emptyDraft());
   const [novoOpcoesTxt, setNovoOpcoesTxt] = useState('');
   const [editId, setEditId] = useState<string | null>(null);
@@ -72,8 +74,8 @@ export function RoteiroClient({ perguntas, cargos }: { perguntas: Pergunta[]; ca
     });
   };
 
-  const excluir = (p: Pergunta) => {
-    if (!confirm(`Excluir a pergunta "${p.pergunta.slice(0, 50)}…"?`)) return;
+  const excluir = async (p: Pergunta) => {
+    if (!(await confirmar({ titulo: 'Excluir pergunta', descricao: `Excluir a pergunta "${p.pergunta.slice(0, 50)}…"?`, perigo: true, confirmLabel: 'Excluir' }))) return;
     start(async () => {
       try {
         await removerPergunta(p.id);

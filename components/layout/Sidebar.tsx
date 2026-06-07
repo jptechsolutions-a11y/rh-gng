@@ -2,55 +2,17 @@
 
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import {
-  LayoutDashboard, Users, FileText, Settings, LogOut, ShieldCheck, ClipboardList, History, CalendarClock,
-  PanelLeftClose, PanelLeftOpen, Home, Target, Plus, BarChart3, UserCog, MessagesSquare,
-  BookOpen, Printer, ClipboardCheck,
-} from 'lucide-react';
+import { useEffect, useState, useTransition } from 'react';
+import { PanelLeftClose, PanelLeftOpen, LogOut } from 'lucide-react';
 import { ConectaLogo } from '@/components/brand/ConectaLogo';
 import { ConectaSymbol } from '@/components/brand/ConectaSymbol';
 import { cn } from '@/lib/cn';
 import { logoutAction } from '@/actions/auth';
-
-type NavItem = { href: string; label: string; icon: React.ComponentType<{ className?: string }> };
-
-const FILIAL_NAV: NavItem[] = [
-  { href: '/painel',          label: 'Painel',          icon: LayoutDashboard },
-  { href: '/entrevista/nova', label: 'Nova entrevista', icon: ClipboardList },
-  { href: '/historico',       label: 'Histórico',       icon: History },
-  { href: '/agenda',          label: 'Agenda',          icon: CalendarClock },
-  { href: '/banco-talentos',  label: 'Banco de talentos', icon: Users },
-];
-
-const ADMIN_NAV: NavItem[] = [
-  { href: '/admin',           label: 'Dashboard',       icon: LayoutDashboard },
-  { href: '/admin/busca',     label: 'Busca global',    icon: Users },
-  { href: '/admin/relatorios', label: 'Relatórios',     icon: FileText },
-  { href: '/admin/config',    label: 'Configuração',    icon: Settings },
-  { href: '/admin/seguranca', label: 'Segurança',       icon: ShieldCheck },
-];
-
-const AVALIACAO_NAV_BASE: NavItem[] = [
-  { href: '/avaliacao',              label: 'Visão geral',            icon: LayoutDashboard },
-  { href: '/avaliacao/nova',         label: 'Nova avaliação',         icon: Plus },
-  { href: '/avaliacao/historico',    label: 'Histórico',              icon: History },
-  { href: '/avaliacao/relatorios',   label: 'Relatórios',             icon: BarChart3 },
-];
-const AVALIACAO_NAV_ADMIN_EXTRAS: NavItem[] = [
-  { href: '/admin/config/pessoas',       label: 'Pessoas',                icon: UserCog },
-  { href: '/admin/config/competencias',  label: 'Competências e fatores', icon: Target },
-];
-
-const ESCUTA_NAV_BASE: NavItem[] = [
-  { href: '/escuta?tab=roteiro',     label: 'Roteiro',           icon: BookOpen },
-  { href: '/escuta?tab=formulario',  label: 'Formulário',        icon: Printer },
-  { href: '/escuta?tab=percepcao',   label: 'Percepção',         icon: ClipboardCheck },
-  { href: '/escuta/historico',       label: 'Histórico',         icon: History },
-];
-const ESCUTA_NAV_ADMIN_EXTRAS: NavItem[] = [
-  { href: '/admin/config/escuta',    label: 'Configuração',      icon: Settings },
-];
+import {
+  FILIAL_NAV, ADMIN_NAV, AVALIACAO_NAV_BASE, AVALIACAO_NAV_ADMIN_EXTRAS,
+  ESCUTA_NAV_BASE, ESCUTA_NAV_ADMIN_EXTRAS,
+} from './nav-config';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 const STORAGE_KEY = 'sidebar:collapsed';
 
@@ -86,6 +48,8 @@ export function Sidebar({
       ? 'Avaliação de Desempenho'
       : 'Conecta G&G';
   const [collapsed, setCollapsed] = useState(false);
+  const confirmar = useConfirm();
+  const [saindo, startSair] = useTransition();
 
   useEffect(() => {
     const saved = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null;
@@ -98,6 +62,15 @@ export function Sidebar({
       try { localStorage.setItem(STORAGE_KEY, next ? '1' : '0'); } catch {}
       return next;
     });
+  };
+
+  const sair = async () => {
+    const ok = await confirmar({
+      titulo: 'Sair do sistema',
+      descricao: 'Será necessário fazer login novamente.',
+      confirmLabel: 'Sair',
+    });
+    if (ok) startSair(async () => { await logoutAction(); });
   };
 
   return (
@@ -239,23 +212,21 @@ export function Sidebar({
       )}
 
       {/* ===== Sair ===== */}
-      <form
-        action={logoutAction}
-        onSubmit={(e) => { if (!confirm('Deseja realmente sair? Será necessário fazer login novamente.')) e.preventDefault(); }}
-        className={cn('relative z-10 border-t border-white/10', collapsed ? 'p-2' : 'p-3')}
-      >
+      <div className={cn('relative z-10 border-t border-white/10', collapsed ? 'p-2' : 'p-3')}>
         <button
-          type="submit"
+          type="button"
+          onClick={sair}
+          disabled={saindo}
           title={collapsed ? 'Sair' : undefined}
           className={cn(
-            'w-full flex items-center rounded-lg text-sm font-display text-white/70 hover:bg-conecta-accent/15 hover:text-conecta-accent transition-colors',
+            'w-full flex items-center rounded-lg text-sm font-display text-white/70 hover:bg-conecta-accent/15 hover:text-conecta-accent transition-colors disabled:opacity-60',
             collapsed ? 'justify-center px-0 py-2 h-10' : 'gap-3 px-3 py-2',
           )}
         >
           <LogOut className="h-4 w-4" />
           {!collapsed && <span>Sair</span>}
         </button>
-      </form>
+      </div>
     </aside>
   );
 }

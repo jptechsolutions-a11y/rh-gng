@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Plus, Trash2, Save, Pencil, X } from 'lucide-react';
 import { criarCriterio, atualizarCriterio, removerCriterio } from '@/actions/admin';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 type Criterio = { id: string; nome: string; escalaMax: number; peso: number; ordem: number; ativo: boolean };
 
@@ -12,6 +13,7 @@ const novo0: Omit<Criterio, 'id'> = { nome: '', escalaMax: 5, peso: 1, ordem: 0,
 
 export function CriteriosClient({ criterios }: { criterios: Criterio[] }) {
   const router = useRouter();
+  const confirmar = useConfirm();
   const [editId, setEditId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Omit<Criterio, 'id'>>(novo0);
   const [novo, setNovo] = useState<Omit<Criterio, 'id'>>({ ...novo0, ordem: criterios.length });
@@ -45,8 +47,8 @@ export function CriteriosClient({ criterios }: { criterios: Criterio[] }) {
     });
   };
 
-  const excluir = (c: Criterio) => {
-    if (!confirm(`Excluir o critério "${c.nome}"?`)) return;
+  const excluir = async (c: Criterio) => {
+    if (!(await confirmar({ titulo: 'Excluir critério', descricao: `Excluir o critério "${c.nome}"?`, perigo: true, confirmLabel: 'Excluir' }))) return;
     start(async () => {
       try {
         await removerCriterio(c.id);

@@ -1,4 +1,5 @@
 import { ConectaSymbol } from '@/components/brand/ConectaSymbol';
+import { HomeButton } from '@/components/layout/HomeButton';
 
 export function EscutaHeader({
   subtitulo = 'Gente e Gestão · Perlog',
@@ -23,12 +24,15 @@ export function EscutaHeader({
             </span>
           </div>
         </div>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/perlog-logo.png"
-          alt=""
-          className="ml-auto h-8 w-auto opacity-90 hidden sm:block"
-        />
+        <div className="ml-auto flex items-center gap-3">
+          <HomeButton variant="onDark" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/perlog-logo.png"
+            alt=""
+            className="h-8 w-auto opacity-90 hidden sm:block"
+          />
+        </div>
       </div>
     </header>
   );

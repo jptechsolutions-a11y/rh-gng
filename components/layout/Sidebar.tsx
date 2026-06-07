@@ -5,7 +5,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import {
   LayoutDashboard, Users, FileText, Settings, LogOut, ShieldCheck, ClipboardList, History, CalendarClock,
-  PanelLeftClose, PanelLeftOpen, Home, Target, Plus, BarChart3, UserCog, ArrowLeft, MessagesSquare,
+  PanelLeftClose, PanelLeftOpen, Home, Target, Plus, BarChart3, UserCog, MessagesSquare,
   BookOpen, Printer, ClipboardCheck,
 } from 'lucide-react';
 import { ConectaLogo } from '@/components/brand/ConectaLogo';
@@ -16,7 +16,6 @@ import { logoutAction } from '@/actions/auth';
 type NavItem = { href: string; label: string; icon: React.ComponentType<{ className?: string }> };
 
 const FILIAL_NAV: NavItem[] = [
-  { href: '/inicio',          label: 'Voltar ao início', icon: ArrowLeft },
   { href: '/painel',          label: 'Painel',          icon: LayoutDashboard },
   { href: '/entrevista/nova', label: 'Nova entrevista', icon: ClipboardList },
   { href: '/historico',       label: 'Histórico',       icon: History },
@@ -25,7 +24,6 @@ const FILIAL_NAV: NavItem[] = [
 ];
 
 const ADMIN_NAV: NavItem[] = [
-  { href: '/inicio',          label: 'Voltar ao início', icon: ArrowLeft },
   { href: '/admin',           label: 'Dashboard',       icon: LayoutDashboard },
   { href: '/admin/busca',     label: 'Busca global',    icon: Users },
   { href: '/admin/relatorios', label: 'Relatórios',     icon: FileText },
@@ -34,7 +32,6 @@ const ADMIN_NAV: NavItem[] = [
 ];
 
 const AVALIACAO_NAV_BASE: NavItem[] = [
-  { href: '/inicio',                 label: 'Voltar ao início',       icon: ArrowLeft },
   { href: '/avaliacao',              label: 'Visão geral',            icon: LayoutDashboard },
   { href: '/avaliacao/nova',         label: 'Nova avaliação',         icon: Plus },
   { href: '/avaliacao/historico',    label: 'Histórico',              icon: History },
@@ -46,7 +43,6 @@ const AVALIACAO_NAV_ADMIN_EXTRAS: NavItem[] = [
 ];
 
 const ESCUTA_NAV_BASE: NavItem[] = [
-  { href: '/inicio',                 label: 'Voltar ao início',  icon: ArrowLeft },
   { href: '/escuta?tab=roteiro',     label: 'Roteiro',           icon: BookOpen },
   { href: '/escuta?tab=formulario',  label: 'Formulário',        icon: Printer },
   { href: '/escuta?tab=percepcao',   label: 'Percepção',         icon: ClipboardCheck },
@@ -178,7 +174,7 @@ export function Sidebar({
       {/* ===== Navegação ===== */}
       <nav className={cn('relative z-10 flex-1 py-4 space-y-0.5 overflow-y-auto', collapsed ? 'px-2' : 'px-3')}>
         {nav.map(({ href, label, icon: Icon }) => {
-          const isRoot = href === '/admin' || href === '/painel' || href === '/avaliacao' || href === '/inicio';
+          const isRoot = href === '/admin' || href === '/painel' || href === '/avaliacao';
           const [hrefPath, hrefQuery] = href.split('?');
           let active: boolean;
           if (hrefQuery) {

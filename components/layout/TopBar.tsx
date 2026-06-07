@@ -1,5 +1,6 @@
 import { Building2 } from 'lucide-react';
 import { LogoutButton } from './LogoutButton';
+import { HomeButton } from './HomeButton';
 
 export function TopBar({
   titulo,
@@ -50,6 +51,7 @@ export function TopBar({
             {badge}
           </div>
         )}
+        <HomeButton />
         <LogoutButton />
       </div>
     </header>

@@ -1,6 +1,6 @@
 import { requireSession } from '@/lib/auth/session';
 import { listarReunioes } from '@/actions/escuta';
-import { EscutaHeader } from '@/components/escuta/EscutaHeader';
+import { TopBar } from '@/components/layout/TopBar';
 import { Button } from '@/components/ui/button';
 import { HistoricoEscutaTable } from './HistoricoEscutaTable';
 
@@ -16,9 +16,12 @@ export default async function HistoricoEscutaPage({
     de: params.de, ate: params.ate,
   });
 
+  const badge = s.perfil === 'filial' ? `Filial ${s.filialCodigo}` : 'ADMIN';
+
   return (
-    <div className="space-y-5 p-4 lg:p-6">
-      <EscutaHeader subtitulo="Histórico de reuniões" />
+    <>
+      <TopBar titulo="Escuta G&G — Histórico" subtitulo="Reuniões registradas" badge={badge} />
+      <div className="space-y-5 p-4 lg:p-6">
 
       {s.perfil === 'admin' && (
         <form className="flex flex-wrap items-end gap-3 rounded-2xl bg-white border border-conecta-primary/10 p-4">
@@ -29,8 +32,9 @@ export default async function HistoricoEscutaPage({
         </form>
       )}
 
-      <HistoricoEscutaTable linhas={linhas} mostrarFilial={s.perfil === 'admin'} />
-    </div>
+        <HistoricoEscutaTable linhas={linhas} mostrarFilial={s.perfil === 'admin'} />
+      </div>
+    </>
   );
 }
 

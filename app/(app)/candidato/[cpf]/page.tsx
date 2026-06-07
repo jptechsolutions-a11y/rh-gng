@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, Plus, ClipboardList, CheckCircle2, XCircle, Hourglass, FileText, Printer, History as HistoryIcon } from 'lucide-react';
 import { TopBar } from '@/components/layout/TopBar';
+import { Button } from '@/components/ui/button';
 import { ConectaCard, SectionHeader } from '@/components/ui/conecta-card';
 import { Badge, statusVariant } from '@/components/ui/badge';
 import { requireSession } from '@/lib/auth/session';
@@ -80,12 +81,11 @@ export default async function CandidatoPage({ params }: { params: Promise<{ cpf:
             <Stat icon={XCircle} label="Reprovadas" value={totais.reprovadas} color="red" />
             <Stat icon={Hourglass} label="Pendentes" value={totais.pendentes} color="amber" />
           </div>
-          <Link
-            href={`/entrevista/nova?cpf=${digits}`}
-            className="conecta-btn-primary text-sm"
-          >
-            <Plus className="h-4 w-4" /> Nova entrevista
-          </Link>
+          <Button asChild variant="conecta" size="conecta" className="text-sm">
+            <Link href={`/entrevista/nova?cpf=${digits}`}>
+              <Plus className="h-4 w-4" /> Nova entrevista
+            </Link>
+          </Button>
         </div>
 
         <ConectaCard>

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Home, Compass } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export default function NotFound() {
   return (
@@ -15,10 +16,12 @@ export default function NotFound() {
         <p className="mt-2 text-sm text-conecta-muted">
           O endereço acessado não existe ou foi movido.
         </p>
-        <Link href="/inicio" className="conecta-btn-primary mt-6 w-full justify-center text-sm">
-          <Home className="h-4 w-4" />
-          Voltar ao início
-        </Link>
+        <Button asChild variant="conecta" size="conecta" className="mt-6 w-full text-sm">
+          <Link href="/inicio">
+            <Home className="h-4 w-4" />
+            Voltar ao início
+          </Link>
+        </Button>
       </div>
     </div>
   );

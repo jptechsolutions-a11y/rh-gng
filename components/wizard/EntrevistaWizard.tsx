@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { ChevronLeft, ChevronRight, Save, CheckCircle2, UserCircle, Briefcase, MessageSquare, Star } from 'lucide-react';
 import { ConectaCard } from '@/components/ui/conecta-card';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/cn';
 import { entrevistaInputSchema, type EntrevistaInput } from '@/lib/validators';
 import { salvarEntrevista } from '@/actions/entrevistas';
@@ -113,34 +114,26 @@ export function EntrevistaWizard({
         </ConectaCard>
 
         <div className="flex items-center justify-between gap-3">
-          <button
+          <Button
             type="button"
+            variant="conecta-outline"
             onClick={() => setStep((s) => Math.max(1, s - 1))}
             disabled={step === 1}
-            className="inline-flex items-center gap-2 h-10 px-4 rounded-lg text-sm font-display font-medium border border-conecta-primary/15 text-conecta-primary bg-white hover:border-conecta-accent/40 hover:text-conecta-accent hover:bg-conecta-accent/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-conecta-primary/15 disabled:hover:text-conecta-primary disabled:hover:bg-white"
           >
             <ChevronLeft className="h-4 w-4" />
             Voltar
-          </button>
+          </Button>
 
           {step < 4 ? (
-            <button
-              type="button"
-              onClick={goNext}
-              className="conecta-btn-primary text-sm"
-            >
+            <Button type="button" variant="conecta" size="conecta" onClick={goNext}>
               Avançar
               <ChevronRight className="h-4 w-4" />
-            </button>
+            </Button>
           ) : (
-            <button
-              type="submit"
-              disabled={pending}
-              className="conecta-btn-primary text-sm disabled:opacity-60 disabled:cursor-wait"
-            >
+            <Button type="submit" variant="conecta" size="conecta" disabled={pending}>
               {pending ? <Save className="h-4 w-4 animate-pulse" /> : <CheckCircle2 className="h-4 w-4" />}
               {pending ? 'Salvando...' : 'Salvar entrevista'}
-            </button>
+            </Button>
           )}
         </div>
       </form>

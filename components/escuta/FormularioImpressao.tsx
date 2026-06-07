@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Printer, ExternalLink } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { ConectaLogo } from '@/components/brand/ConectaLogo';
 import { PilarIcone } from './PilarIcone';
 
@@ -16,16 +17,13 @@ export function FormularioImpressao({ pilares }: { pilares: Pilar[] }) {
           <br />
           Abra o documento dedicado e use <em>Imprimir / Salvar PDF</em> para gerar o arquivo A4.
         </div>
-        <Link
-          href="/escuta/formulario/imprimir"
-          target="_blank"
-          rel="noopener"
-          className="conecta-btn-primary shrink-0"
-        >
-          <Printer className="h-4 w-4" />
-          Abrir formulário PDF
-          <ExternalLink className="h-3.5 w-3.5 opacity-80" />
-        </Link>
+        <Button asChild variant="conecta" size="conecta" className="shrink-0">
+          <Link href="/escuta/formulario/imprimir" target="_blank" rel="noopener">
+            <Printer className="h-4 w-4" />
+            Abrir formulário PDF
+            <ExternalLink className="h-3.5 w-3.5 opacity-80" />
+          </Link>
+        </Button>
       </div>
 
       {/* Preview do formulário (sem janela de impressão) */}

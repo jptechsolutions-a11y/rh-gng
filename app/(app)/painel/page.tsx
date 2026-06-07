@@ -10,6 +10,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { TopBar } from '@/components/layout/TopBar';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { requireSession } from '@/lib/auth/session';
 import { listarEntrevistasFilialSlim } from '@/actions/entrevistas';
@@ -218,16 +219,15 @@ function Shortcut({
 }) {
   if (primary) {
     return (
-      <Link
-        href={href}
-        className="group conecta-btn-primary justify-between w-full text-sm"
-      >
-        <span className="inline-flex items-center gap-2">
-          <Icon className="h-4 w-4" />
-          {label}
-        </span>
-        <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
-      </Link>
+      <Button asChild variant="conecta" size="conecta" className="group w-full text-sm">
+        <Link href={href} className="justify-between">
+          <span className="inline-flex items-center gap-2">
+            <Icon className="h-4 w-4" />
+            {label}
+          </span>
+          <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+        </Link>
+      </Button>
     );
   }
   return (

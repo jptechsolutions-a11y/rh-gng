@@ -165,8 +165,8 @@ export function WeeklyChart({ data }: { data: Array<{ label: string; value: numb
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto" role="img" aria-label="Entrevistas por semana">
         <defs>
           <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#F37021" stopOpacity="0.35" />
-            <stop offset="100%" stopColor="#F37021" stopOpacity="0" />
+            <stop offset="0%" stopColor="#E8621A" stopOpacity="0.35" />
+            <stop offset="100%" stopColor="#E8621A" stopOpacity="0" />
           </linearGradient>
         </defs>
 
@@ -181,7 +181,7 @@ export function WeeklyChart({ data }: { data: Array<{ label: string; value: numb
         {/* Linha de média */}
         {Number(media) > 0 && (
           <g>
-            <line x1={padL} y1={mediaY} x2={W - padR} y2={mediaY} stroke="#F37021" strokeDasharray="4,3" strokeOpacity={0.55} />
+            <line x1={padL} y1={mediaY} x2={W - padR} y2={mediaY} stroke="#E8621A" strokeDasharray="4,3" strokeOpacity={0.55} />
             <text x={W - padR - 4} y={mediaY - 4} textAnchor="end" className="fill-perlog-orange" style={{ fontSize: 9, fontWeight: 600 }}>
               média {media}
             </text>
@@ -191,7 +191,7 @@ export function WeeklyChart({ data }: { data: Array<{ label: string; value: numb
         {/* Área */}
         <path d={areaPath} fill="url(#areaGrad)" />
         {/* Linha */}
-        <path d={linhaPath} fill="none" stroke="#F37021" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+        <path d={linhaPath} fill="none" stroke="#E8621A" strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
 
         {/* Barras finas atrás dos pontos */}
         {pts.map((p, i) => (
@@ -201,7 +201,7 @@ export function WeeklyChart({ data }: { data: Array<{ label: string; value: numb
             y={p.y}
             width={bw}
             height={padT + innerH - p.y}
-            fill="#F37021"
+            fill="#E8621A"
             fillOpacity={0.08}
             rx={2}
           />
@@ -210,7 +210,7 @@ export function WeeklyChart({ data }: { data: Array<{ label: string; value: numb
         {/* Pontos + label de valor + tooltip nativo */}
         {pts.map((p, i) => (
           <g key={`p-${i}`}>
-            <circle cx={p.x} cy={p.y} r={4} fill="white" stroke="#F37021" strokeWidth={2}>
+            <circle cx={p.x} cy={p.y} r={4} fill="white" stroke="#E8621A" strokeWidth={2}>
               <title>{`${p.label}${p.date ? ` (${p.date})` : ''}: ${p.v} entrevista${p.v === 1 ? '' : 's'}`}</title>
             </circle>
             {p.v > 0 && (

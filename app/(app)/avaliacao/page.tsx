@@ -12,6 +12,7 @@ import {
 import { requireSession } from '@/lib/auth/session';
 import { listarHistorico, statsHistorico } from '@/actions/avaliacao';
 import { TopBar } from '@/components/layout/TopBar';
+import { Button } from '@/components/ui/button';
 import { ConectaCard, SectionHeader } from '@/components/ui/conecta-card';
 import { ClassificacaoBadge } from '@/components/avaliacao/ClassificacaoBadge';
 import type { Classificacao } from '@/lib/avaliacao/calculos';
@@ -30,10 +31,12 @@ export default async function AvaliacaoHome() {
 
       <div className="space-y-5 p-6">
         <div className="flex justify-end">
-          <Link href="/avaliacao/nova" className="conecta-btn-primary text-sm">
-            <Plus className="h-4 w-4" />
-            Nova avaliação
-          </Link>
+          <Button asChild variant="conecta" size="conecta" className="text-sm">
+            <Link href="/avaliacao/nova">
+              <Plus className="h-4 w-4" />
+              Nova avaliação
+            </Link>
+          </Button>
         </div>
 
         {/* ===== KPIs ===== */}

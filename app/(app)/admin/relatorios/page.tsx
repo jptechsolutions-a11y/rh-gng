@@ -1,4 +1,5 @@
 import { TopBar } from '@/components/layout/TopBar';
+import { Button } from '@/components/ui/button';
 import { ConectaCard, SectionHeader } from '@/components/ui/conecta-card';
 import {
   Download,
@@ -98,10 +99,12 @@ export default async function RelatoriosPage() {
                 Inclui todos os campos e logs de mudança de status.
               </p>
             </div>
-            <a href="/api/export/csv" className="conecta-btn-primary text-sm shrink-0">
-              <Download className="h-4 w-4" />
-              Baixar CSV
-            </a>
+            <Button asChild variant="conecta" size="conecta" className="text-sm shrink-0">
+              <a href="/api/export/csv">
+                <Download className="h-4 w-4" />
+                Baixar CSV
+              </a>
+            </Button>
           </div>
         </ConectaCard>
 

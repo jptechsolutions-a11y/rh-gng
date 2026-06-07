@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { History, Plus, FileSpreadsheet, Scale } from 'lucide-react';
 import { TopBar } from '@/components/layout/TopBar';
+import { Button } from '@/components/ui/button';
 import { ConectaCard } from '@/components/ui/conecta-card';
 import { Badge, statusVariant } from '@/components/ui/badge';
 import { requireSession } from '@/lib/auth/session';
@@ -83,12 +84,11 @@ export default async function HistoricoPage({ searchParams }: { searchParams: Pr
             >
               <FileSpreadsheet className="h-4 w-4" /> Exportar Excel
             </a>
-            <Link
-              href="/entrevista/nova"
-              className="conecta-btn-primary text-sm"
-            >
-              <Plus className="h-4 w-4" /> Nova
-            </Link>
+            <Button asChild variant="conecta" size="conecta" className="text-sm">
+              <Link href="/entrevista/nova">
+                <Plus className="h-4 w-4" /> Nova
+              </Link>
+            </Button>
           </div>
         </div>
 

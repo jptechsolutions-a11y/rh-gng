@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { Search, AlertCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Badge, statusVariant } from '@/components/ui/badge';
 import { buscaGlobal } from '@/actions/entrevistas';
 
@@ -43,13 +44,15 @@ export function BuscaGlobalClient() {
             className="pl-9 border-conecta-primary/15 focus-visible:ring-conecta-accent/30 focus-visible:border-conecta-accent"
           />
         </div>
-        <button
+        <Button
           type="submit"
+          variant="conecta"
+          size="conecta"
           disabled={pending || q.trim().length < 2}
-          className="conecta-btn-primary text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+          className="text-sm disabled:opacity-60 disabled:cursor-not-allowed"
         >
           {pending ? 'Buscando...' : 'Buscar'}
-        </button>
+        </Button>
       </form>
 
       {erro && (

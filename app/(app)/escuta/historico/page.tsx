@@ -1,6 +1,7 @@
 import { requireSession } from '@/lib/auth/session';
 import { listarReunioes } from '@/actions/escuta';
 import { EscutaHeader } from '@/components/escuta/EscutaHeader';
+import { Button } from '@/components/ui/button';
 import { HistoricoEscutaTable } from './HistoricoEscutaTable';
 
 export const dynamic = 'force-dynamic';
@@ -24,7 +25,7 @@ export default async function HistoricoEscutaPage({
           <FieldText name="filial" label="Filial (código)" defaultValue={params.filial} />
           <FieldText name="de"     label="De"  type="date" defaultValue={params.de} />
           <FieldText name="ate"    label="Até" type="date" defaultValue={params.ate} />
-          <button type="submit" className="conecta-btn-primary">Filtrar</button>
+          <Button type="submit" variant="conecta" size="conecta">Filtrar</Button>
         </form>
       )}
 

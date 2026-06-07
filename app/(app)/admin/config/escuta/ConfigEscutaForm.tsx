@@ -1,6 +1,7 @@
 'use client';
 import { useState, useTransition } from 'react';
 import { Plus, Trash2, Save, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { salvarConfigRoteiro, salvarConfigPilares } from '@/actions/escuta';
 
 type Etapa = { ordem: number; titulo: string; descricao: string };
@@ -127,11 +128,17 @@ export function ConfigEscutaForm({
       )}
 
       <div className="flex justify-end">
-        <button type="button" onClick={salvar} disabled={pending}
-                className="conecta-btn-primary disabled:opacity-70">
+        <Button
+          type="button"
+          variant="conecta"
+          size="conecta"
+          onClick={salvar}
+          disabled={pending}
+          className="disabled:opacity-70"
+        >
           <Save className="h-4 w-4" />
           {pending ? 'Salvando…' : 'Salvar configuração'}
-        </button>
+        </Button>
       </div>
     </div>
   );

@@ -3,19 +3,22 @@
 import { useActionState, useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { Eye, EyeOff, LogIn, AlertCircle, UserCog, Mail, Lock, Building2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { loginAction, type LoginState } from '@/actions/auth';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
-    <button
+    <Button
       type="submit"
+      variant="conecta"
+      size="conecta"
       disabled={pending}
-      className="conecta-btn-primary w-full text-base disabled:opacity-70 disabled:cursor-wait"
+      className="w-full text-base disabled:opacity-70 disabled:cursor-wait"
     >
       <LogIn className="h-5 w-5" />
       {pending ? 'Entrando...' : 'ENTRAR'}
-    </button>
+    </Button>
   );
 }
 

@@ -2,6 +2,7 @@
 import { useState, useTransition } from 'react';
 import { Save, AlertCircle, CheckCircle2 } from 'lucide-react';
 import type { EscutaPresencaItem } from '@/db/schema';
+import { Button } from '@/components/ui/button';
 import { salvarReuniao } from '@/actions/escuta';
 import { PilarPercepcaoCard } from './PilarPercepcaoCard';
 import { PresencaDigitada } from './PresencaDigitada';
@@ -119,15 +120,17 @@ export function PercepcaoForm({ pilares }: { pilares: Pilar[] }) {
       )}
 
       <div className="flex justify-end">
-        <button
+        <Button
           type="button"
+          variant="conecta"
+          size="conecta"
           disabled={pending}
           onClick={submit}
-          className="conecta-btn-primary disabled:opacity-70 disabled:cursor-wait"
+          className="disabled:opacity-70 disabled:cursor-wait"
         >
           {pending ? <CheckCircle2 className="h-4 w-4 animate-pulse" /> : <Save className="h-4 w-4" />}
           {pending ? 'Salvando…' : 'Salvar Percepção'}
-        </button>
+        </Button>
       </div>
     </section>
   );

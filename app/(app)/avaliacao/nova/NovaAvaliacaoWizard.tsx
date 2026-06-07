@@ -3,6 +3,7 @@ import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, Save, CheckCircle2, UserCircle, Star, MessageSquare } from 'lucide-react';
 import { ConectaCard, SectionHeader } from '@/components/ui/conecta-card';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/cn';
@@ -162,9 +163,6 @@ export function NovaAvaliacaoWizard({ competencias }: { competencias: Competenci
     });
   }
 
-  const btnSecondary =
-    'inline-flex items-center gap-2 h-10 px-4 rounded-lg text-sm font-display font-medium border border-conecta-primary/15 text-conecta-primary bg-white hover:border-conecta-accent/40 hover:text-conecta-accent hover:bg-conecta-accent/5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
-
   const inputClass =
     'border-conecta-primary/15 focus-visible:ring-conecta-accent/30 focus-visible:border-conecta-accent';
 
@@ -187,14 +185,14 @@ export function NovaAvaliacaoWizard({ competencias }: { competencias: Competenci
                   onBlur={() => buscar('colaborador')}
                   className={inputClass}
                 />
-                <button
+                <Button
                   type="button"
+                  variant="conecta-outline"
                   onClick={() => buscar('colaborador')}
                   disabled={pending}
-                  className={btnSecondary}
                 >
                   Buscar
-                </button>
+                </Button>
               </div>
               {avaliado && (
                 <p className="mt-2 text-xs text-conecta-muted bg-conecta-accent/8 border border-conecta-accent/20 rounded-md px-2 py-1.5">
@@ -214,14 +212,14 @@ export function NovaAvaliacaoWizard({ competencias }: { competencias: Competenci
                   onBlur={() => buscar('gestor')}
                   className={inputClass}
                 />
-                <button
+                <Button
                   type="button"
+                  variant="conecta-outline"
                   onClick={() => buscar('gestor')}
                   disabled={pending}
-                  className={btnSecondary}
                 >
                   Buscar
-                </button>
+                </Button>
               </div>
               {gestor && (
                 <p className="mt-2 text-xs text-conecta-muted bg-conecta-accent/8 border border-conecta-accent/20 rounded-md px-2 py-1.5">
@@ -232,15 +230,16 @@ export function NovaAvaliacaoWizard({ competencias }: { competencias: Competenci
             </div>
           </div>
           <div className="flex justify-end mt-6">
-            <button
+            <Button
               type="button"
+              variant="conecta"
+              size="conecta"
               onClick={() => setStep(2)}
               disabled={!avaliado || !gestor || avaliado.id === gestor.id}
-              className="conecta-btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Continuar
               <ChevronRight className="h-4 w-4" />
-            </button>
+            </Button>
           </div>
         </ConectaCard>
       )}
@@ -263,19 +262,20 @@ export function NovaAvaliacaoWizard({ competencias }: { competencias: Competenci
             </CompetenciaCard>
           ))}
           <div className="flex justify-between">
-            <button type="button" onClick={() => setStep(1)} className={btnSecondary}>
+            <Button type="button" variant="conecta-outline" onClick={() => setStep(1)}>
               <ChevronLeft className="h-4 w-4" />
               Voltar
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="conecta"
+              size="conecta"
               onClick={() => setStep(3)}
               disabled={!completo}
-              className="conecta-btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Continuar
               <ChevronRight className="h-4 w-4" />
-            </button>
+            </Button>
           </div>
         </>
       )}
@@ -318,19 +318,20 @@ export function NovaAvaliacaoWizard({ competencias }: { competencias: Competenci
           </ConectaCard>
           <ResultadoCard pontuacao={pontuacao} classificacao={classif} />
           <div className="flex justify-between">
-            <button type="button" onClick={() => setStep(2)} className={btnSecondary}>
+            <Button type="button" variant="conecta-outline" onClick={() => setStep(2)}>
               <ChevronLeft className="h-4 w-4" />
               Voltar
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              variant="conecta"
+              size="conecta"
               onClick={salvar}
               disabled={pending || !completo}
-              className="conecta-btn-primary text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {pending ? <Save className="h-4 w-4 animate-pulse" /> : <CheckCircle2 className="h-4 w-4" />}
               {pending ? 'Salvando...' : 'Salvar avaliação'}
-            </button>
+            </Button>
           </div>
         </>
       )}

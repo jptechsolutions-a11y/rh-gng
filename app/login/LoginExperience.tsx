@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ArrowRight } from 'lucide-react';
 import { ConectaLogo } from '@/components/brand/ConectaLogo';
 import { ConectaSymbol } from '@/components/brand/ConectaSymbol';
+import { Button } from '@/components/ui/button';
 import {
   IconAcolher,
   IconOuvir,
@@ -271,14 +272,16 @@ export function LoginExperience() {
               ref={welcomeCtaRef}
               className="cg-enter-stagger relative z-10 pl-8 lg:pl-12 pr-8 lg:pr-14 pb-8"
             >
-              <button
+              <Button
                 type="button"
+                variant="conecta-access"
+                size="conecta"
                 onClick={handleAccess}
-                className="conecta-btn-access text-base w-full justify-center"
+                className="text-base w-full"
               >
                 ACESSAR O SISTEMA
                 <ArrowRight className="h-5 w-5" />
-              </button>
+              </Button>
             </div>
           </>
         )}

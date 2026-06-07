@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { AlertTriangle, RotateCcw } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 // Error boundary do segmento autenticado. Sem isto, qualquer exceção em
 // render/Server Action cai no fallback cru do Next.
@@ -32,14 +33,16 @@ export default function Error({
         {error.digest && (
           <p className="mt-2 text-[11px] text-conecta-muted/70 font-mono">ref: {error.digest}</p>
         )}
-        <button
+        <Button
           type="button"
+          variant="conecta"
+          size="conecta"
           onClick={reset}
-          className="conecta-btn-primary mt-6 w-full justify-center text-sm"
+          className="mt-6 w-full text-sm"
         >
           <RotateCcw className="h-4 w-4" />
           Tentar novamente
-        </button>
+        </Button>
       </div>
     </div>
   );

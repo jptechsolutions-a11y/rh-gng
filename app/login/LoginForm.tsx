@@ -2,19 +2,71 @@
 
 import { useActionState, useState } from 'react';
 import { useFormStatus } from 'react-dom';
-import { Eye, EyeOff, LogIn, AlertCircle, UserCog } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Eye, EyeOff, LogIn, AlertCircle, UserCog, Mail, Lock, Building2 } from 'lucide-react';
 import { loginAction, type LoginState } from '@/actions/auth';
 
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" className="w-full" size="lg" disabled={pending}>
-      <LogIn className="h-4 w-4" />
-      {pending ? 'Entrando...' : 'Entrar'}
-    </Button>
+    <button
+      type="submit"
+      disabled={pending}
+      className="conecta-btn-primary w-full text-base disabled:opacity-70 disabled:cursor-wait"
+    >
+      <LogIn className="h-5 w-5" />
+      {pending ? 'Entrando...' : 'ENTRAR'}
+    </button>
+  );
+}
+
+function Field({
+  id,
+  name,
+  type,
+  label,
+  autoComplete,
+  required,
+  icon,
+  defaultValue,
+  rightSlot,
+}: {
+  id: string;
+  name: string;
+  type: string;
+  label: string;
+  autoComplete?: string;
+  required?: boolean;
+  icon: React.ReactNode;
+  defaultValue?: string;
+  rightSlot?: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label
+        htmlFor={id}
+        className="block text-[11px] uppercase tracking-[0.18em] font-semibold text-conecta-primary"
+      >
+        {label}
+      </label>
+      <div className="relative">
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-conecta-accent pointer-events-none">
+          {icon}
+        </div>
+        <input
+          id={id}
+          name={name}
+          type={type}
+          autoComplete={autoComplete}
+          required={required}
+          defaultValue={defaultValue}
+          placeholder={label}
+          className="w-full bg-white border border-slate-300 rounded-lg pl-10 pr-10 py-3 text-[15px] text-conecta-text placeholder-conecta-muted/60 focus:outline-none focus:border-conecta-accent focus:ring-2 focus:ring-conecta-accent/25 transition-colors"
+        />
+        {rightSlot && (
+          <div className="absolute right-2 top-1/2 -translate-y-1/2">{rightSlot}</div>
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -24,54 +76,66 @@ export function LoginForm() {
   const [showPwd, setShowPwd] = useState(false);
 
   return (
-    <form action={formAction} className="space-y-5">
-      {modoAdmin && (
-        <div className="space-y-2">
-          <Label htmlFor="usuario">Usuário</Label>
-          <Input id="usuario" name="usuario" autoComplete="username" required placeholder="admin" />
-        </div>
+    <form action={formAction} className="space-y-7">
+      {modoAdmin ? (
+        <Field
+          id="usuario"
+          name="usuario"
+          type="text"
+          label="Usuário administrador"
+          autoComplete="username"
+          required
+          icon={<UserCog className="h-4 w-4" />}
+        />
+      ) : (
+        <Field
+          id="filial"
+          name="filial"
+          type="text"
+          label="Código da filial"
+          autoComplete="username"
+          required
+          icon={<Building2 className="h-4 w-4" />}
+        />
       )}
 
-      <div className="space-y-2">
-        <Label htmlFor="senha">Senha</Label>
-        <div className="relative">
-          <Input
-            id="senha"
-            name="senha"
-            type={showPwd ? 'text' : 'password'}
-            autoComplete="current-password"
-            required
-            placeholder="••••••••"
-            className="pr-10"
-          />
+      <Field
+        id="senha"
+        name="senha"
+        type={showPwd ? 'text' : 'password'}
+        label={modoAdmin ? 'Senha do administrador' : 'Senha da filial'}
+        autoComplete="current-password"
+        required
+        icon={showPwd ? <Mail className="h-4 w-4 opacity-0" /> : <Lock className="h-4 w-4" />}
+        rightSlot={
           <button
             type="button"
             onClick={() => setShowPwd((v) => !v)}
             aria-label={showPwd ? 'Ocultar senha' : 'Mostrar senha'}
-            className="absolute inset-y-0 right-0 px-3 text-perlog-slate hover:text-perlog-navy"
+            className="text-conecta-muted hover:text-conecta-primary px-1"
           >
             {showPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
-        </div>
-      </div>
+        }
+      />
 
-      <label className="flex items-center gap-2 text-sm text-perlog-slate cursor-pointer select-none">
+      <label className="flex items-start gap-3 text-sm text-conecta-muted cursor-pointer select-none">
         <input
           type="checkbox"
           name="lembrar"
           defaultChecked={false}
-          className="h-4 w-4 rounded border-slate-300 text-perlog-orange focus:ring-perlog-orange/40"
+          className="mt-0.5 h-4 w-4 rounded border-slate-300 text-conecta-accent focus:ring-conecta-accent/40 accent-[#E8621A]"
         />
-        <span>
-          Lembrar minha senha neste dispositivo
-          <span className="block text-[11px] text-perlog-slate/80">
-            Se desmarcado, a senha será pedida novamente quando você fechar o navegador.
+        <span className="leading-snug">
+          Lembrar acesso neste dispositivo
+          <span className="block text-[11px] text-conecta-muted/80 mt-0.5">
+            Se desmarcado, a senha será pedida novamente ao fechar o navegador.
           </span>
         </span>
       </label>
 
       {state?.erro && (
-        <div className="flex items-start gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+        <div className="flex items-start gap-2 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
           <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
           <span>{state.erro}</span>
         </div>
@@ -82,7 +146,7 @@ export function LoginForm() {
       <button
         type="button"
         onClick={() => setModoAdmin((v) => !v)}
-        className="w-full inline-flex items-center justify-center gap-2 text-xs text-perlog-slate hover:text-perlog-navy"
+        className="w-full inline-flex items-center justify-center gap-2 text-xs text-conecta-muted hover:text-conecta-primary transition-colors"
       >
         <UserCog className="h-3.5 w-3.5" />
         {modoAdmin ? 'Sou usuário de filial' : 'Sou administrador'}

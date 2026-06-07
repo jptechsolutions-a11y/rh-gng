@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { gsap } from 'gsap';
 import { ArrowRight } from 'lucide-react';
 import { ConectaLogo } from '@/components/brand/ConectaLogo';
 import { ConectaSymbol } from '@/components/brand/ConectaSymbol';
@@ -46,11 +45,20 @@ export function LoginExperience() {
   const loginRef = useRef<HTMLDivElement>(null);
   const teamARef = useRef<HTMLDivElement>(null);
   const teamBRef = useRef<HTMLDivElement>(null);
+  // gsap é carregado sob demanda (chunk separado) para sair do bundle inicial do login.
+  const gsapRef = useRef<typeof import('gsap') | null>(null);
 
   useEffect(() => {
-    const ctx = gsap.context(() => {
-      gsap.fromTo(
-        '#cg-symbol',
+    let ctx: { revert: () => void } | undefined;
+    let cancelled = false;
+    (async () => {
+      const mod = await import('gsap');
+      if (cancelled) return;
+      gsapRef.current = mod;
+      const { gsap } = mod;
+      ctx = gsap.context(() => {
+        gsap.fromTo(
+          '#cg-symbol',
         { scale: 0.6, opacity: 0, rotation: -6 },
         {
           scale: 1, opacity: 1, rotation: 0,
@@ -84,12 +92,16 @@ export function LoginExperience() {
           ease: 'power2.out', delay: 0.6, clearProps: 'all',
         },
       );
-    }, rootRef);
-    return () => ctx.revert();
+      }, rootRef);
+    })();
+    return () => { cancelled = true; ctx?.revert(); };
   }, []);
 
   const handleAccess = () => {
     if (animating || stage === 'login') return;
+    const gsap = gsapRef.current?.gsap;
+    // Fallback: se o gsap ainda não terminou de carregar, entra sem animação.
+    if (!gsap) { setStage('login'); return; }
     setAnimating(true);
 
     const tl = gsap.timeline({

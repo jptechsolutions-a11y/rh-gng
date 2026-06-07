@@ -10,6 +10,7 @@ export const cpfSchema = z
 
 export const loginSchema = z.object({
   usuario: z.string().trim().optional(),
+  filial: z.string().trim().optional(),
   senha: z.string().min(1, 'Senha obrigatória').max(200),
 });
 

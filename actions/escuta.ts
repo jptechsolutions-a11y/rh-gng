@@ -119,19 +119,9 @@ export async function carregarReuniao(id: string) {
   return r;
 }
 
+// Constrói URLs same-origin que apontam para o proxy /api/escuta/foto.
+// Same-origin evita os problemas de Cross-Origin-Resource-Policy que o
+// browser aplica a <img> apontando direto para o Supabase Storage.
 export async function urlsAssinadasFotos(paths: string[]) {
-  if (paths.length === 0) return [] as string[];
-  const { createClient } = await import('@supabase/supabase-js');
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false, autoRefreshToken: false } },
-  );
-  const out: string[] = [];
-  for (const p of paths) {
-    const { data } = await supabase.storage.from('escuta-evidencias')
-      .createSignedUrl(p, 3600);
-    out.push(data?.signedUrl ?? '');
-  }
-  return out;
+  return paths.map((p) => `/api/escuta/foto?path=${encodeURIComponent(p)}`);
 }

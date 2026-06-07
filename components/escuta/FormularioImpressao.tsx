@@ -1,5 +1,5 @@
-'use client';
-import { Printer } from 'lucide-react';
+import Link from 'next/link';
+import { Printer, ExternalLink } from 'lucide-react';
 import { ConectaLogo } from '@/components/brand/ConectaLogo';
 import { PilarIcone } from './PilarIcone';
 
@@ -8,19 +8,28 @@ type Pilar = { id: number; ordem: number; nome: string; icone: string; perguntas
 export function FormularioImpressao({ pilares }: { pilares: Pilar[] }) {
   return (
     <section className="space-y-5">
-      <div className="flex justify-end print:hidden">
-        <button
-          type="button"
-          onClick={() => window.print()}
-          className="conecta-btn-primary"
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-2xl bg-conecta-light/60 border border-conecta-primary/10 px-5 py-4">
+        <div className="text-sm text-conecta-muted leading-snug">
+          <span className="font-display font-semibold text-conecta-primary">
+            Formulário em branco para preenchimento manual.
+          </span>
+          <br />
+          Abra o documento dedicado e use <em>Imprimir / Salvar PDF</em> para gerar o arquivo A4.
+        </div>
+        <Link
+          href="/escuta/formulario/imprimir"
+          target="_blank"
+          rel="noopener"
+          className="conecta-btn-primary shrink-0"
         >
           <Printer className="h-4 w-4" />
-          Imprimir Formulário
-        </button>
+          Abrir formulário PDF
+          <ExternalLink className="h-3.5 w-3.5 opacity-80" />
+        </Link>
       </div>
 
-      <div id="escuta-print-area"
-           className="bg-white rounded-2xl border border-conecta-primary/10 p-6 print:border-0 print:p-0 print:rounded-none">
+      {/* Preview do formulário (sem janela de impressão) */}
+      <div className="bg-white rounded-2xl border border-conecta-primary/10 p-6">
         <header className="flex items-start justify-between gap-4 pb-4 border-b border-conecta-primary/20">
           <ConectaLogo variant="full" withSubtitle className="scale-90 origin-left" />
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -30,7 +39,9 @@ export function FormularioImpressao({ pilares }: { pilares: Pilar[] }) {
         <div className="grid grid-cols-3 gap-3 mt-4 text-xs">
           {['Nome do Avaliado', 'Função', 'Data'].map((l) => (
             <div key={l}>
-              <div className="text-conecta-primary font-display font-semibold uppercase tracking-[0.14em] text-[10px]">{l}</div>
+              <div className="text-conecta-primary font-display font-semibold uppercase tracking-[0.14em] text-[10px]">
+                {l}
+              </div>
               <div className="mt-1 h-7 border-b border-conecta-primary/40" />
             </div>
           ))}
@@ -42,7 +53,7 @@ export function FormularioImpressao({ pilares }: { pilares: Pilar[] }) {
 
         <div className="mt-4 space-y-4">
           {pilares.map((p) => (
-            <div key={p.id} className="rounded-xl border border-conecta-primary/15 p-4 break-inside-avoid">
+            <div key={p.id} className="rounded-xl border border-conecta-primary/15 p-4">
               <div className="flex items-center gap-3 mb-2">
                 <span className="grid place-items-center h-9 w-9 rounded-lg bg-conecta-primary text-white">
                   <PilarIcone chave={p.icone} className="h-4 w-4" />
@@ -64,7 +75,7 @@ export function FormularioImpressao({ pilares }: { pilares: Pilar[] }) {
           ))}
         </div>
 
-        <div className="mt-5 rounded-xl border border-conecta-accent/40 p-4 break-inside-avoid">
+        <div className="mt-5 rounded-xl border border-conecta-accent/40 p-4">
           <div className="font-display font-extrabold text-conecta-accent uppercase tracking-[0.14em] text-xs">
             Percepção Final da G&amp;G
           </div>
@@ -73,14 +84,6 @@ export function FormularioImpressao({ pilares }: { pilares: Pilar[] }) {
           ))}
         </div>
       </div>
-
-      <style jsx global>{`
-        @media print {
-          body > *:not(:has(#escuta-print-area)) { display: none !important; }
-          #escuta-print-area { display: block !important; box-shadow: none !important; }
-          @page { size: A4; margin: 12mm; }
-        }
-      `}</style>
     </section>
   );
 }

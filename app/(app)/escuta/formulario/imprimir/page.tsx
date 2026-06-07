@@ -15,9 +15,9 @@ export default async function ImprimirFormularioEscutaPage() {
     <>
       <PrintToolbar />
 
-      <div className="print-doc mx-auto my-6 max-w-[820px] bg-white shadow-elev print:shadow-none print:my-0 print:max-w-none text-[10px] leading-snug text-[#1E1E2E]">
+      <div className="print-doc mx-auto my-6 max-w-[820px] w-full bg-white shadow-elev print:shadow-none print:my-0 print:max-w-none print:w-full text-[10px] leading-snug text-[#1E1E2E]">
         {/* ===== Cabeçalho ===== */}
-        <header className="px-8 pt-6 pb-3 border-b-[3px] border-[#E8621A] print:px-6 flex items-start justify-between gap-4">
+        <header className="px-8 pt-6 pb-3 border-b-[3px] border-[#E8621A] print:px-3 print:pt-3 flex items-start justify-between gap-4">
           <div className="flex items-center gap-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/perlog-logo.png" alt="Perlog" className="h-9 w-auto" />
@@ -36,7 +36,7 @@ export default async function ImprimirFormularioEscutaPage() {
           </div>
         </header>
 
-        <main className="px-8 py-3 print:px-6 space-y-3">
+        <main className="px-8 py-3 print:px-3 print:py-2 space-y-3">
           {/* ===== 1. Identificação (linha única) ===== */}
           <section>
             <SectionBar n="1" title="Identificação" />
@@ -113,7 +113,7 @@ export default async function ImprimirFormularioEscutaPage() {
           </section>
         </main>
 
-        <footer className="border-t border-slate-200 px-8 py-2 print:px-6 flex items-center justify-between text-[8px] text-[#6B7280]">
+        <footer className="border-t border-slate-200 px-8 py-2 print:px-3 flex items-center justify-between text-[8px] text-[#6B7280]">
           <span>Grupo Perlog — Conecta+ G&amp;G · Gente e Gestão</span>
           <span>Acolher · Ouvir · Identificar · Agir</span>
         </footer>
@@ -127,9 +127,14 @@ export default async function ImprimirFormularioEscutaPage() {
           color-adjust: exact !important;
         }
         @media print {
-          @page { size: A4; margin: 8mm 10mm 8mm 10mm; }
-          body { background: white !important; }
-          .print-doc { box-shadow: none !important; }
+          @page { size: A4; margin: 6mm 6mm 6mm 6mm; }
+          html, body { background: white !important; width: 100% !important; }
+          .print-doc {
+            box-shadow: none !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+          }
         }
       `}</style>
     </>

@@ -30,12 +30,35 @@ export function ReuniaoLeitura({
       {fotoUrls.length > 0 && (
         <div>
           <SectionTitle>Evidências fotográficas</SectionTitle>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
+          <p className="text-xs text-conecta-muted mt-1">
+            Clique em uma foto para abrir em tamanho original.
+          </p>
+          <div
+            className={
+              fotoUrls.length === 1
+                ? 'mt-3'
+                : fotoUrls.length === 2
+                  ? 'grid grid-cols-1 sm:grid-cols-2 gap-4 mt-3'
+                  : 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-3'
+            }
+          >
             {fotoUrls.map((u, i) => (
               // eslint-disable-next-line @next/next/no-img-element
-              <a key={i} href={u} target="_blank" rel="noreferrer"
-                 className="block rounded-xl overflow-hidden border border-conecta-primary/10 bg-conecta-light">
-                <img src={u} alt={`Evidência ${i + 1}`} className="w-full h-44 object-cover" />
+              <a
+                key={i}
+                href={u}
+                target="_blank"
+                rel="noreferrer"
+                className="group relative block rounded-xl overflow-hidden border border-conecta-primary/15 bg-slate-100 shadow-card hover:shadow-elev transition-shadow"
+              >
+                <img
+                  src={u}
+                  alt={`Evidência ${i + 1}`}
+                  className={`w-full ${fotoUrls.length === 1 ? 'max-h-[600px]' : 'max-h-[420px]'} h-auto object-contain bg-slate-100`}
+                />
+                <span className="absolute bottom-2 right-2 px-2 py-0.5 rounded bg-black/55 text-white text-[10px] font-semibold tracking-wide uppercase opacity-0 group-hover:opacity-100 transition-opacity">
+                  Foto {i + 1} · ampliar
+                </span>
               </a>
             ))}
           </div>

@@ -18,7 +18,7 @@ export default async function Historico({
 }: {
   searchParams: Promise<SP>;
 }) {
-  await requireSession();
+  const s = await requireSession();
   const sp = (await searchParams) ?? {};
   const [lista, stats] = await Promise.all([
     listarHistorico({
@@ -41,7 +41,11 @@ export default async function Historico({
   ]);
   return (
     <>
-      <TopBar titulo="Histórico de avaliações" subtitulo="Avaliação de desempenho" />
+      <TopBar
+        titulo="Histórico de avaliações"
+        subtitulo={s.perfil === 'filial' ? s.filialNome : 'Avaliação de desempenho'}
+        badge={s.perfil === 'filial' ? `Filial ${s.filialCodigo}` : 'ADMIN'}
+      />
       <div className="space-y-5 p-6">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <MiniKpi icon={ClipboardList} label="Total" value={stats?.total ?? 0} accent />

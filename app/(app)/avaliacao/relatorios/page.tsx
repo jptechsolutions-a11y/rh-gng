@@ -10,7 +10,7 @@ import { TopBar } from '@/components/layout/TopBar';
 export const dynamic = 'force-dynamic';
 
 export default async function Relatorios() {
-  await requireSession();
+  const s = await requireSession();
   const [porFilial, porComp, top, bottom] = await Promise.all([
     relatorioPorFilial(),
     relatorioPorCompetencia(),
@@ -19,7 +19,11 @@ export default async function Relatorios() {
   ]);
   return (
     <>
-      <TopBar titulo="Relatórios" subtitulo="Avaliação de desempenho" />
+      <TopBar
+        titulo="Relatórios"
+        subtitulo={s.perfil === 'filial' ? s.filialNome : 'Avaliação de desempenho'}
+        badge={s.perfil === 'filial' ? `Filial ${s.filialCodigo}` : 'ADMIN'}
+      />
       <div className="space-y-6 p-6">
         <RelatoriosCharts
           porFilial={porFilial}

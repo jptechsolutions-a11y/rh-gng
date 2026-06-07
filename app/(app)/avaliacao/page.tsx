@@ -20,14 +20,16 @@ import type { Classificacao } from '@/lib/avaliacao/calculos';
 export const dynamic = 'force-dynamic';
 
 export default async function AvaliacaoHome() {
-  await requireSession();
+  const s = await requireSession();
   const [stats, ultimas] = await Promise.all([
     statsHistorico(),
     listarHistorico({ perPage: 5 }),
   ]);
+  const badge = s.perfil === 'filial' ? `Filial ${s.filialCodigo}` : 'ADMIN';
+  const subtitulo = s.perfil === 'filial' ? s.filialNome : 'Visão geral';
   return (
     <>
-      <TopBar titulo="Avaliação de desempenho" subtitulo="Visão geral" />
+      <TopBar titulo="Avaliação de desempenho" subtitulo={subtitulo} badge={badge} />
 
       <div className="space-y-5 p-6">
         <div className="flex justify-end">

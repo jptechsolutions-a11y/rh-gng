@@ -10,13 +10,17 @@ import { Button } from '@/components/ui/button';
 export const dynamic = 'force-dynamic';
 
 export default async function Page({ params }: { params: Promise<{ id: string }> }) {
-  await requireSession();
+  const s = await requireSession();
   const { id } = await params;
   const dados = await obterAvaliacao(id);
   if (!dados) notFound();
   return (
     <>
-      <TopBar titulo="Detalhe da avaliação" subtitulo="Avaliação de desempenho" />
+      <TopBar
+        titulo="Detalhe da avaliação"
+        subtitulo={s.perfil === 'filial' ? s.filialNome : 'Avaliação de desempenho'}
+        badge={s.perfil === 'filial' ? `Filial ${s.filialCodigo}` : 'ADMIN'}
+      />
       <div className="space-y-6 p-6">
         <div className="flex justify-end">
           <Link href={`/avaliacao/${id}/imprimir`}>

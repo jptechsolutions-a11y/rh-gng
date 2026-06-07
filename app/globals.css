@@ -1,5 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
-
+/* Fontes carregadas via next/font (app/layout.tsx) — sem @import bloqueante. */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;

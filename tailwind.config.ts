@@ -48,9 +48,9 @@ const config: Config = {
       },
       borderRadius: { lg: '0.75rem', md: '0.5rem', sm: '0.375rem' },
       fontFamily: {
-        sans: ['Inter', 'var(--font-inter)', 'system-ui', 'sans-serif'],
-        display: ['Poppins', 'Inter', 'system-ui', 'sans-serif'],
-        mono: ['"IBM Plex Mono"', 'ui-monospace', 'monospace'],
+        sans: ['var(--font-inter)', 'Inter', 'system-ui', 'sans-serif'],
+        display: ['var(--font-poppins)', 'Poppins', 'Inter', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-plex-mono)', '"IBM Plex Mono"', 'ui-monospace', 'monospace'],
       },
       backgroundImage: {
         'conecta-deep': 'linear-gradient(135deg, #0D2B6B 0%, #1A3F8F 50%, #071840 100%)',

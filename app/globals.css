@@ -169,3 +169,98 @@
 @media (prefers-reduced-motion: reduce) {
   .cg-team-pulse { animation: none; }
 }
+
+/* ===== Álbum de reuniões (Escuta G&G) ===== */
+
+/* Palco — fundo navy profundo com aurora discreta */
+.album-bg {
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgba(232,98,26,0.18) 0%, rgba(232,98,26,0) 55%),
+    radial-gradient(80% 60% at 50% 100%, rgba(26,63,143,0.55) 0%, rgba(7,24,64,0) 60%),
+    linear-gradient(160deg, #07142e 0%, #0D2B6B 50%, #0a1f4f 100%);
+}
+.album-grain {
+  opacity: 0.18;
+  mix-blend-mode: overlay;
+  background-image:
+    radial-gradient(rgba(255,255,255,0.6) 1px, transparent 1px),
+    radial-gradient(rgba(255,255,255,0.4) 1px, transparent 1px);
+  background-size: 3px 3px, 7px 7px;
+  background-position: 0 0, 1.5px 1.5px;
+}
+.album-spot {
+  background: radial-gradient(45% 45% at 50% 48%, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0) 70%);
+}
+
+/* Polaroid: entrada (rotação leve diferente em cada posição) */
+@keyframes album-pop-top {
+  0%   { transform: translateY(8px) scale(0.96) rotate(-1deg); opacity: 0; }
+  100% { transform: translateY(0)   scale(1)    rotate(-0.8deg); opacity: 1; }
+}
+.album-polaroid-top {
+  transform: rotate(-0.8deg);
+  animation: album-pop-top 600ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  transform-origin: center 70%;
+}
+.album-polaroid-left {
+  transform: translate(-22%, 4%) rotate(-8deg) scale(0.88);
+  transform-origin: center 70%;
+  filter: blur(0.2px);
+}
+.album-polaroid-right {
+  transform: translate(22%, 4%) rotate(8deg) scale(0.88);
+  transform-origin: center 70%;
+  filter: blur(0.2px);
+}
+
+/* Saída do polaroid de topo (vira a "página" pra direita ou esquerda) */
+@keyframes album-fly-next {
+  0%   { transform: rotate(-0.8deg)   translate(0, 0)    scale(1); opacity: 1; }
+  40%  { transform: rotate(8deg)      translate(15%, -4%) scale(0.98); opacity: 1; }
+  100% { transform: rotate(28deg)     translate(130%, 8%) scale(0.85); opacity: 0; }
+}
+@keyframes album-fly-prev {
+  0%   { transform: rotate(-0.8deg)   translate(0, 0)     scale(1); opacity: 1; }
+  40%  { transform: rotate(-10deg)    translate(-15%, -4%) scale(0.98); opacity: 1; }
+  100% { transform: rotate(-28deg)    translate(-130%, 8%) scale(0.85); opacity: 0; }
+}
+.album-polaroid-fly-next {
+  animation: album-fly-next 700ms cubic-bezier(0.5, 0, 0.75, 0) forwards;
+  transform-origin: center 60%;
+}
+.album-polaroid-fly-prev {
+  animation: album-fly-prev 700ms cubic-bezier(0.5, 0, 0.75, 0) forwards;
+  transform-origin: center 60%;
+}
+
+/* Ken Burns — zoom-pan sutil enquanto o polaroid está em destaque */
+@keyframes album-kenburns {
+  0%   { transform: scale(1.02) translate(0, 0); }
+  100% { transform: scale(1.10) translate(-1.5%, -1.5%); }
+}
+.album-kenburns {
+  animation: album-kenburns 6s ease-out forwards;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .album-polaroid-top,
+  .album-polaroid-fly-next,
+  .album-polaroid-fly-prev,
+  .album-kenburns { animation: none; }
+}
+
+/* ===== Nuvem de palavras (Escuta) ===== */
+@keyframes nuvem-pop {
+  0%   { opacity: 0; transform: scale(0.3) translateY(8px); filter: blur(4px); }
+  60%  { opacity: 1; transform: scale(1.08) translateY(0); filter: blur(0); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+.nuvem-palavra {
+  opacity: 0;
+  animation: nuvem-pop 520ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  will-change: transform, opacity, filter;
+}
+@media (prefers-reduced-motion: reduce) {
+  .nuvem-palavra { animation: none; opacity: 1; }
+}

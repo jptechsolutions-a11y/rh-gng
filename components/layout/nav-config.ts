@@ -2,6 +2,7 @@ import type { LucideIcon } from 'lucide-react';
 import {
   LayoutDashboard, Users, FileText, Settings, ShieldCheck, ClipboardList, History,
   CalendarClock, Plus, BarChart3, UserCog, Target, BookOpen, Printer, ClipboardCheck,
+  GalleryHorizontal, Cloud,
 } from 'lucide-react';
 
 // Fonte ÚNICA de navegação — consumida pela Sidebar (desktop) e pela MobileNav.
@@ -40,6 +41,8 @@ export const ESCUTA_NAV_BASE: NavItem[] = [
   { href: '/escuta?tab=roteiro',    label: 'Roteiro',    icon: BookOpen },
   { href: '/escuta?tab=formulario', label: 'Formulário', icon: Printer },
   { href: '/escuta?tab=percepcao',  label: 'Percepção',  icon: ClipboardCheck },
+  { href: '/escuta?tab=reunioes',   label: 'Reuniões',   icon: GalleryHorizontal },
+  { href: '/escuta?tab=nuvem',      label: 'Nuvem',      icon: Cloud },
   { href: '/escuta/historico',      label: 'Histórico',  icon: History },
 ];
 export const ESCUTA_NAV_ADMIN_EXTRAS: NavItem[] = [

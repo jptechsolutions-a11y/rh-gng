@@ -67,16 +67,16 @@ export default async function ImprimirFormularioEscutaPage() {
                     </span>
                     <span className="truncate">{p.nome.toUpperCase()}</span>
                   </div>
-                  <ul className="px-2 py-1.5 space-y-1.5">
+                  <ul className="px-2 py-2 space-y-2">
                     {p.perguntas.map((q, i) => (
                       <li key={i} className="break-inside-avoid">
-                        <div className="text-[9px] text-[#1E1E2E]">
+                        <div className="text-[9.5px] text-[#1E1E2E] leading-tight">
                           <span className="font-bold text-[#E8621A]">
                             {String(i + 1).padStart(2, '0')}.
                           </span>{' '}
                           {q}
                         </div>
-                        <div className="mt-0.5 border-b border-dashed border-[#0D2B6B66] h-3" />
+                        <div className="mt-1 border-b border-dashed border-[#0D2B6B66] h-4" />
                       </li>
                     ))}
                   </ul>
@@ -92,8 +92,8 @@ export default async function ImprimirFormularioEscutaPage() {
               className="border border-[#E8621A66] rounded-sm px-3 py-2 mt-1 break-inside-avoid"
               style={{ background: '#FFF7F1' }}
             >
-              {Array.from({ length: 4 }).map((_, n) => (
-                <div key={n} className="border-b border-dashed border-[#0D2B6B55] h-4" />
+              {Array.from({ length: 9 }).map((_, n) => (
+                <div key={n} className="border-b border-dashed border-[#0D2B6B55] h-[18px]" />
               ))}
             </div>
           </section>

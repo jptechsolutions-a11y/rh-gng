@@ -12,6 +12,7 @@ export type NavItem = { href: string; label: string; icon: LucideIcon };
 
 export const FILIAL_NAV: NavItem[] = [
   { href: '/painel',          label: 'Painel',            icon: LayoutDashboard },
+  { href: '/indicadores',     label: 'Indicadores',       icon: BarChart3 },
   { href: '/guia-rapido',     label: 'Guia Rápido',       icon: BookOpen },
   { href: '/entrevista/nova', label: 'Nova entrevista',   icon: ClipboardList },
   { href: '/historico',       label: 'Histórico',         icon: History },
@@ -23,6 +24,7 @@ export const ADMIN_NAV: NavItem[] = [
   { href: '/admin',            label: 'Dashboard',    icon: LayoutDashboard },
   { href: '/admin/busca',      label: 'Busca global', icon: Users },
   { href: '/admin/relatorios', label: 'Relatórios',   icon: FileText },
+  { href: '/indicadores',      label: 'Indicadores',  icon: BarChart3 },
   { href: '/admin/config',     label: 'Configuração', icon: Settings },
   { href: '/admin/seguranca',  label: 'Segurança',    icon: ShieldCheck },
 ];

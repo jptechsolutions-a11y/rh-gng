@@ -49,6 +49,7 @@ export async function salvarConfigRoteiro(payload: unknown) {
     heroFrase: data.heroFrase,
     bannerTexto: data.bannerTexto,
     etapas: data.etapas,
+    diasSugeridos: data.diasSugeridos,
     atualizadoPor: `admin:${s.usuario}`,
   }).onConflictDoUpdate({
     target: schema.escutaRoteiro.id,
@@ -58,6 +59,7 @@ export async function salvarConfigRoteiro(payload: unknown) {
       heroFrase: data.heroFrase,
       bannerTexto: data.bannerTexto,
       etapas: data.etapas,
+      diasSugeridos: data.diasSugeridos,
       atualizadoEm: sql`now()`,
       atualizadoPor: `admin:${s.usuario}`,
     },

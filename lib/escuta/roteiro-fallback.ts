@@ -19,4 +19,5 @@ export const ROTEIRO_FALLBACK = {
     { ordem: 6, titulo: 'ACOLHER, OUVIR, IDENTIFICAR E AGIR',
       descricao: 'Conduzir com escuta ativa: acolher para integrar, ouvir para entender, identificar para evoluir, agir para transformar.' },
   ] satisfies EscutaEtapa[],
+  diasSugeridos: ['Quinta', 'Sexta'] as string[],
 };

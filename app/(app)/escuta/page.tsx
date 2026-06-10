@@ -38,7 +38,12 @@ export default async function EscutaPage({
     <>
       <TopBar titulo="Escuta G&G" subtitulo={subtitulo} badge={badge} />
       <div className="space-y-5 p-4 lg:p-6">
-        {active === 'roteiro' && <RoteiroView {...roteiro} />}
+        {active === 'roteiro' && (
+          <RoteiroView
+            {...roteiro}
+            diasSugeridos={(roteiro as { diasSugeridos?: string[] }).diasSugeridos ?? []}
+          />
+        )}
         {active === 'formulario' && <FormularioImpressao pilares={pilares} />}
         {active === 'percepcao' && <PercepcaoForm pilares={pilares} />}
         {active === 'reunioes' && <AlbumReunioes itens={album} />}

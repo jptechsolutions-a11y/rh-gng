@@ -1,3 +1,4 @@
+import { CalendarDays } from 'lucide-react';
 import {
   IconAcolher, IconOuvir, IconIdentificar, IconAgir,
 } from '@/components/brand/ConectaPillarIcons';
@@ -6,9 +7,11 @@ type Etapa = { ordem: number; titulo: string; descricao: string };
 
 export function RoteiroView({
   heroTitulo, heroSubtitulo, heroFrase, bannerTexto, etapas,
+  diasSugeridos = [],
 }: {
   heroTitulo: string; heroSubtitulo: string; heroFrase: string;
   bannerTexto: string; etapas: Etapa[];
+  diasSugeridos?: string[];
 }) {
   const [primeira, ...resto] = heroTitulo.split(' ');
   return (
@@ -43,6 +46,33 @@ export function RoteiroView({
           </li>
         ))}
       </ol>
+
+      {diasSugeridos.length > 0 && (
+        <div className="rounded-2xl bg-white border border-conecta-primary/10 px-5 py-4 shadow-card">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="grid place-items-center h-9 w-9 rounded-full bg-conecta-accent/10 text-conecta-accent">
+              <CalendarDays className="h-5 w-5" />
+            </span>
+            <div>
+              <h3 className="font-display font-extrabold text-conecta-primary tracking-tight">
+                Agenda sugerida
+              </h3>
+              <p className="text-xs text-conecta-muted">
+                Dias recomendados para realizar a Escuta G&amp;G na filial
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {diasSugeridos.map((d) => (
+              <span key={d}
+                    className="inline-flex items-center gap-1.5 rounded-full bg-conecta-accent/10 text-conecta-primary px-3 py-1 text-sm font-semibold">
+                <span className="h-1.5 w-1.5 rounded-full bg-conecta-accent" />
+                {d}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="rounded-2xl bg-conecta-primary text-white px-5 py-4 flex flex-wrap justify-around gap-3">
         {[

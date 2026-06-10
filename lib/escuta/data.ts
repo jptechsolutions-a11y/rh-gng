@@ -14,6 +14,7 @@ export async function carregarRoteiro() {
     heroFrase:     row.heroFrase,
     bannerTexto:   row.bannerTexto,
     etapas:        row.etapas ?? [],
+    diasSugeridos: row.diasSugeridos ?? [],
   };
 }
 

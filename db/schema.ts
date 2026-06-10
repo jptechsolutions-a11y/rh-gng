@@ -225,6 +225,7 @@ export const escutaRoteiro = pgTable('escuta_roteiro', {
   heroFrase:     text('hero_frase').notNull(),
   bannerTexto:   text('banner_texto').notNull(),
   etapas:        jsonb('etapas').$type<EscutaEtapa[]>().notNull().default([]),
+  diasSugeridos: jsonb('dias_sugeridos').$type<string[]>().notNull().default(['Quinta','Sexta']),
   atualizadoEm:  timestamp('atualizado_em', { withTimezone: true }).notNull().defaultNow(),
   atualizadoPor: text('atualizado_por'),
 });

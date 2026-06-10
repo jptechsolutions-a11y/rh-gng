@@ -12,7 +12,7 @@ export function ConfigEscutaForm({
 }: {
   roteiroInicial: {
     heroTitulo: string; heroSubtitulo: string; heroFrase: string;
-    bannerTexto: string; etapas: Etapa[];
+    bannerTexto: string; etapas: Etapa[]; diasSugeridos: string[];
   };
   pilaresIniciais: Pilar[];
 }) {
@@ -25,7 +25,12 @@ export function ConfigEscutaForm({
     setMsg(null);
     start(async () => {
       try {
-        await salvarConfigRoteiro(roteiro);
+        await salvarConfigRoteiro({
+          ...roteiro,
+          diasSugeridos: (roteiro.diasSugeridos ?? [])
+            .map((d) => d.trim())
+            .filter(Boolean),
+        });
         await salvarConfigPilares({
           pilares: pilares.map((p) => ({ id: p.id, nome: p.nome, perguntas: p.perguntas })),
         });
@@ -95,6 +100,42 @@ export function ConfigEscutaForm({
                   })}
                   className="inline-flex items-center gap-1 text-sm font-semibold text-conecta-accent hover:text-conecta-primary">
             <Plus className="h-4 w-4" /> Adicionar etapa
+          </button>
+        </div>
+
+        <div className="space-y-2">
+          <div className="text-[11px] uppercase tracking-[0.18em] font-semibold text-conecta-primary">
+            Agenda sugerida — dias para realizar a Escuta G&amp;G
+          </div>
+          <p className="text-xs text-conecta-muted">
+            Esses dias aparecem como sugestão na aba Roteiro da Escuta G&amp;G.
+          </p>
+          {(roteiro.diasSugeridos ?? []).map((dia, i) => (
+            <div key={i} className="rounded-xl bg-white border border-conecta-primary/10 p-3 grid grid-cols-12 gap-2 items-center">
+              <input type="text" value={dia} placeholder="Ex.: Quinta"
+                     onChange={(ev) => setRoteiro({
+                       ...roteiro,
+                       diasSugeridos: roteiro.diasSugeridos.map((x, idx) =>
+                         idx === i ? ev.target.value : x),
+                     })}
+                     className="col-span-11 border rounded px-2 py-1 text-sm" />
+              <button type="button"
+                      onClick={() => setRoteiro({
+                        ...roteiro,
+                        diasSugeridos: roteiro.diasSugeridos.filter((_, idx) => idx !== i),
+                      })}
+                      className="col-span-1 text-conecta-muted hover:text-red-600">
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          ))}
+          <button type="button"
+                  onClick={() => setRoteiro({
+                    ...roteiro,
+                    diasSugeridos: [...(roteiro.diasSugeridos ?? []), ''],
+                  })}
+                  className="inline-flex items-center gap-1 text-sm font-semibold text-conecta-accent hover:text-conecta-primary">
+            <Plus className="h-4 w-4" /> Adicionar dia
           </button>
         </div>
       </section>

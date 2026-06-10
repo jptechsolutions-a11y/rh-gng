@@ -32,6 +32,7 @@ export const ConfigRoteiroSchema = z.object({
   heroFrase:     z.string().min(1).max(500),
   bannerTexto:   z.string().min(1).max(200),
   etapas:        z.array(EtapaSchema).min(1).max(20),
+  diasSugeridos: z.array(z.string().min(1).max(40)).max(14).default([]),
 });
 export type ConfigRoteiroInput = z.infer<typeof ConfigRoteiroSchema>;
 

@@ -157,7 +157,7 @@ export function Sidebar({
         {nav.map(({ href, label, icon: Icon }) => {
           const isRoot = href === '/admin' || href === '/painel' || href === '/avaliacao';
           const [hrefPath, hrefQuery] = href.split('?');
-          const defaultTab = hrefPath === '/indicadores' ? 'banco-horas' : 'roteiro';
+          const defaultTab = hrefPath === '/indicadores' ? 'inicio' : 'roteiro';
           let active: boolean;
           if (hrefQuery) {
             // Item da sidebar usa query (?tab=...): ativo só se a tab atual bate.

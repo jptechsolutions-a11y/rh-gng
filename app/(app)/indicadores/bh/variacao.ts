@@ -15,7 +15,12 @@ export function calcVariacao(atual: number, anterior: number | null): Variacao {
 }
 
 export function formatHoras(n: number): string {
-  return `${n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} h`;
+  const sign = n < 0 ? '-' : '';
+  const abs = Math.abs(n);
+  const totalMin = Math.round(abs * 60);
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  return `${sign}${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
 export function formatBRL(n: number): string {

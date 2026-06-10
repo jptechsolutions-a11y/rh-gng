@@ -105,7 +105,30 @@
       "Bash(findstr /i \"entrevista guia modelo\")",
       "Bash(findstr /I \"guia\")",
       "Bash(node \"node_modules\\\\typescript\\\\bin\\\\tsc\" --noEmit)",
-      "PowerShell(node \"node_modules\\\\typescript\\\\bin\\\\tsc\" --noEmit 2>&1 | Select-String -Pattern \"error TS\" | ForEach-Object { $_.Line })"
+      "PowerShell(node \"node_modules\\\\typescript\\\\bin\\\\tsc\" --noEmit 2>&1 | Select-String -Pattern \"error TS\" | ForEach-Object { $_.Line })",
+      "Bash(node \"node_modules\\\\vitest\\\\vitest.mjs\" run)",
+      "Bash(git ls-remote *)",
+      "mcp__1a892842-7d66-45c5-86db-3cbe95c89b0b__get_deployment_build_logs",
+      "mcp__1a892842-7d66-45c5-86db-3cbe95c89b0b__list_deployments",
+      "Bash(node \"./node_modules/eslint/bin/eslint.js\" components/layout/Sidebar.tsx)",
+      "Bash(node \"./node_modules/next/dist/bin/next\" build)",
+      "Bash(ls \"C:\\\\Users\\\\juliano.correa\\\\Desktop\\\\Ref\" 2>&1 | head -30)",
+      "Bash(python -c \"import pandas as pd; df = pd.read_excel\\(r'C:\\\\Users\\\\juliano.correa\\\\Desktop\\\\Ref\\\\BH PERLOG.xls', sheet_name=None\\); [print\\('=== Sheet:', k, '===\\\\n', v.head\\(20\\), '\\\\nColunas:', list\\(v.columns\\), '\\\\nShape:', v.shape, '\\\\n'\\) for k,v in df.items\\(\\)]\")",
+      "Bash(python -c 'import pandas as pd; df = pd.read_excel\\(r'\\\\''C:\\\\Users\\\\juliano.correa\\\\Desktop\\\\Ref\\\\BH PERLOG.xls'\\\\'', sheet_name=None\\); *)",
+      "Read(//c/Users/juliano.correa/Desktop/Ref/**)",
+      "Read(//c/Users/juliano.correa/Desktop/**)",
+      "Bash(node -e \"const XLSX = require\\('xlsx'\\); const wb = XLSX.readFile\\('C:\\\\\\\\\\\\\\\\Users\\\\\\\\\\\\\\\\juliano.correa\\\\\\\\\\\\\\\\Desktop\\\\\\\\\\\\\\\\Ref\\\\\\\\\\\\\\\\BH PERLOG.xls'\\); console.log\\('Sheets:', wb.SheetNames\\); wb.SheetNames.forEach\\(s => { const ws = wb.Sheets[s]; const data = XLSX.utils.sheet_to_json\\(ws, {header:1}\\); console.log\\('---', s, '---'\\); console.log\\('Rows:', data.length\\); data.slice\\(0,8\\).forEach\\(\\(r,i\\)=>console.log\\(i, JSON.stringify\\(r\\)\\)\\); }\\);\")",
+      "Bash(node scripts/inspect-bh.js)",
+      "Bash(node -e \"const {db}=require\\('./db/client'\\); const {filiais}=require\\('./db/schema'\\); db.select\\({codigo:filiais.codigo,nome:filiais.nome}\\).from\\(filiais\\).limit\\(20\\).then\\(r=>{console.log\\(r\\);process.exit\\(0\\)}\\).catch\\(e=>{console.error\\(e.message\\);process.exit\\(1\\)}\\)\")",
+      "Bash(node \"node_modules/vitest/vitest.mjs\" --version)",
+      "Bash(node \"node_modules/drizzle-kit/bin.cjs\" generate)",
+      "Bash(node -e \"require\\('fs'\\).readFileSync\\('.env.local','utf8'\\).split\\(/\\\\r?\\\\n/\\).forEach\\(l=>{const m=l.match\\(/^\\([^#=]+\\)=\\(.*\\)$/\\);if\\(m\\){process.env[m[1].trim\\(\\)]=m[2].trim\\(\\).replace\\(/^[\\\\\"']|[\\\\\"']$/g,''\\)}}\\); require\\('child_process'\\).spawnSync\\(process.execPath, ['node_modules/drizzle-kit/bin.cjs','generate','--name','indicadores_bh'], {stdio:'inherit', env: {...process.env, NODE_OPTIONS:'--require=./scripts/no-op.js'}}\\)\")",
+      "Bash(git reset *)",
+      "Bash(node -e \"const p=require\\('postgres'\\); const sql=p\\(process.env.DIRECT_URL,{ssl:'require'}\\); sql\\\\`SELECT t.tgname, c.relname AS table_name, pg_get_triggerdef\\(t.oid\\) AS def FROM pg_trigger t JOIN pg_class c ON c.oid = t.tgrelid WHERE NOT t.tgisinternal AND c.relname IN \\('log_historico','log_acessos'\\)\\\\`.then\\(r=>{console.log\\(JSON.stringify\\(r,null,2\\)\\);sql.end\\(\\);}\\).catch\\(e=>{console.error\\(e.message\\);sql.end\\(\\);}\\)\")",
+      "Bash(node scripts/qry-trig.mjs)",
+      "Bash(node scripts/patch-no_modify_logs.mjs)",
+      "Bash(node scripts/inspect-inconsist.mjs)",
+      "Bash(node scripts/apply-0004.mjs)"
     ]
   }
 }

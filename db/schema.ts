@@ -294,3 +294,37 @@ export const bhMeta = pgTable('bh_meta', {
 }, (t) => ({
   singleton: check('bh_meta_singleton', sql`${t.id} = 'singleton'`),
 }));
+
+// =====================================================
+// Indicadores — Inconsistências (substitui a cada import; sem anterior)
+// =====================================================
+
+export const inconsistSnapshot = pgTable('inconsist_snapshot', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  filialId: uuid('filial_id').references(() => filiais.id, { onDelete: 'restrict' }),
+  codfilialOrigem: text('codfilial_origem').notNull(),
+  chapa: text('chapa').notNull(),
+  nome: text('nome').notNull(),
+  funcao: text('funcao'),
+  secao: text('secao'),
+  regional: text('regional'),
+  bandeira: text('bandeira'),
+  tipo: text('tipo').notNull(),
+  dataOcorrencia: date('data_ocorrencia'),
+  codsituacao: text('codsituacao'),
+}, (t) => ({
+  filialIdx: index('inconsist_filial_idx').on(t.filialId),
+  chapaIdx:  index('inconsist_chapa_idx').on(t.chapa),
+  secaoIdx:  index('inconsist_secao_idx').on(t.secao),
+  funcaoIdx: index('inconsist_funcao_idx').on(t.funcao),
+}));
+
+export const inconsistMeta = pgTable('inconsist_meta', {
+  id: text('id').primaryKey(),
+  ultimaAtualizacao: timestamp('ultima_atualizacao', { withTimezone: true }).notNull().defaultNow(),
+  atualizadoPor: uuid('atualizado_por').references(() => admins.id, { onDelete: 'set null' }),
+  totalLinhas: integer('total_linhas').notNull().default(0),
+  totalFiliais: integer('total_filiais').notNull().default(0),
+}, (t) => ({
+  singleton: check('inconsist_meta_singleton', sql`${t.id} = 'singleton'`),
+}));

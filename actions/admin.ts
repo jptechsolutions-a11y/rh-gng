@@ -66,6 +66,52 @@ export async function alternarFilialAtiva(id: string, ativa: boolean) {
   return { ok: true };
 }
 
+export async function criarFilial(input: { codigo: string; nome: string; senha: string }) {
+  await requireSession('admin');
+  const codigo = input.codigo.trim();
+  const nome = input.nome.trim();
+  if (codigo.length < 1) throw new Error('Código obrigatório');
+  if (nome.length < 2) throw new Error('Nome muito curto');
+  if (input.senha.length < 6) throw new Error('Senha mínima de 6 caracteres');
+  const existente = await db.select({ id: schema.filiais.id })
+    .from(schema.filiais).where(eq(schema.filiais.codigo, codigo)).limit(1);
+  if (existente.length > 0) throw new Error(`Já existe uma filial com o código ${codigo}`);
+  const hash = await hashPassword(input.senha);
+  await db.insert(schema.filiais).values({ codigo, nome, senhaHash: hash, ativa: true });
+  revalidatePath('/admin/config/filiais');
+  return { ok: true };
+}
+
+export async function atualizarFilial(id: string, input: { codigo: string; nome: string }) {
+  await requireSession('admin');
+  const codigo = input.codigo.trim();
+  const nome = input.nome.trim();
+  if (codigo.length < 1) throw new Error('Código obrigatório');
+  if (nome.length < 2) throw new Error('Nome muito curto');
+  const conflito = await db.select({ id: schema.filiais.id })
+    .from(schema.filiais)
+    .where(and(eq(schema.filiais.codigo, codigo), sql`${schema.filiais.id} <> ${id}`))
+    .limit(1);
+  if (conflito.length > 0) throw new Error(`Outra filial já usa o código ${codigo}`);
+  await db.update(schema.filiais).set({ codigo, nome }).where(eq(schema.filiais.id, id));
+  revalidatePath('/admin/config/filiais');
+  return { ok: true };
+}
+
+export async function removerFilial(id: string) {
+  await requireSession('admin');
+  await db.transaction(async (tx) => {
+    await tx.execute(sql`SET LOCAL app.allow_log_purge = '1'`);
+    await tx.delete(schema.avaliacoesDesempenho).where(eq(schema.avaliacoesDesempenho.filialId, id));
+    await tx.delete(schema.entrevistas).where(eq(schema.entrevistas.filialId, id));
+    await tx.delete(schema.bhSnapshotAtual).where(eq(schema.bhSnapshotAtual.filialId, id));
+    await tx.delete(schema.bhSnapshotAnterior).where(eq(schema.bhSnapshotAnterior.filialId, id));
+    await tx.delete(schema.filiais).where(eq(schema.filiais.id, id));
+  });
+  revalidatePath('/admin/config/filiais');
+  return { ok: true };
+}
+
 // ────────────────────────────────────────────────────────────────
 // CARGOS
 // ────────────────────────────────────────────────────────────────

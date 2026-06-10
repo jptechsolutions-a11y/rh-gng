@@ -186,7 +186,7 @@ export default async function InicioPage() {
 
           {/* Indicadores */}
           <Link
-            href="/indicadores?tab=banco-horas"
+            href="/indicadores?tab=inicio"
             className="cg-module-card group relative rounded-2xl bg-white text-conecta-text p-5 overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-[0_20px_44px_-12px_rgba(13,43,107,0.45)]"
           >
             <span

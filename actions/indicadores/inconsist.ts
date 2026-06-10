@@ -5,25 +5,26 @@ import { eq, inArray, sql } from 'drizzle-orm';
 import * as XLSX from 'xlsx';
 import { requireSession } from '@/lib/auth/session';
 import { revalidatePath } from 'next/cache';
-import { parseBHWorkbook } from '@/lib/indicadores/bh-parser';
+import { parseInconsistWorkbook } from '@/lib/indicadores/inconsist-parser';
 import {
-  agregarResumo, top5Por, agregarResumoPorFilial, montarDetalhado,
-  type Resumo, type ResumoFilial, type DetalhadoRow,
-} from '@/lib/indicadores/bh-queries';
-import { fetchSnapshotRows } from '@/lib/indicadores/bh-db';
+  agregarResumoInconsist, top5PorInconsist,
+  agregarResumoPorFilialInconsist, montarDetalhadoInconsist,
+  type ResumoInconsist, type ResumoFilialInconsist, type DetalhadoInconsistRow,
+} from '@/lib/indicadores/inconsist-queries';
+import { fetchInconsistRows } from '@/lib/indicadores/inconsist-db';
 
-export type ImportarBHResult = {
+export type ImportarInconsistResult = {
   inserted: number;
   warnings: Array<{ linha?: number; chapa?: string; motivo: string }>;
 };
 
-export async function importarBH(formData: FormData): Promise<ImportarBHResult> {
+export async function importarInconsist(formData: FormData): Promise<ImportarInconsistResult> {
   const s = await requireSession('admin');
   const file = formData.get('arquivo');
   if (!(file instanceof File)) throw new Error('Arquivo ausente');
   const buf = Buffer.from(await file.arrayBuffer());
   const wb = XLSX.read(buf, { type: 'buffer' });
-  const { rows, warnings } = parseBHWorkbook(wb);
+  const { rows, warnings } = parseInconsistWorkbook(wb);
 
   const codigos = [...new Set(rows.map((r) => r.codfilial))];
   const filiaisDb = codigos.length
@@ -33,7 +34,7 @@ export async function importarBH(formData: FormData): Promise<ImportarBHResult> 
     : [];
   const mapFilial = new Map(filiaisDb.map((f) => [f.codigo, f.id]));
 
-  const allWarnings: ImportarBHResult['warnings'] = warnings.slice();
+  const allWarnings: ImportarInconsistResult['warnings'] = warnings.slice();
   const inserts = rows.map((r) => {
     const fid = mapFilial.get(r.codfilial) ?? null;
     if (!fid) allWarnings.push({ chapa: r.chapa, motivo: `Filial ${r.codfilial} não cadastrada` });
@@ -46,31 +47,28 @@ export async function importarBH(formData: FormData): Promise<ImportarBHResult> 
       secao: r.secao,
       regional: r.regional,
       bandeira: r.bandeira,
-      horasDecimal: r.horasDecimal.toFixed(2),
-      valorPgto: r.valorPgto.toFixed(2),
-      situacao: r.situacao,
+      tipo: r.tipo,
+      dataOcorrencia: r.dataOcorrencia,
+      codsituacao: r.codsituacao,
     };
   });
 
   await db.transaction(async (tx) => {
-    await tx.execute(sql`TRUNCATE TABLE ${schema.bhSnapshotAnterior}`);
-    await tx.execute(sql`INSERT INTO ${schema.bhSnapshotAnterior}
-      SELECT * FROM ${schema.bhSnapshotAtual}`);
-    await tx.execute(sql`TRUNCATE TABLE ${schema.bhSnapshotAtual}`);
+    await tx.execute(sql`TRUNCATE TABLE ${schema.inconsistSnapshot}`);
     if (inserts.length) {
       for (let i = 0; i < inserts.length; i += 500) {
-        await tx.insert(schema.bhSnapshotAtual).values(inserts.slice(i, i + 500));
+        await tx.insert(schema.inconsistSnapshot).values(inserts.slice(i, i + 500));
       }
     }
     const totalFiliais = new Set(inserts.map((i) => i.filialId).filter(Boolean)).size;
-    await tx.insert(schema.bhMeta).values({
+    await tx.insert(schema.inconsistMeta).values({
       id: 'singleton',
       ultimaAtualizacao: new Date(),
       atualizadoPor: s.adminId,
       totalLinhas: inserts.length,
       totalFiliais,
     }).onConflictDoUpdate({
-      target: schema.bhMeta.id,
+      target: schema.inconsistMeta.id,
       set: {
         ultimaAtualizacao: new Date(),
         atualizadoPor: s.adminId,
@@ -84,52 +82,46 @@ export async function importarBH(formData: FormData): Promise<ImportarBHResult> 
   return { inserted: inserts.length, warnings: allWarnings };
 }
 
-export type DadosBH = {
+export type DadosInconsist = {
   meta: { ultimaAtualizacao: string | null; atualizadoPorNome: string | null } | null;
-  resumo: Resumo;
-  topFuncoes: Array<{ label: string; valor: number }>;
-  topSecoes: Array<{ label: string; valor: number }>;
-  porFilial: ResumoFilial[];
-  detalhado: DetalhadoRow[];
-  filtros: { funcoes: string[]; secoes: string[] };
+  resumo: ResumoInconsist;
+  topFuncoes: Array<{ label: string; valor: number; pct: number }>;
+  topSecoes: Array<{ label: string; valor: number; pct: number }>;
+  porFilial: ResumoFilialInconsist[];
+  detalhado: DetalhadoInconsistRow[];
+  filtros: { funcoes: string[] };
 };
 
-export async function getDadosBH(): Promise<DadosBH> {
+export async function getDadosInconsist(): Promise<DadosInconsist> {
   const s = await requireSession();
   const isAdmin = s.perfil === 'admin';
   const filialFiltro = isAdmin ? undefined : s.filialId;
 
-  const atualGlobal = await fetchSnapshotRows(schema.bhSnapshotAtual);
-  const anteriorGlobal = await fetchSnapshotRows(schema.bhSnapshotAnterior);
-
-  const atualDet = filialFiltro
-    ? await fetchSnapshotRows(schema.bhSnapshotAtual, filialFiltro)
-    : atualGlobal;
-  const anteriorDet = filialFiltro
-    ? await fetchSnapshotRows(schema.bhSnapshotAnterior, filialFiltro)
-    : anteriorGlobal;
+  const todos = await fetchInconsistRows();
+  const filtrados = filialFiltro
+    ? await fetchInconsistRows(filialFiltro)
+    : todos;
 
   const metaRow = await db
-    .select({ ts: schema.bhMeta.ultimaAtualizacao, nome: schema.admins.nome })
-    .from(schema.bhMeta)
-    .leftJoin(schema.admins, eq(schema.bhMeta.atualizadoPor, schema.admins.id))
-    .where(eq(schema.bhMeta.id, 'singleton'));
+    .select({ ts: schema.inconsistMeta.ultimaAtualizacao, nome: schema.admins.nome })
+    .from(schema.inconsistMeta)
+    .leftJoin(schema.admins, eq(schema.inconsistMeta.atualizadoPor, schema.admins.id))
+    .where(eq(schema.inconsistMeta.id, 'singleton'));
 
   const meta = metaRow[0]
     ? { ultimaAtualizacao: metaRow[0].ts.toISOString(), atualizadoPorNome: metaRow[0].nome }
     : null;
 
-  const detalhado = montarDetalhado(atualDet, anteriorDet);
+  const detalhado = montarDetalhadoInconsist(filtrados);
   const funcoes = [...new Set(detalhado.map((d) => d.funcao).filter((x): x is string => !!x))].sort();
-  const secoes  = [...new Set(detalhado.map((d) => d.secao ).filter((x): x is string => !!x))].sort();
 
   return {
     meta,
-    resumo: agregarResumo(atualDet),
-    topFuncoes: top5Por(atualDet, 'funcao'),
-    topSecoes:  top5Por(atualDet, 'secao'),
-    porFilial:  agregarResumoPorFilial(atualGlobal, anteriorGlobal),
+    resumo:     agregarResumoInconsist(filtrados),
+    topFuncoes: top5PorInconsist(filtrados, 'funcao'),
+    topSecoes:  top5PorInconsist(filtrados, 'secao'),
+    porFilial:  agregarResumoPorFilialInconsist(todos),
     detalhado,
-    filtros: { funcoes, secoes },
+    filtros: { funcoes },
   };
 }

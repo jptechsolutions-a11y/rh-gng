@@ -11,8 +11,8 @@ function formatHoras(n: number): string {
   return `${sign}${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
-function formatDec(n: number): string {
-  return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function formatInt(n: number): string {
+  return n.toLocaleString('pt-BR');
 }
 
 export function InicioView({ dados }: { dados: RankingsBundle }) {
@@ -48,10 +48,10 @@ export function InicioView({ dados }: { dados: RankingsBundle }) {
           color="navy"
         />
         <RankingBars
-          titulo="Ranking Inconsistências (média/pessoa)"
+          titulo="Ranking Inconsistências"
           icon={AlertTriangle}
           items={dados.inconsist.items}
-          format={(n) => formatDec(n)}
+          format={(n) => formatInt(n)}
           color="orange"
         />
       </div>

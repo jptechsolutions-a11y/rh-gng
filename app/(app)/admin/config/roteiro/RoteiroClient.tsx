@@ -18,6 +18,7 @@ const TIPOS = [
   { v: 'sim-nao', label: 'Sim / Não' },
   { v: 'escala', label: 'Escala 1–5' },
   { v: 'select', label: 'Seleção (opções)' },
+  { v: 'multi', label: 'Múltipla escolha (vários)' },
 ] as const;
 
 function emptyDraft(cargo = 'TODOS'): Draft {
@@ -39,10 +40,11 @@ export function RoteiroClient({ perguntas, cargos }: { perguntas: Pergunta[]; ca
 
   const adicionar = () => {
     if (!novo.pergunta.trim()) { toast.error('Informe a pergunta'); return; }
-    const opcoes = novo.tipo === 'select'
+    const precisaOpcoes = novo.tipo === 'select' || novo.tipo === 'multi';
+    const opcoes = precisaOpcoes
       ? novoOpcoesTxt.split('\n').map((s) => s.trim()).filter(Boolean)
       : undefined;
-    if (novo.tipo === 'select' && (!opcoes || opcoes.length === 0)) { toast.error('Adicione opções (uma por linha)'); return; }
+    if (precisaOpcoes && (!opcoes || opcoes.length === 0)) { toast.error('Adicione opções (uma por linha)'); return; }
     start(async () => {
       try {
         await criarPergunta({ cargo: novo.cargo, ordem: novo.ordem, pergunta: novo.pergunta, tipo: novo.tipo, opcoes });
@@ -61,7 +63,7 @@ export function RoteiroClient({ perguntas, cargos }: { perguntas: Pergunta[]; ca
   };
 
   const salvar = (id: string) => {
-    const opcoes = draft.tipo === 'select'
+    const opcoes = draft.tipo === 'select' || draft.tipo === 'multi'
       ? draftOpcoesTxt.split('\n').map((s) => s.trim()).filter(Boolean)
       : undefined;
     start(async () => {
@@ -115,7 +117,7 @@ export function RoteiroClient({ perguntas, cargos }: { perguntas: Pergunta[]; ca
             <Plus className="h-4 w-4" />
           </button>
         </div>
-        {novo.tipo === 'select' && (
+        {(novo.tipo === 'select' || novo.tipo === 'multi') && (
           <textarea
             placeholder="Opções (uma por linha)&#10;Ex: Excelente&#10;Bom&#10;Regular"
             value={novoOpcoesTxt}
@@ -149,7 +151,7 @@ export function RoteiroClient({ perguntas, cargos }: { perguntas: Pergunta[]; ca
                 </div>
                 <textarea value={draft.pergunta} onChange={(e) => setDraft({ ...draft, pergunta: e.target.value })} rows={2}
                   className="w-full rounded border border-slate-200 px-2 py-1 text-sm" />
-                {draft.tipo === 'select' && (
+                {(draft.tipo === 'select' || draft.tipo === 'multi') && (
                   <textarea placeholder="Opções (uma por linha)" value={draftOpcoesTxt} onChange={(e) => setDraftOpcoesTxt(e.target.value)} rows={3}
                     className="w-full rounded border border-slate-200 px-2 py-1 text-sm" />
                 )}

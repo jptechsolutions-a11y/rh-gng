@@ -4,7 +4,6 @@ import {
   Settings,
   Users,
   ClipboardList,
-  Star,
   ListChecks,
   ArrowRight,
   UserCog,
@@ -27,12 +26,6 @@ export default async function ConfigPage() {
       title: 'Cargos',
       desc: 'Gerenciar cargos disponíveis para entrevistas.',
       href: '/admin/config/cargos',
-    },
-    {
-      icon: Star,
-      title: 'Critérios',
-      desc: 'Critérios de avaliação, escalas e pesos.',
-      href: '/admin/config/criterios',
     },
     {
       icon: ListChecks,

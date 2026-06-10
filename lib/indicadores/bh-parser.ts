@@ -2,13 +2,24 @@ import * as XLSX from 'xlsx';
 import { BH_HEADER, BHRowSchema, type BHParseResult, type BHRow } from './bh-validators';
 
 export function parseHHMM(v: unknown): number | null {
-  if (typeof v === 'number' && Number.isFinite(v)) return Math.max(0, v);
+  if (typeof v === 'number' && Number.isFinite(v)) {
+    if (v < 0) return 0;
+    if (v < 1) return v * 24;
+    return v;
+  }
   if (typeof v !== 'string') return null;
   const m = v.trim().match(/^(\d+):(\d{1,2})$/);
   if (!m) return null;
   const h = Number(m[1]); const min = Number(m[2]);
   if (!Number.isFinite(h) || !Number.isFinite(min) || min >= 60) return null;
   return h + min / 60;
+}
+
+function normalizeChapa(v: unknown): string {
+  if (typeof v === 'number' && Number.isFinite(v)) {
+    return String(Math.trunc(v)).padStart(8, '0');
+  }
+  return String(v ?? '').trim();
 }
 
 export function normalizeCodfilial(v: unknown): string {
@@ -35,7 +46,7 @@ export function parseBHWorkbook(wb: XLSX.WorkBook): BHParseResult {
 
   for (let i = 1; i < rows.length; i++) {
     const r = rows[i] as unknown[];
-    const chapa = String(r[3] ?? '').trim();
+    const chapa = normalizeChapa(r[3]);
     const nome  = String(r[4] ?? '').trim();
     if (!chapa || !nome) continue;
 

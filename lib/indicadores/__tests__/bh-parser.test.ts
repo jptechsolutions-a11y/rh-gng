@@ -16,8 +16,13 @@ describe('parseHHMM', () => {
     expect(parseHHMM('00:00')).toBe(0);
     expect(parseHHMM('41:45')).toBe(41.75);
   });
-  it('aceita número (já decimal)', () => {
+  it('converte fração-de-dia do Excel para horas decimais', () => {
+    // 12:19 stored como (12 + 19/60) / 24 = 0.5131944...
+    expect(parseHHMM((12 + 19/60) / 24)).toBeCloseTo(12 + 19/60, 5);
+  });
+  it('número >= 1 é tratado como horas decimais já prontas', () => {
     expect(parseHHMM(2.5)).toBe(2.5);
+    expect(parseHHMM(41.75)).toBe(41.75);
   });
   it('retorna null em valor inválido', () => {
     expect(parseHHMM('abc')).toBeNull();
@@ -77,10 +82,21 @@ describe('parseBHWorkbook', () => {
     expect(out.warnings).toHaveLength(0);
   });
 
-  it('ignora TOTAL_NEGATIVO (não soma no horasDecimal)', () => {
-    const neg = [...baseRow]; neg[7] = '00:00'; neg[8] = -2.85;
-    const wb = workbookFromRows([BH_HEADER as unknown as string[], neg]);
+  it('não usa TOTAL_NEGATIVO no horasDecimal (apenas TOTAL_EM_HORA)', () => {
+    const a = [...baseRow]; a[7] = '00:00'; a[8] = -2.85;
+    const b = [...baseRow]; b[7] = '05:00'; b[8] = -10; b[3] = '00000002'; b[4] = 'OUTRO';
+    const wb = workbookFromRows([BH_HEADER as unknown as string[], a, b]);
     const out = parseBHWorkbook(wb);
     expect(out.rows[0].horasDecimal).toBe(0);
+    expect(out.rows[1].horasDecimal).toBe(5);
+    // BHRow não tem campo "negativo" — confirma que TOTAL_NEGATIVO não está no shape
+    expect(Object.keys(out.rows[0])).not.toContain('totalNegativo');
+  });
+
+  it('preserva leading zeros quando CHAPA vem como número do Excel', () => {
+    const row = [...baseRow]; row[3] = 3204142; // sem leading zero
+    const wb = workbookFromRows([BH_HEADER as unknown as string[], row]);
+    const out = parseBHWorkbook(wb);
+    expect(out.rows[0].chapa).toBe('03204142');
   });
 });

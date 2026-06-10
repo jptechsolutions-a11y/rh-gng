@@ -2,9 +2,10 @@
 
 import { useState, useTransition } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { Upload } from 'lucide-react';
+import { Upload, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
 import { importarBH, type ImportarBHResult } from '@/actions/indicadores/bh';
 
 export function ImportarBHDialog() {
@@ -31,55 +32,104 @@ export function ImportarBHDialog() {
   }
 
   return (
-    <Dialog.Root open={open} onOpenChange={(o) => { setOpen(o); if (!o) { setArquivo(null); setResultado(null); } }}>
+    <Dialog.Root
+      open={open}
+      onOpenChange={(o) => { setOpen(o); if (!o) { setArquivo(null); setResultado(null); } }}
+    >
       <Dialog.Trigger asChild>
-        <button className="inline-flex items-center gap-2 rounded-md bg-emerald-600 text-white px-3 py-2 text-sm hover:bg-emerald-700">
-          <Upload className="size-4" /> Importar BH
-        </button>
+        <Button variant="conecta" size="conecta" className="text-sm">
+          <Upload className="h-4 w-4" />
+          Importar BH
+        </Button>
       </Dialog.Trigger>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-black/40" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card border rounded-lg w-[min(560px,95vw)] p-5 shadow-lg">
-          <Dialog.Title className="text-lg font-semibold">Importar Banco de Horas</Dialog.Title>
-          <Dialog.Description className="text-sm text-muted-foreground mb-4">
-            Selecione a planilha (.xls ou .xlsx) no formato BH PERLOG. O snapshot atual virará o anterior.
-          </Dialog.Description>
-
-          <input
-            type="file"
-            accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            onChange={(e) => setArquivo(e.target.files?.[0] ?? null)}
-            className="block w-full text-sm"
+        <Dialog.Overlay className="fixed inset-0 z-40 bg-conecta-primary/45 backdrop-blur-sm data-[state=open]:animate-in data-[state=open]:fade-in-0" />
+        <Dialog.Content
+          className="fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2 w-[min(580px,95vw)] overflow-hidden rounded-xl bg-white border border-conecta-primary/10"
+          style={{ boxShadow: '0 20px 60px -16px rgba(13,43,107,0.45)' }}
+        >
+          <span
+            aria-hidden
+            className="absolute top-0 left-0 right-0 h-1"
+            style={{ background: '#E8621A' }}
           />
-
-          {resultado && (
-            <div className="mt-4 max-h-48 overflow-y-auto text-sm space-y-1 border rounded-md p-2">
-              <div><b>{resultado.inserted}</b> linhas importadas.</div>
-              {resultado.warnings.length > 0 && (
-                <>
-                  <div className="font-medium mt-2">Avisos ({resultado.warnings.length}):</div>
-                  <ul className="list-disc pl-5 text-xs text-muted-foreground">
-                    {resultado.warnings.slice(0, 50).map((w, i) => (
-                      <li key={i}>{w.chapa ? `chapa ${w.chapa}: ` : w.linha ? `linha ${w.linha}: ` : ''}{w.motivo}</li>
-                    ))}
-                    {resultado.warnings.length > 50 && <li>… (+{resultado.warnings.length - 50} avisos)</li>}
-                  </ul>
-                </>
-              )}
+          <div className="p-6 pt-7">
+            <div className="flex items-start justify-between gap-3 mb-1">
+              <div className="flex items-center gap-2">
+                <span className="h-[2px] w-6 bg-conecta-accent" />
+                <span className="font-display text-[10px] uppercase tracking-[0.32em] text-conecta-accent font-semibold">
+                  Banco de Horas
+                </span>
+              </div>
+              <Dialog.Close
+                className="text-conecta-muted hover:text-conecta-primary transition-colors"
+                aria-label="Fechar"
+              >
+                <X className="h-4 w-4" />
+              </Dialog.Close>
             </div>
-          )}
+            <Dialog.Title className="font-display text-[20px] font-extrabold text-conecta-primary tracking-tight">
+              Importar planilha
+            </Dialog.Title>
+            <Dialog.Description className="text-[13px] text-conecta-muted mt-1">
+              Selecione o arquivo <span className="font-semibold">BH PERLOG</span> (.xls ou .xlsx).
+              O snapshot atual vira o anterior para gerar a comparação.
+            </Dialog.Description>
 
-          <div className="mt-5 flex justify-end gap-2">
-            <Dialog.Close asChild>
-              <button className="rounded-md border px-3 py-2 text-sm">Fechar</button>
-            </Dialog.Close>
-            <button
-              onClick={submit}
-              disabled={pending || !arquivo}
-              className="rounded-md bg-emerald-600 text-white px-3 py-2 text-sm hover:bg-emerald-700 disabled:opacity-50"
-            >
-              {pending ? 'Importando…' : 'Importar'}
-            </button>
+            <label className="mt-5 block">
+              <span className="block font-display text-[11px] uppercase tracking-[0.18em] font-semibold text-conecta-primary mb-1.5">
+                Arquivo
+              </span>
+              <input
+                type="file"
+                accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                onChange={(e) => setArquivo(e.target.files?.[0] ?? null)}
+                className="block w-full text-sm text-conecta-text file:mr-3 file:rounded-lg file:border-0 file:bg-conecta-primary/8 file:px-3 file:py-2 file:font-display file:font-semibold file:text-conecta-primary file:text-xs file:uppercase file:tracking-[0.14em] hover:file:bg-conecta-accent/15 hover:file:text-conecta-accent transition"
+              />
+            </label>
+
+            {resultado && (
+              <div
+                className="mt-5 rounded-lg border border-conecta-primary/10 bg-conecta-primary/3 p-3"
+                style={{ background: 'rgba(13,43,107,0.04)' }}
+              >
+                <div className="font-display text-sm font-semibold text-conecta-primary">
+                  <span className="text-conecta-accent">{resultado.inserted}</span> linhas importadas
+                </div>
+                {resultado.warnings.length > 0 && (
+                  <div className="mt-2">
+                    <div className="font-display text-[11px] uppercase tracking-[0.14em] text-conecta-muted mb-1">
+                      Avisos ({resultado.warnings.length})
+                    </div>
+                    <ul className="text-xs text-conecta-muted space-y-0.5 max-h-40 overflow-y-auto list-disc pl-5">
+                      {resultado.warnings.slice(0, 50).map((w, i) => (
+                        <li key={i}>
+                          {w.chapa ? `chapa ${w.chapa}: ` : w.linha ? `linha ${w.linha}: ` : ''}
+                          {w.motivo}
+                        </li>
+                      ))}
+                      {resultado.warnings.length > 50 && (
+                        <li>… (+{resultado.warnings.length - 50} avisos)</li>
+                      )}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div className="mt-6 flex justify-end gap-2">
+              <Dialog.Close asChild>
+                <Button variant="conecta-outline">Fechar</Button>
+              </Dialog.Close>
+              <Button
+                variant="conecta"
+                onClick={submit}
+                disabled={pending || !arquivo}
+              >
+                <Upload className="h-4 w-4" />
+                {pending ? 'Importando…' : 'Importar'}
+              </Button>
+            </div>
           </div>
         </Dialog.Content>
       </Dialog.Portal>

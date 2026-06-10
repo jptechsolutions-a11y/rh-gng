@@ -1,29 +1,45 @@
 'use client';
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { ConectaCard, SectionHeader } from '@/components/ui/conecta-card';
+import { Activity } from 'lucide-react';
 import { formatHoras } from './variacao';
 
-const COLORS = ['#059669', '#0ea5e9', '#22c55e', '#0284c7', '#10b981'];
+const COLORS = ['#0D2B6B', '#E8621A', '#1A3F8F', '#F59E45', '#3E5BA9'];
 
 export function RoscaTop5({ titulo, dados }: { titulo: string; dados: Array<{ label: string; valor: number }> }) {
   return (
-    <div className="rounded-lg border bg-card p-4">
-      <h3 className="font-medium mb-3">{titulo}</h3>
+    <ConectaCard noPadding>
+      <div className="p-5 pb-2">
+        <SectionHeader label={titulo} icon={Activity} />
+      </div>
       {dados.length === 0 ? (
-        <p className="text-sm text-muted-foreground py-12 text-center">Sem dados</p>
+        <p className="px-5 py-12 text-center text-sm text-conecta-muted">Sem dados</p>
       ) : (
-        <div className="h-72">
+        <div className="h-72 px-2 pb-4">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
-              <Pie data={dados} dataKey="valor" nameKey="label" innerRadius={55} outerRadius={90} paddingAngle={2}>
-                {dados.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+              <Pie data={dados} dataKey="valor" nameKey="label" innerRadius={55} outerRadius={92} paddingAngle={2}>
+                {dados.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} stroke="#fff" strokeWidth={2} />)}
               </Pie>
-              <Tooltip formatter={(v) => formatHoras(Number(v))} />
-              <Legend verticalAlign="bottom" height={36} />
+              <Tooltip
+                formatter={(v) => formatHoras(Number(v))}
+                contentStyle={{
+                  border: '1px solid rgba(13,43,107,0.12)',
+                  borderRadius: 8,
+                  boxShadow: '0 4px 24px -10px rgba(13,43,107,0.25)',
+                  fontFamily: 'inherit',
+                }}
+              />
+              <Legend
+                verticalAlign="bottom"
+                height={42}
+                wrapperStyle={{ fontSize: 12, fontFamily: 'inherit', color: '#475569' }}
+              />
             </PieChart>
           </ResponsiveContainer>
         </div>
       )}
-    </div>
+    </ConectaCard>
   );
 }

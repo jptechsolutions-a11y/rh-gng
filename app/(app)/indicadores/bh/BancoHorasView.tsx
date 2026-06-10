@@ -3,6 +3,7 @@
 import type { DadosBH } from '@/actions/indicadores/bh';
 import { CardsResumo } from './CardsResumo';
 import { RoscaTop5 } from './RoscaTop5';
+import { TabelaResumoFilial } from './TabelaResumoFilial';
 
 export function BancoHorasView({ dados, perfil }: { dados: DadosBH; perfil: 'admin' | 'filial' }) {
   const ts = dados.meta?.ultimaAtualizacao
@@ -26,6 +27,8 @@ export function BancoHorasView({ dados, perfil }: { dados: DadosBH; perfil: 'adm
         <RoscaTop5 titulo="Top 5 funções (horas)" dados={dados.topFuncoes} />
         <RoscaTop5 titulo="Top 5 seções (horas)"  dados={dados.topSecoes} />
       </div>
+
+      <TabelaResumoFilial rows={dados.porFilial} />
     </div>
   );
 }

@@ -254,3 +254,43 @@ export const escutaReunioes = pgTable('escuta_reunioes', {
 }, (t) => ({
   filialDataIdx: index('escuta_reunioes_filial_data_idx').on(t.filialCodigo, t.dataReuniao),
 }));
+
+// =====================================================
+// Indicadores — Banco de Horas
+// =====================================================
+
+const bhSnapshotColumns = {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  filialId: uuid('filial_id').references(() => filiais.id, { onDelete: 'restrict' }),
+  codfilialOrigem: text('codfilial_origem').notNull(),
+  chapa: text('chapa').notNull(),
+  nome: text('nome').notNull(),
+  funcao: text('funcao'),
+  secao: text('secao'),
+  regional: text('regional'),
+  bandeira: text('bandeira'),
+  horasDecimal: numeric('horas_decimal', { precision: 10, scale: 2 }).notNull(),
+  valorPgto: numeric('valor_pgto', { precision: 12, scale: 2 }).notNull().default('0'),
+  situacao: text('situacao'),
+} as const;
+
+export const bhSnapshotAtual = pgTable('bh_snapshot_atual', bhSnapshotColumns, (t) => ({
+  filialIdx: index('bh_atual_filial_idx').on(t.filialId),
+  chapaIdx:  index('bh_atual_chapa_idx').on(t.chapa),
+  secaoIdx:  index('bh_atual_secao_idx').on(t.secao),
+  funcaoIdx: index('bh_atual_funcao_idx').on(t.funcao),
+}));
+
+export const bhSnapshotAnterior = pgTable('bh_snapshot_anterior', bhSnapshotColumns, (t) => ({
+  chapaIdx: index('bh_anterior_chapa_idx').on(t.chapa),
+}));
+
+export const bhMeta = pgTable('bh_meta', {
+  id: text('id').primaryKey(),
+  ultimaAtualizacao: timestamp('ultima_atualizacao', { withTimezone: true }).notNull().defaultNow(),
+  atualizadoPor: uuid('atualizado_por').references(() => admins.id, { onDelete: 'set null' }),
+  totalLinhas: integer('total_linhas').notNull().default(0),
+  totalFiliais: integer('total_filiais').notNull().default(0),
+}, (t) => ({
+  singleton: check('bh_meta_singleton', sql`${t.id} = 'singleton'`),
+}));

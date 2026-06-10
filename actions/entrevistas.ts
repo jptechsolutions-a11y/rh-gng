@@ -282,6 +282,23 @@ export async function listarPorCpfMesmaFilial(cpf: string, excluirId?: string) {
   return excluirId ? rows.filter((r) => r.id !== excluirId) : rows;
 }
 
+export async function buscarUltimosDadosPorCpf(cpf: string): Promise<{ nome: string; dataNasc: string | null } | null> {
+  const s = await requireSession('filial');
+  const digits = cpf.replace(/\D/g, '');
+  if (digits.length !== 11) return null;
+  const rows = await db.select({
+    nome: schema.entrevistas.nome,
+    dataNasc: schema.entrevistas.dataNasc,
+  })
+    .from(schema.entrevistas)
+    .where(and(eq(schema.entrevistas.cpf, digits), eq(schema.entrevistas.filialId, s.filialId)))
+    .orderBy(desc(schema.entrevistas.dataHora))
+    .limit(1);
+  const r = rows[0];
+  if (!r) return null;
+  return { nome: r.nome, dataNasc: r.dataNasc ?? null };
+}
+
 export async function atualizarStatus(input: { entrevistaId: string; novoStatus: string; motivo?: string }) {
   const s = await requireSession();
   const parsed = atualizarStatusSchema.parse(input);

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import Link from 'next/link';
 import { AlertTriangle, X, History } from 'lucide-react';
-import { listarPorCpfMesmaFilial } from '@/actions/entrevistas';
+import { listarPorCpfMesmaFilial, buscarUltimosDadosPorCpf } from '@/actions/entrevistas';
 import type { EntrevistaInput } from '@/lib/validators';
 
 type Existente = {
@@ -16,7 +16,7 @@ type Existente = {
 };
 
 export function CpfDuplicateAlert({ entrevistaIdAtual }: { entrevistaIdAtual?: string }) {
-  const { watch } = useFormContext<EntrevistaInput>();
+  const { watch, setValue } = useFormContext<EntrevistaInput>();
   const cpf = watch('cpf');
   const [existentes, setExistentes] = useState<Existente[]>([]);
   const [dismissed, setDismissed] = useState(false);
@@ -81,6 +81,20 @@ export function CpfDuplicateAlert({ entrevistaIdAtual }: { entrevistaIdAtual?: s
             >
               <History className="h-3.5 w-3.5" /> Ver histórico do candidato
             </Link>
+            <button
+              type="button"
+              onClick={async () => {
+                const dados = await buscarUltimosDadosPorCpf(cpfDigits);
+                if (dados) {
+                  setValue('nome', dados.nome, { shouldDirty: true, shouldValidate: true });
+                  if (dados.dataNasc) setValue('dataNasc', dados.dataNasc as never, { shouldDirty: true });
+                }
+                setDismissed(true);
+              }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium border border-amber-400 bg-white text-amber-900 hover:bg-amber-100"
+            >
+              Prosseguir e preencher nome / nascimento
+            </button>
             <button
               type="button"
               onClick={() => setDismissed(true)}

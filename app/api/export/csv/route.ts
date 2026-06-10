@@ -5,8 +5,8 @@ import { requireSession } from '@/lib/auth/session';
 export const dynamic = 'force-dynamic';
 
 const COLS = [
-  'id','filialId','dataHora','cpf','nome','email','telefone','cidade',
-  'cargoPretendido','status','notaGeral','recrutador','atualizadoEm',
+  'id','filialId','dataHora','cpf','nome',
+  'cargoPretendido','status','parecer','notaGeral','recrutador','atualizadoEm',
 ] as const;
 
 // CSV-injection-safe escape: aspas as necessárias + prefix `'` quando o valor

@@ -10,10 +10,9 @@ type Row = {
   id: string;
   nome: string;
   cpf: string;
-  telefone: string | null;
   cargoPretendido: string | null;
   status: string;
-  cidade: string | null;
+  parecer: string | null;
   dataHora: string;
 };
 
@@ -74,7 +73,7 @@ export function BancoTalentosClient({ rows }: { rows: Row[] }) {
                 <tr>
                   <th scope="col">Candidato</th>
                   <th scope="col">Cargo</th>
-                  <th scope="col">Cidade</th>
+                  <th scope="col">Parecer</th>
                   <th scope="col">Tempo no banco</th>
                 </tr>
               </thead>
@@ -90,12 +89,17 @@ export function BancoTalentosClient({ rows }: { rows: Row[] }) {
                         >
                           {e.nome}
                         </Link>
-                        <div className="text-xs text-conecta-muted mt-0.5">
-                          {e.telefone ?? '—'}
-                        </div>
                       </td>
                       <td className="text-conecta-text">{e.cargoPretendido ?? '—'}</td>
-                      <td className="text-conecta-muted">{e.cidade ?? '—'}</td>
+                      <td>
+                        {e.parecer ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-perlog-orange/10 text-perlog-orange ring-1 ring-perlog-orange/30">
+                            {e.parecer}
+                          </span>
+                        ) : (
+                          <span className="text-conecta-muted">—</span>
+                        )}
+                      </td>
                       <td>
                         <span
                           className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-display font-semibold border ${age.cls}`}

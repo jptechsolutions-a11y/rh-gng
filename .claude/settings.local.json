@@ -98,7 +98,14 @@
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); deps={**d.get\\('dependencies',{}\\), **d.get\\('devDependencies',{}\\)}; print\\('zod:', deps.get\\('zod','not found'\\)\\)\")",
       "Bash(npm test *)",
       "Bash(node node_modules\\\\typescript\\\\bin\\\\tsc --noEmit)",
-      "Bash(node \"node_modules/typescript/bin/tsc\" --noEmit)"
+      "Bash(node \"node_modules/typescript/bin/tsc\" --noEmit)",
+      "PowerShell(\\(Get-Command node\\).Source)",
+      "Bash(node \"./node_modules/typescript/bin/tsc\" --noEmit)",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(Object.keys\\(p.dependencies\\).filter\\(k=>k.includes\\('motion'\\)||k.includes\\('framer'\\)||k.includes\\('animat'\\)\\).join\\('\\\\n'\\)\\)\")",
+      "Bash(findstr /i \"entrevista guia modelo\")",
+      "Bash(findstr /I \"guia\")",
+      "Bash(node \"node_modules\\\\typescript\\\\bin\\\\tsc\" --noEmit)",
+      "PowerShell(node \"node_modules\\\\typescript\\\\bin\\\\tsc\" --noEmit 2>&1 | Select-String -Pattern \"error TS\" | ForEach-Object { $_.Line })"
     ]
   }
 }

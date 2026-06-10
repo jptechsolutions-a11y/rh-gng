@@ -48,8 +48,7 @@ export default async function HistoricoPage({ searchParams }: { searchParams: Pr
     if (q) {
       const hitNome = e.nome.toLowerCase().includes(q);
       const hitCpf = qDigits.length >= 3 && e.cpf.includes(qDigits);
-      const hitEmail = (e.email ?? '').toLowerCase().includes(q);
-      if (!hitNome && !hitCpf && !hitEmail) return false;
+      if (!hitNome && !hitCpf) return false;
     }
     return true;
   });
@@ -143,7 +142,14 @@ export default async function HistoricoPage({ searchParams }: { searchParams: Pr
                         <td className="text-conecta-text">{e.cargoPretendido ?? '—'}</td>
                         <td className="text-conecta-muted text-xs">{e.recrutador ?? '—'}</td>
                         <td>
-                          <Badge variant={statusVariant(e.status)}>{e.status}</Badge>
+                          <div className="flex items-center gap-1.5">
+                            <Badge variant={statusVariant(e.status)}>{e.status}</Badge>
+                            {e.parecer && (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-perlog-orange/10 text-perlog-orange ring-1 ring-perlog-orange/30">
+                                {e.parecer}
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td>
                           <span

@@ -101,51 +101,6 @@ export async function removerCargo(id: string) {
 }
 
 // ────────────────────────────────────────────────────────────────
-// CRITÉRIOS
-// ────────────────────────────────────────────────────────────────
-
-export async function listarCriteriosAdmin() {
-  await requireSession('admin');
-  return db.select().from(schema.criterios).orderBy(asc(schema.criterios.ordem), asc(schema.criterios.nome));
-}
-
-export async function criarCriterio(input: { nome: string; escalaMax: number; peso: number; ordem: number }) {
-  await requireSession('admin');
-  if (input.nome.trim().length < 2) throw new Error('Nome muito curto');
-  if (input.escalaMax < 2 || input.escalaMax > 10) throw new Error('Escala entre 2 e 10');
-  await db.insert(schema.criterios).values({
-    nome: input.nome.trim(),
-    escalaMax: input.escalaMax,
-    peso: String(input.peso),
-    ordem: input.ordem,
-    ativo: true,
-  });
-  revalidatePath('/admin/config/criterios');
-  return { ok: true };
-}
-
-export async function atualizarCriterio(id: string, input: { nome: string; escalaMax: number; peso: number; ordem: number; ativo: boolean }) {
-  await requireSession('admin');
-  if (input.nome.trim().length < 2) throw new Error('Nome muito curto');
-  await db.update(schema.criterios).set({
-    nome: input.nome.trim(),
-    escalaMax: input.escalaMax,
-    peso: String(input.peso),
-    ordem: input.ordem,
-    ativo: input.ativo,
-  }).where(eq(schema.criterios.id, id));
-  revalidatePath('/admin/config/criterios');
-  return { ok: true };
-}
-
-export async function removerCriterio(id: string) {
-  await requireSession('admin');
-  await db.delete(schema.criterios).where(eq(schema.criterios.id, id));
-  revalidatePath('/admin/config/criterios');
-  return { ok: true };
-}
-
-// ────────────────────────────────────────────────────────────────
 // ROTEIRO (perguntas)
 // ────────────────────────────────────────────────────────────────
 

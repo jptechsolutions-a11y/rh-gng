@@ -40,8 +40,7 @@ export async function GET(req: NextRequest) {
     if (q) {
       const hitNome = e.nome.toLowerCase().includes(q);
       const hitCpf = qDigits.length >= 3 && e.cpf.includes(qDigits);
-      const hitEmail = (e.email ?? '').toLowerCase().includes(q);
-      if (!hitNome && !hitCpf && !hitEmail) return false;
+      if (!hitNome && !hitCpf) return false;
     }
     return true;
   });
@@ -50,15 +49,10 @@ export async function GET(req: NextRequest) {
     'Nome': e.nome,
     'CPF': fmtCpf(e.cpf),
     'Cargo proposto': e.cargoPretendido ?? '',
-    'Telefone': e.telefone ?? '',
-    'E-mail': e.email ?? '',
-    'Cidade': e.cidade ?? '',
-    'Escolaridade': e.escolaridade ?? '',
-    'CNH': e.possuiCnh ?? '',
-    'Pretensão salarial': e.pretensaoSalarial ? Number(e.pretensaoSalarial) : '',
     'Turnos': (e.disponibilidadeTurnos ?? []).join(' · '),
     'Entrevistador': e.recrutador ?? '',
     'Status': e.status,
+    'Parecer': e.parecer ?? '',
     'Retorno': retornoDe(e.status),
     'Aprovado pelo G&G': e.aprovadoPeloGg ? 'Sim' : 'Não',
     'Gestor aprovador': e.gestorAprovador ?? '',
@@ -73,9 +67,8 @@ export async function GET(req: NextRequest) {
   const ws = XLSX.utils.json_to_sheet(data);
   // Larguras estimadas
   ws['!cols'] = [
-    { wch: 28 }, { wch: 16 }, { wch: 24 }, { wch: 16 }, { wch: 28 }, { wch: 18 },
-    { wch: 22 }, { wch: 14 }, { wch: 16 }, { wch: 20 }, { wch: 20 },
-    { wch: 18 }, { wch: 12 }, { wch: 14 }, { wch: 22 },
+    { wch: 28 }, { wch: 16 }, { wch: 24 }, { wch: 20 }, { wch: 20 },
+    { wch: 18 }, { wch: 16 }, { wch: 12 }, { wch: 14 }, { wch: 22 },
     { wch: 18 }, { wch: 18 }, { wch: 14 }, { wch: 40 }, { wch: 40 },
   ];
   XLSX.utils.book_append_sheet(wb, ws, 'Entrevistas');

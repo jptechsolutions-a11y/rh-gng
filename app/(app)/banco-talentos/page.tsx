@@ -13,10 +13,9 @@ export default async function BancoTalentosPage() {
     id: r.id,
     nome: r.nome,
     cpf: r.cpf,
-    telefone: r.telefone,
     cargoPretendido: r.cargoPretendido,
     status: r.status,
-    cidade: r.cidade,
+    parecer: r.parecer,
     dataHora: r.dataHora.toISOString(),
   }));
 

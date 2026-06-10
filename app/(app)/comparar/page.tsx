@@ -5,7 +5,7 @@ import { ConectaCard } from '@/components/ui/conecta-card';
 import { Badge, statusVariant } from '@/components/ui/badge';
 import { requireSession } from '@/lib/auth/session';
 import { listarPorCargoFilial } from '@/actions/entrevistas';
-import { getCargosAtivos, getCriterios } from '@/db/queries/config';
+import { getCargosAtivos } from '@/db/queries/config';
 import { CargoSelect } from './CargoSelect';
 
 export const dynamic = 'force-dynamic';
@@ -23,9 +23,9 @@ export default async function CompararPage({
   const s = await requireSession('filial');
   const sp = await searchParams;
 
-  // Primeiro resolvemos cargos+criterios em paralelo; só então pedimos os candidatos
-  // do cargo selecionado (filtro vai pro SQL — antes puxávamos 500 linhas e filtrávamos em JS).
-  const [cargos, criterios] = await Promise.all([getCargosAtivos(), getCriterios()]);
+  // Resolvemos cargos primeiro; só então pedimos os candidatos do cargo selecionado
+  // (filtro vai pro SQL — antes puxávamos 500 linhas e filtrávamos em JS).
+  const [cargos] = await Promise.all([getCargosAtivos()]);
   const cargoSel = sp.cargo ?? cargos[0]?.nome ?? '';
   const filtradas = cargoSel ? await listarPorCargoFilial(cargoSel, 6) : [];
 
@@ -92,26 +92,27 @@ export default async function CompararPage({
                     ))}
                   />
                   <Row
+                    label="Parecer"
+                    cells={filtradas.map((e) =>
+                      e.parecer ? (
+                        <span
+                          key={e.id}
+                          className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-perlog-orange/10 text-perlog-orange ring-1 ring-perlog-orange/30"
+                        >
+                          {e.parecer}
+                        </span>
+                      ) : (
+                        <span key={e.id} className="text-conecta-muted">—</span>
+                      ),
+                    )}
+                  />
+                  <Row
                     label="Entrevistador"
                     cells={filtradas.map((e) => e.recrutador ?? '—')}
                   />
                   <Row
                     label="Gestor aprovador"
                     cells={filtradas.map((e) => e.gestorAprovador ?? '—')}
-                  />
-                  <Row label="Cidade" cells={filtradas.map((e) => e.cidade ?? '—')} />
-                  <Row
-                    label="Escolaridade"
-                    cells={filtradas.map((e) => e.escolaridade ?? '—')}
-                  />
-                  <Row label="CNH" cells={filtradas.map((e) => e.possuiCnh ?? '—')} />
-                  <Row
-                    label="Pretensão"
-                    cells={filtradas.map((e) =>
-                      e.pretensaoSalarial
-                        ? `R$ ${Number(e.pretensaoSalarial).toLocaleString('pt-BR')}`
-                        : '—',
-                    )}
                   />
                   <Row
                     label="Turnos"
@@ -122,63 +123,6 @@ export default async function CompararPage({
                   <Row
                     label="Avaliado pelo G&G"
                     cells={filtradas.map((e) => (e.aprovadoPeloGg ? '✓' : '—'))}
-                  />
-
-                  <tr>
-                    <td
-                      colSpan={filtradas.length + 1}
-                      className="!bg-conecta-primary/5 !text-conecta-accent font-display text-[10px] uppercase tracking-[0.32em] font-semibold border-t-2 !border-conecta-accent/40"
-                    >
-                      Critérios de avaliação
-                    </td>
-                  </tr>
-                  {criterios.map((c) => (
-                    <Row
-                      key={c.id}
-                      label={c.nome}
-                      cells={filtradas.map((e) => {
-                        const notas = (e.notasCriterios ?? {}) as Record<string, number>;
-                        const v = notas[c.id];
-                        if (v === undefined)
-                          return (
-                            <span key={e.id} className="text-conecta-muted">
-                              —
-                            </span>
-                          );
-                        return (
-                          <div key={e.id} className="flex items-center gap-1.5">
-                            <span className="font-display font-bold text-conecta-primary tabular-nums">
-                              {v}
-                            </span>
-                            <span className="text-[10px] text-conecta-muted">
-                              /{c.escalaMax}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    />
-                  ))}
-                  <Row
-                    label="Média geral"
-                    bold
-                    cells={filtradas.map((e) => {
-                      const notas = (e.notasCriterios ?? {}) as Record<string, number>;
-                      const arr = Object.values(notas)
-                        .map(Number)
-                        .filter((n) => !Number.isNaN(n) && n > 0);
-                      const media =
-                        arr.length > 0
-                          ? (arr.reduce((a, b) => a + b, 0) / arr.length).toFixed(2)
-                          : '—';
-                      return (
-                        <span
-                          key={e.id}
-                          className="font-display font-extrabold text-conecta-accent tabular-nums text-base"
-                        >
-                          {media}
-                        </span>
-                      );
-                    })}
                   />
                 </tbody>
               </table>

@@ -5,6 +5,7 @@ import { CardsResumo } from './CardsResumo';
 import { RoscaTop5 } from './RoscaTop5';
 import { TabelaResumoFilial } from './TabelaResumoFilial';
 import { TabelaDetalhado } from './TabelaDetalhado';
+import { ImportarBHDialog } from './ImportarBHDialog';
 
 export function BancoHorasView({ dados, perfil }: { dados: DadosBH; perfil: 'admin' | 'filial' }) {
   const ts = dados.meta?.ultimaAtualizacao
@@ -19,7 +20,7 @@ export function BancoHorasView({ dados, perfil }: { dados: DadosBH; perfil: 'adm
             {ts ? `Última atualização: ${ts}${dados.meta?.atualizadoPorNome ? ` por ${dados.meta.atualizadoPorNome}` : ''}` : 'Sem dados importados'}
           </p>
         </div>
-        {perfil === 'admin' && <div data-testid="slot-importar" />}
+        {perfil === 'admin' && <ImportarBHDialog />}
       </div>
 
       <CardsResumo r={dados.resumo} />

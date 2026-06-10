@@ -16,12 +16,6 @@ export const getRoteiro = cache(async (cargo: string) => {
     .orderBy(asc(schema.roteiro.ordem));
 });
 
-export const getCriterios = cache(async () =>
-  db.select().from(schema.criterios)
-    .where(eq(schema.criterios.ativo, true))
-    .orderBy(asc(schema.criterios.ordem))
-);
-
 export const getOpcoes = cache(async () => {
   const rows = await db.select().from(schema.opcoes);
   const out: Record<string, string[]> = {};

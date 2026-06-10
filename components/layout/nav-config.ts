@@ -12,11 +12,11 @@ export type NavItem = { href: string; label: string; icon: LucideIcon };
 
 export const FILIAL_NAV: NavItem[] = [
   { href: '/painel',          label: 'Painel',            icon: LayoutDashboard },
+  { href: '/guia-rapido',     label: 'Guia Rápido',       icon: BookOpen },
   { href: '/entrevista/nova', label: 'Nova entrevista',   icon: ClipboardList },
   { href: '/historico',       label: 'Histórico',         icon: History },
   { href: '/agenda',          label: 'Agenda',            icon: CalendarClock },
   { href: '/banco-talentos',  label: 'Banco de talentos', icon: Users },
-  { href: '/guia-rapido',     label: 'Guia Rápido',       icon: BookOpen },
 ];
 
 export const ADMIN_NAV: NavItem[] = [

@@ -16,6 +16,7 @@ export const FILIAL_NAV: NavItem[] = [
   { href: '/historico',       label: 'Histórico',         icon: History },
   { href: '/agenda',          label: 'Agenda',            icon: CalendarClock },
   { href: '/banco-talentos',  label: 'Banco de talentos', icon: Users },
+  { href: '/guia-rapido',     label: 'Guia Rápido',       icon: BookOpen },
 ];
 
 export const ADMIN_NAV: NavItem[] = [

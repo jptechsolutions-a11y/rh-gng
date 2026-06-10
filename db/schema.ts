@@ -50,16 +50,6 @@ export const roteiro = pgTable('roteiro', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const criterios = pgTable('criterios', {
-  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
-  nome: text('nome').notNull(),
-  escalaMax: integer('escala_max').notNull().default(5),
-  peso: numeric('peso', { precision: 4, scale: 2 }).notNull().default('1'),
-  ativo: boolean('ativo').notNull().default(true),
-  ordem: integer('ordem').notNull().default(0),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-});
-
 export const opcoes = pgTable('opcoes', {
   chave: text('chave').primaryKey(),
   valores: text('valores').array().notNull(),
@@ -74,17 +64,12 @@ export const entrevistas = pgTable('entrevistas', {
   nome: text('nome').notNull(),
   dataNasc: date('data_nasc'),
   rg: text('rg'),
-  telefone: text('telefone'),
-  email: text('email'),
-  cidade: text('cidade'),
   cargoPretendido: text('cargo_pretendido'),
-  pretensaoSalarial: numeric('pretensao_salarial', { precision: 10, scale: 2 }),
+  parecer: text('parecer'),
   experiencias: text('experiencias'),
   linkedin: text('linkedin'),
-  escolaridade: text('escolaridade'),
   estadoCivil: text('estado_civil'),
   temFilhos: boolean('tem_filhos'),
-  possuiCnh: text('possui_cnh'),
   veiculoProprio: boolean('veiculo_proprio'),
   disponibilidadeTurnos: text('disponibilidade_turnos').array(),
   disponibilidadeInicio: date('disponibilidade_inicio'),
@@ -100,6 +85,7 @@ export const entrevistas = pgTable('entrevistas', {
   jaTrabalhouQuando: text('ja_trabalhou_quando'),
   curriculoUrl: text('curriculo_url'),
   respostasRoteiro: jsonb('respostas_roteiro').notNull().default(sql`'{}'::jsonb`),
+  // notasCriterios agora armazena { [comportamentoSlug]: 'sim'|'parcial'|'nao' } — 9 comportamentos fixos do modelo G&G.
   notasCriterios: jsonb('notas_criterios').notNull().default(sql`'{}'::jsonb`),
   observacoes: text('observacoes'),
   notaGeral: numeric('nota_geral', { precision: 3, scale: 2 }),

@@ -71,7 +71,7 @@ describe('parseBHWorkbook', () => {
     const out = parseBHWorkbook(wb);
     expect(out.rows).toHaveLength(1);
     expect(out.warnings).toHaveLength(1);
-    expect(out.warnings[0].motivo).toMatch(/hora/i);
+    expect(out.warnings[0]?.motivo).toMatch(/hora/i);
   });
 
   it('pula linha de Total Geral (CHAPA vazia)', () => {
@@ -87,16 +87,16 @@ describe('parseBHWorkbook', () => {
     const b = [...baseRow]; b[7] = '05:00'; b[8] = -10; b[3] = '00000002'; b[4] = 'OUTRO';
     const wb = workbookFromRows([BH_HEADER as unknown as string[], a, b]);
     const out = parseBHWorkbook(wb);
-    expect(out.rows[0].horasDecimal).toBe(0);
-    expect(out.rows[1].horasDecimal).toBe(5);
+    expect(out.rows[0]?.horasDecimal).toBe(0);
+    expect(out.rows[1]?.horasDecimal).toBe(5);
     // BHRow não tem campo "negativo" — confirma que TOTAL_NEGATIVO não está no shape
-    expect(Object.keys(out.rows[0])).not.toContain('totalNegativo');
+    expect(Object.keys(out.rows[0]!)).not.toContain('totalNegativo');
   });
 
   it('preserva leading zeros quando CHAPA vem como número do Excel', () => {
     const row = [...baseRow]; row[3] = 3204142; // sem leading zero
     const wb = workbookFromRows([BH_HEADER as unknown as string[], row]);
     const out = parseBHWorkbook(wb);
-    expect(out.rows[0].chapa).toBe('03204142');
+    expect(out.rows[0]?.chapa).toBe('03204142');
   });
 });

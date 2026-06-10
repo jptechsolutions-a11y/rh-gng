@@ -31,6 +31,7 @@ export function parseBHWorkbook(wb: XLSX.WorkBook): BHParseResult {
   const sheetName = wb.SheetNames[0];
   if (!sheetName) throw new Error('Planilha vazia');
   const ws = wb.Sheets[sheetName];
+  if (!ws) throw new Error('Planilha vazia');
   const rows = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, defval: null });
   if (rows.length === 0) throw new Error('Planilha sem linhas');
 

@@ -1,7 +1,7 @@
 'use server';
 
 import { db, schema } from '@/db/client';
-import { eq, sql } from 'drizzle-orm';
+import { eq, inArray, sql } from 'drizzle-orm';
 import * as XLSX from 'xlsx';
 import { requireSession } from '@/lib/auth/session';
 import { revalidatePath } from 'next/cache';
@@ -29,7 +29,7 @@ export async function importarBH(formData: FormData): Promise<ImportarBHResult> 
   const filiaisDb = codigos.length
     ? await db.select({ id: schema.filiais.id, codigo: schema.filiais.codigo })
         .from(schema.filiais)
-        .where(sql`${schema.filiais.codigo} = ANY(${codigos})`)
+        .where(inArray(schema.filiais.codigo, codigos))
     : [];
   const mapFilial = new Map(filiaisDb.map((f) => [f.codigo, f.id]));
 

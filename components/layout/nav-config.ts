@@ -2,7 +2,7 @@ import type { LucideIcon } from 'lucide-react';
 import {
   LayoutDashboard, Users, FileText, Settings, ShieldCheck, ClipboardList, History,
   CalendarClock, Plus, BarChart3, UserCog, Target, BookOpen, Printer, ClipboardCheck,
-  GalleryHorizontal, Cloud,
+  GalleryHorizontal, Cloud, Clock,
 } from 'lucide-react';
 
 // Fonte ÚNICA de navegação — consumida pela Sidebar (desktop) e pela MobileNav.
@@ -12,7 +12,6 @@ export type NavItem = { href: string; label: string; icon: LucideIcon };
 
 export const FILIAL_NAV: NavItem[] = [
   { href: '/painel',          label: 'Painel',            icon: LayoutDashboard },
-  { href: '/indicadores',     label: 'Indicadores',       icon: BarChart3 },
   { href: '/guia-rapido',     label: 'Guia Rápido',       icon: BookOpen },
   { href: '/entrevista/nova', label: 'Nova entrevista',   icon: ClipboardList },
   { href: '/historico',       label: 'Histórico',         icon: History },
@@ -24,7 +23,6 @@ export const ADMIN_NAV: NavItem[] = [
   { href: '/admin',            label: 'Dashboard',    icon: LayoutDashboard },
   { href: '/admin/busca',      label: 'Busca global', icon: Users },
   { href: '/admin/relatorios', label: 'Relatórios',   icon: FileText },
-  { href: '/indicadores',      label: 'Indicadores',  icon: BarChart3 },
   { href: '/admin/config',     label: 'Configuração', icon: Settings },
   { href: '/admin/seguranca',  label: 'Segurança',    icon: ShieldCheck },
 ];
@@ -38,6 +36,10 @@ export const AVALIACAO_NAV_BASE: NavItem[] = [
 export const AVALIACAO_NAV_ADMIN_EXTRAS: NavItem[] = [
   { href: '/admin/config/pessoas',      label: 'Pessoas',                icon: UserCog },
   { href: '/admin/config/competencias', label: 'Competências e fatores', icon: Target },
+];
+
+export const INDICADORES_NAV_BASE: NavItem[] = [
+  { href: '/indicadores?tab=banco-horas', label: 'Banco de Horas', icon: Clock },
 ];
 
 export const ESCUTA_NAV_BASE: NavItem[] = [

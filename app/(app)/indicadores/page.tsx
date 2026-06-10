@@ -1,16 +1,36 @@
 import { requireSession } from '@/lib/auth/session';
 import { getDadosBH } from '@/actions/indicadores/bh';
-import { IndicadoresTabs } from './IndicadoresTabs';
+import { TopBar } from '@/components/layout/TopBar';
+import { BancoHorasView } from './bh/BancoHorasView';
 
 export const dynamic = 'force-dynamic';
 
-export default async function IndicadoresPage() {
+type Tab = 'banco-horas';
+function parseTab(v: string | undefined): Tab {
+  // Por enquanto só existe banco-horas; futuros indicadores entram aqui.
+  return v === 'banco-horas' ? 'banco-horas' : 'banco-horas';
+}
+
+export default async function IndicadoresPage({
+  searchParams,
+}: { searchParams: Promise<{ tab?: string }> }) {
   const s = await requireSession();
-  const dados = await getDadosBH();
+  const { tab } = await searchParams;
+  const active = parseTab(tab);
+
+  const badge = s.perfil === 'filial' ? `Filial ${s.filialCodigo}` : 'ADMIN';
+  const subtitulo = s.perfil === 'filial' ? s.filialNome : 'Gente e Gestão · Perlog';
+
+  const dados = active === 'banco-horas' ? await getDadosBH() : null;
+
   return (
-    <main className="container mx-auto px-4 py-6">
-      <h1 className="text-2xl font-semibold mb-4">Indicadores</h1>
-      <IndicadoresTabs dados={dados} perfil={s.perfil} />
-    </main>
+    <>
+      <TopBar titulo="Indicadores" subtitulo={subtitulo} badge={badge} />
+      <div className="space-y-5 p-4 lg:p-6">
+        {active === 'banco-horas' && dados && (
+          <BancoHorasView dados={dados} perfil={s.perfil} />
+        )}
+      </div>
+    </>
   );
 }

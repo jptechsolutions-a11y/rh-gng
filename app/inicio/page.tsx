@@ -7,6 +7,7 @@ import {
   Settings,
   FileText,
   MessagesSquare,
+  LineChart,
 } from 'lucide-react';
 import { ConectaLogo } from '@/components/brand/ConectaLogo';
 import { ConectaSymbol } from '@/components/brand/ConectaSymbol';
@@ -74,7 +75,7 @@ export default async function InicioPage() {
         </div>
 
         {/* ===== Cards de módulos ===== */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-5xl">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full max-w-6xl">
           {/* Entrevistas */}
           <Link
             href={s.perfil === 'admin' ? '/admin' : '/painel'}
@@ -138,6 +139,42 @@ export default async function InicioPage() {
                 </h2>
                 <p className="text-[13px] text-conecta-muted mt-1 leading-snug">
                   Avalie por competências, registre feedback e PDI.
+                </p>
+                <div className="inline-flex items-center gap-2 text-[13px] font-display font-semibold text-conecta-primary group-hover:gap-3 transition-all mt-3">
+                  Acessar
+                  <ArrowRight className="h-4 w-4" />
+                </div>
+              </div>
+            </div>
+          </Link>
+
+          {/* Indicadores */}
+          <Link
+            href="/indicadores?tab=banco-horas"
+            className="cg-module-card group relative rounded-2xl bg-white text-conecta-text p-5 overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-[0_20px_44px_-12px_rgba(13,43,107,0.45)]"
+          >
+            <span
+              aria-hidden
+              className="absolute top-0 left-0 h-1 w-full"
+              style={{ background: 'linear-gradient(90deg, #0D2B6B 0%, #E8621A 100%)' }}
+            />
+            <div className="absolute top-4 right-4 h-24 w-24 bg-conecta-primary/10 rounded-full blur-3xl group-hover:bg-conecta-primary/20 transition-colors" />
+            <div className="relative flex items-start gap-4">
+              <div
+                className="grid place-items-center h-12 w-12 rounded-xl text-white shrink-0"
+                style={{
+                  background: 'linear-gradient(135deg, #0D2B6B 0%, #E8621A 100%)',
+                  boxShadow: '0 10px 22px -8px rgba(13,43,107,0.45)',
+                }}
+              >
+                <LineChart className="h-6 w-6" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h2 className="font-display text-[20px] font-extrabold text-conecta-primary tracking-tight leading-tight">
+                  Indicadores
+                </h2>
+                <p className="text-[13px] text-conecta-muted mt-1 leading-snug">
+                  Banco de horas, comparativos por filial e detalhamento por colaborador.
                 </p>
                 <div className="inline-flex items-center gap-2 text-[13px] font-display font-semibold text-conecta-primary group-hover:gap-3 transition-all mt-3">
                   Acessar

@@ -11,6 +11,7 @@ import { logoutAction } from '@/actions/auth';
 import {
   FILIAL_NAV, ADMIN_NAV, AVALIACAO_NAV_BASE, AVALIACAO_NAV_ADMIN_EXTRAS,
   ESCUTA_NAV_BASE, ESCUTA_NAV_ADMIN_EXTRAS,
+  INDICADORES_NAV_BASE,
 } from './nav-config';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 
@@ -31,22 +32,29 @@ export function Sidebar({
     pathname === '/escuta' ||
     pathname.startsWith('/escuta/') ||
     pathname.startsWith('/admin/config/escuta');
-  const nav = inEscuta
-    ? perfil === 'admin'
-      ? [...ESCUTA_NAV_BASE, ...ESCUTA_NAV_ADMIN_EXTRAS]
-      : ESCUTA_NAV_BASE
-    : inAvaliacao
+  const inIndicadores =
+    pathname === '/indicadores' ||
+    pathname.startsWith('/indicadores/');
+  const nav = inIndicadores
+    ? INDICADORES_NAV_BASE
+    : inEscuta
       ? perfil === 'admin'
-        ? [...AVALIACAO_NAV_BASE, ...AVALIACAO_NAV_ADMIN_EXTRAS]
-        : AVALIACAO_NAV_BASE
-      : perfil === 'admin'
-        ? ADMIN_NAV
-        : FILIAL_NAV;
-  const moduleLabel = inEscuta
-    ? 'Escuta G&G'
-    : inAvaliacao
-      ? 'Avaliação de Desempenho'
-      : 'Conecta G&G';
+        ? [...ESCUTA_NAV_BASE, ...ESCUTA_NAV_ADMIN_EXTRAS]
+        : ESCUTA_NAV_BASE
+      : inAvaliacao
+        ? perfil === 'admin'
+          ? [...AVALIACAO_NAV_BASE, ...AVALIACAO_NAV_ADMIN_EXTRAS]
+          : AVALIACAO_NAV_BASE
+        : perfil === 'admin'
+          ? ADMIN_NAV
+          : FILIAL_NAV;
+  const moduleLabel = inIndicadores
+    ? 'Indicadores'
+    : inEscuta
+      ? 'Escuta G&G'
+      : inAvaliacao
+        ? 'Avaliação de Desempenho'
+        : 'Conecta G&G';
   const [collapsed, setCollapsed] = useState(false);
   const confirmar = useConfirm();
   const [saindo, startSair] = useTransition();
@@ -149,11 +157,12 @@ export function Sidebar({
         {nav.map(({ href, label, icon: Icon }) => {
           const isRoot = href === '/admin' || href === '/painel' || href === '/avaliacao';
           const [hrefPath, hrefQuery] = href.split('?');
+          const defaultTab = hrefPath === '/indicadores' ? 'banco-horas' : 'roteiro';
           let active: boolean;
           if (hrefQuery) {
             // Item da sidebar usa query (?tab=...): ativo só se a tab atual bate.
             const tabValue = new URLSearchParams(hrefQuery).get('tab');
-            active = pathname === hrefPath && (currentTab ?? 'roteiro') === tabValue;
+            active = pathname === hrefPath && (currentTab ?? defaultTab) === tabValue;
           } else if (isRoot) {
             active = pathname === hrefPath;
           } else if (hrefPath === '/escuta') {

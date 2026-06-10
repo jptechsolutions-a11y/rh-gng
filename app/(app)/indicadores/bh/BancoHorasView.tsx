@@ -13,11 +13,19 @@ export function BancoHorasView({ dados, perfil }: { dados: DadosBH; perfil: 'adm
     : null;
   return (
     <div className="space-y-6">
-      <div className="flex items-end justify-between flex-wrap gap-3">
-        <div>
-          <h2 className="text-xl font-semibold">Banco de Horas</h2>
-          <p className="text-sm text-muted-foreground">
-            {ts ? `Última atualização: ${ts}${dados.meta?.atualizadoPorNome ? ` por ${dados.meta.atualizadoPorNome}` : ''}` : 'Sem dados importados'}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="h-[2px] w-6 bg-conecta-accent" />
+            <span className="font-display text-[10px] uppercase tracking-[0.32em] text-conecta-accent font-semibold">
+              Banco de Horas
+            </span>
+          </div>
+          <h2 className="font-display text-[22px] font-extrabold text-conecta-primary tracking-tight mt-1.5">
+            Visão geral
+          </h2>
+          <p className="text-[13px] text-conecta-muted mt-0.5">
+            {ts ? `Última atualização: ${ts}${dados.meta?.atualizadoPorNome ? ` por ${dados.meta.atualizadoPorNome}` : ''}` : 'Sem dados importados.'}
           </p>
         </div>
         {perfil === 'admin' && <ImportarBHDialog />}

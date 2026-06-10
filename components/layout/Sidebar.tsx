@@ -212,21 +212,23 @@ export function Sidebar({
       )}
 
       {/* ===== Sair ===== */}
-      <div className={cn('relative z-10 border-t border-white/10', collapsed ? 'p-2' : 'p-3')}>
-        <button
-          type="button"
-          onClick={sair}
-          disabled={saindo}
-          title={collapsed ? 'Sair' : undefined}
-          className={cn(
-            'w-full flex items-center rounded-lg text-sm font-display text-white/70 hover:bg-conecta-accent/15 hover:text-conecta-accent transition-colors disabled:opacity-60',
-            collapsed ? 'justify-center px-0 py-2 h-10' : 'gap-3 px-3 py-2',
-          )}
-        >
-          <LogOut className="h-4 w-4" />
-          {!collapsed && <span>Sair</span>}
-        </button>
-      </div>
+      {!inAvaliacao && (
+        <div className={cn('relative z-10 border-t border-white/10', collapsed ? 'p-2' : 'p-3')}>
+          <button
+            type="button"
+            onClick={sair}
+            disabled={saindo}
+            title={collapsed ? 'Sair' : undefined}
+            className={cn(
+              'w-full flex items-center rounded-lg text-sm font-display text-white/70 hover:bg-conecta-accent/15 hover:text-conecta-accent transition-colors disabled:opacity-60',
+              collapsed ? 'justify-center px-0 py-2 h-10' : 'gap-3 px-3 py-2',
+            )}
+          >
+            <LogOut className="h-4 w-4" />
+            {!collapsed && <span>Sair</span>}
+          </button>
+        </div>
+      )}
     </aside>
   );
 }

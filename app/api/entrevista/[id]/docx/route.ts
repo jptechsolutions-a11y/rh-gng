@@ -7,7 +7,7 @@ import {
 import { requireSession } from '@/lib/auth/session';
 import { getEntrevista } from '@/actions/entrevistas';
 import { db, schema } from '@/db/client';
-import { getCriterios, getRoteiro } from '@/db/queries/config';
+import { getRoteiro } from '@/db/queries/config';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,6 +15,23 @@ const PERLOG_ORANGE = 'F37021';
 const PERLOG_NAVY = '0F1F3D';
 const LIGHT_GRAY = 'F1F5F9';
 const BORDER_GRAY = 'CBD5E1';
+
+const COMPORTAMENTOS_LABELS: Record<string, string> = {
+  comunicacao: 'Boa comunicação',
+  interesse_vaga: 'Interesse pela vaga',
+  postura: 'Postura profissional',
+  pontualidade: 'Pontualidade',
+  clareza: 'Clareza nas respostas',
+  estabilidade_emocional: 'Estabilidade emocional',
+  energia: 'Energia / disposição',
+  comprometimento: 'Comprometimento',
+  equipe: 'Facilidade para trabalho em equipe',
+};
+const COMPORTAMENTOS_ORDEM = [
+  'comunicacao', 'interesse_vaga', 'postura', 'pontualidade', 'clareza',
+  'estabilidade_emocional', 'energia', 'comprometimento', 'equipe',
+] as const;
+const NIVEL_LABEL: Record<string, string> = { sim: 'Sim', parcial: 'Parcial', nao: 'Não' };
 
 const border = { style: BorderStyle.SINGLE, size: 6, color: BORDER_GRAY };
 const allBorders = { top: border, bottom: border, left: border, right: border };
@@ -75,89 +92,56 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const e = await getEntrevista(id);
   if (!e) return NextResponse.json({ erro: 'Entrevista não encontrada' }, { status: 404 });
 
-  const [criterios, roteiro, filialRows] = await Promise.all([
-    getCriterios(),
+  const [roteiro, filialRows] = await Promise.all([
     getRoteiro(e.cargoPretendido ?? 'TODOS'),
     db.select({ codigo: schema.filiais.codigo, nome: schema.filiais.nome })
       .from(schema.filiais).where(eq(schema.filiais.id, e.filialId)).limit(1),
   ]);
   const filial = filialRows[0];
 
-  const respostas = (e.respostasRoteiro ?? {}) as Record<string, string | number | boolean>;
-  const notas = (e.notasCriterios ?? {}) as Record<string, number>;
-  const notasArr = Object.values(notas).map(Number).filter((n) => !Number.isNaN(n) && n > 0);
-  const media = notasArr.length > 0 ? (notasArr.reduce((a, b) => a + b, 0) / notasArr.length).toFixed(2) : '—';
+  const respostas = (e.respostasRoteiro ?? {}) as Record<string, string | number | boolean | string[]>;
+  const notas = (e.notasCriterios ?? {}) as Record<string, string>;
 
-  // CRITÉRIOS - tabela com cabeçalho
-  const critRows: TableRow[] = [
+  // COMPORTAMENTOS - tabela com cabeçalho
+  const compRows: TableRow[] = [
     new TableRow({
       tableHeader: true,
       children: [
         new TableCell({
           borders: allBorders,
-          width: { size: 5400, type: WidthType.DXA },
+          width: { size: 6400, type: WidthType.DXA },
           shading: { type: ShadingType.CLEAR, fill: PERLOG_NAVY },
           margins: { top: 80, bottom: 80, left: 120, right: 120 },
-          children: [new Paragraph({ children: [new TextRun({ text: 'Critério', bold: true, color: 'FFFFFF', size: 20 })] })],
+          children: [new Paragraph({ children: [new TextRun({ text: 'Comportamento', bold: true, color: 'FFFFFF', size: 20 })] })],
         }),
         new TableCell({
           borders: allBorders,
-          width: { size: 1800, type: WidthType.DXA },
+          width: { size: 2600, type: WidthType.DXA },
           shading: { type: ShadingType.CLEAR, fill: PERLOG_NAVY },
           margins: { top: 80, bottom: 80, left: 120, right: 120 },
-          children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'Nota', bold: true, color: 'FFFFFF', size: 20 })] })],
-        }),
-        new TableCell({
-          borders: allBorders,
-          width: { size: 1800, type: WidthType.DXA },
-          shading: { type: ShadingType.CLEAR, fill: PERLOG_NAVY },
-          margins: { top: 80, bottom: 80, left: 120, right: 120 },
-          children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'Escala', bold: true, color: 'FFFFFF', size: 20 })] })],
+          children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: 'Avaliação', bold: true, color: 'FFFFFF', size: 20 })] })],
         }),
       ],
     }),
-    ...criterios.map((c) =>
-      new TableRow({
+    ...COMPORTAMENTOS_ORDEM.map((slug) => {
+      const v = notas[slug];
+      const valorLabel = v && NIVEL_LABEL[v] ? NIVEL_LABEL[v] : '—';
+      return new TableRow({
         children: [
           new TableCell({
             borders: allBorders,
-            width: { size: 5400, type: WidthType.DXA },
+            width: { size: 6400, type: WidthType.DXA },
             margins: { top: 80, bottom: 80, left: 120, right: 120 },
-            children: [new Paragraph({ children: [new TextRun({ text: c.nome, size: 20 })] })],
+            children: [new Paragraph({ children: [new TextRun({ text: COMPORTAMENTOS_LABELS[slug], size: 20 })] })],
           }),
           new TableCell({
             borders: allBorders,
-            width: { size: 1800, type: WidthType.DXA },
+            width: { size: 2600, type: WidthType.DXA },
             margins: { top: 80, bottom: 80, left: 120, right: 120 },
-            children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: notas[c.id]?.toString() ?? '—', bold: true, size: 20 })] })],
-          }),
-          new TableCell({
-            borders: allBorders,
-            width: { size: 1800, type: WidthType.DXA },
-            margins: { top: 80, bottom: 80, left: 120, right: 120 },
-            children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: `0–${c.escalaMax}`, color: '64748B', size: 20 })] })],
+            children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: valorLabel, bold: true, size: 20 })] })],
           }),
         ],
-      })
-    ),
-    new TableRow({
-      children: [
-        new TableCell({
-          borders: allBorders,
-          width: { size: 5400, type: WidthType.DXA },
-          shading: { type: ShadingType.CLEAR, fill: 'FEF3E8' },
-          margins: { top: 80, bottom: 80, left: 120, right: 120 },
-          children: [new Paragraph({ children: [new TextRun({ text: 'Média geral', bold: true, size: 20 })] })],
-        }),
-        new TableCell({
-          borders: allBorders,
-          width: { size: 3600, type: WidthType.DXA },
-          shading: { type: ShadingType.CLEAR, fill: 'FEF3E8' },
-          margins: { top: 80, bottom: 80, left: 120, right: 120 },
-          columnSpan: 2,
-          children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: media, bold: true, size: 20 })] })],
-        }),
-      ],
+      });
     }),
   ];
 
@@ -167,7 +151,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   } else {
     roteiro.forEach((q, i) => {
       const resp = respostas[q.id];
-      const respText = (resp === undefined || resp === null || resp === '') ? 'Sem resposta' : String(resp);
       roteiroBlocks.push(
         new Paragraph({
           spacing: { before: 160, after: 60 },
@@ -176,12 +159,31 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
             new TextRun({ text: q.pergunta, bold: true, size: 20 }),
           ],
         }),
-        new Paragraph({
+      );
+      if (Array.isArray(resp)) {
+        if (resp.length === 0) {
+          roteiroBlocks.push(new Paragraph({
+            shading: { type: ShadingType.CLEAR, fill: LIGHT_GRAY },
+            spacing: { after: 80 },
+            children: [new TextRun({ text: 'Sem resposta', size: 20, italics: true })],
+          }));
+        } else {
+          resp.forEach((it) => {
+            roteiroBlocks.push(new Paragraph({
+              shading: { type: ShadingType.CLEAR, fill: LIGHT_GRAY },
+              bullet: { level: 0 },
+              children: [new TextRun({ text: String(it), size: 20 })],
+            }));
+          });
+        }
+      } else {
+        const respText = (resp === undefined || resp === null || resp === '') ? 'Sem resposta' : String(resp);
+        roteiroBlocks.push(new Paragraph({
           shading: { type: ShadingType.CLEAR, fill: LIGHT_GRAY },
           spacing: { after: 80 },
           children: [new TextRun({ text: respText, size: 20, italics: respText === 'Sem resposta' })],
-        }),
-      );
+        }));
+      }
     });
   }
 
@@ -248,9 +250,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
             ['Nome', e.nome],
             ['CPF', fmtCpf(e.cpf)],
             ['Data de nascimento', fmtDate(e.dataNasc)],
-            ['Telefone', e.telefone ?? '—'],
-            ['E-mail', e.email ?? '—'],
-            ['Cidade', e.cidade ?? '—'],
           ]),
 
           sectionTitle('2', 'Dados da entrevista'),
@@ -259,10 +258,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
             ['Entrevistador(a)', e.recrutador ?? '—'],
             ['Unidade / CD', filial ? `${filial.codigo} — ${filial.nome}` : '—'],
             ['Cargo proposto', e.cargoPretendido ?? '—'],
-            ['Pretensão salarial', e.pretensaoSalarial ? `R$ ${Number(e.pretensaoSalarial).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '—'],
-            ['Escolaridade', e.escolaridade ?? '—'],
             ['Estado civil', e.estadoCivil ?? '—'],
-            ['CNH', e.possuiCnh ?? '—'],
             ['Preferência de turno', (e.disponibilidadeTurnos ?? []).join(' · ') || '—'],
           ]),
 
@@ -277,17 +273,18 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
           sectionTitle('4', 'Roteiro da entrevista'),
           ...roteiroBlocks,
 
-          sectionTitle('5', 'Avaliação por critério'),
+          sectionTitle('5', 'Comportamentos'),
           new Table({
             width: { size: 9000, type: WidthType.DXA },
-            columnWidths: [5400, 1800, 1800],
-            rows: critRows,
+            columnWidths: [6400, 2600],
+            rows: compRows,
           }),
 
           sectionTitle('6', 'Parecer final'),
           kvTable([
             ['Status', e.status],
             ['Avaliado pelo G&G', e.aprovadoPeloGg ? 'Sim' : 'Não'],
+            ['Parecer final', e.parecer ?? '—'],
             ...(e.status === 'Aprovado' || e.status === 'Reprovado'
               ? ([
                   ['Gestor que decidiu', e.gestorAprovador ?? '—'],

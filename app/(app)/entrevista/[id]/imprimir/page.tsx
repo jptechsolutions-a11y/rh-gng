@@ -1,7 +1,8 @@
+import React from 'react';
 import { notFound } from 'next/navigation';
 import { requireSession } from '@/lib/auth/session';
 import { getEntrevista } from '@/actions/entrevistas';
-import { getCriterios, getRoteiro } from '@/db/queries/config';
+import { getRoteiro } from '@/db/queries/config';
 import { db, schema } from '@/db/client';
 import { eq } from 'drizzle-orm';
 import { PerlogLogo } from '@/components/brand/PerlogLogo';
@@ -9,24 +10,51 @@ import { PrintToolbar } from './PrintToolbar';
 
 export const dynamic = 'force-dynamic';
 
+const COMPORTAMENTOS_LABELS: Record<string, string> = {
+  comunicacao: 'Boa comunicação',
+  interesse_vaga: 'Interesse pela vaga',
+  postura: 'Postura profissional',
+  pontualidade: 'Pontualidade',
+  clareza: 'Clareza nas respostas',
+  estabilidade_emocional: 'Estabilidade emocional',
+  energia: 'Energia / disposição',
+  comprometimento: 'Comprometimento',
+  equipe: 'Facilidade para trabalho em equipe',
+};
+const COMPORTAMENTOS_ORDEM = [
+  'comunicacao', 'interesse_vaga', 'postura', 'pontualidade', 'clareza',
+  'estabilidade_emocional', 'energia', 'comprometimento', 'equipe',
+] as const;
+const NIVEL_LABEL: Record<string, string> = { sim: 'Sim', parcial: 'Parcial', nao: 'Não' };
+
+function renderResposta(v: unknown): React.ReactNode {
+  if (Array.isArray(v)) {
+    return (
+      <ul className="list-disc pl-5 text-[12px] text-slate-800 space-y-0.5">
+        {v.map((it, i) => (<li key={i}>{String(it)}</li>))}
+      </ul>
+    );
+  }
+  if (v == null || v === '') return <span className="text-perlog-slate italic">Sem resposta</span>;
+  if (typeof v === 'boolean') return <span>{v ? 'Sim' : 'Não'}</span>;
+  return <span className="whitespace-pre-wrap">{String(v)}</span>;
+}
+
 export default async function ImprimirPage({ params }: { params: Promise<{ id: string }> }) {
   await requireSession();
   const { id } = await params;
   const e = await getEntrevista(id);
   if (!e) notFound();
 
-  const [criterios, roteiro, filialRow] = await Promise.all([
-    getCriterios(),
+  const [roteiro, filialRow] = await Promise.all([
     getRoteiro(e.cargoPretendido ?? 'TODOS'),
     db.select({ codigo: schema.filiais.codigo, nome: schema.filiais.nome })
       .from(schema.filiais).where(eq(schema.filiais.id, e.filialId)).limit(1),
   ]);
   const filial = filialRow[0];
 
-  const respostas = (e.respostasRoteiro ?? {}) as Record<string, string | number | boolean>;
-  const notas = (e.notasCriterios ?? {}) as Record<string, number>;
-  const notasArr = Object.values(notas).map(Number).filter((n) => !Number.isNaN(n) && n > 0);
-  const media = notasArr.length > 0 ? (notasArr.reduce((a, b) => a + b, 0) / notasArr.length).toFixed(2) : '—';
+  const respostas = (e.respostasRoteiro ?? {}) as Record<string, string | number | boolean | string[]>;
+  const notas = (e.notasCriterios ?? {}) as Record<string, string>;
 
   const fmtDate = (d: Date | string | null | undefined) =>
     d ? new Date(d).toLocaleDateString('pt-BR') : '—';
@@ -66,9 +94,6 @@ export default async function ImprimirPage({ params }: { params: Promise<{ id: s
                 <Row label="Nome" value={e.nome} />
                 <Row label="CPF" value={fmtCpf(e.cpf)} />
                 <Row label="Data de nascimento" value={fmtDate(e.dataNasc)} />
-                <Row label="Telefone" value={e.telefone ?? '—'} />
-                <Row label="E-mail" value={e.email ?? '—'} />
-                <Row label="Cidade" value={e.cidade ?? '—'} />
               </tbody>
             </table>
           </section>
@@ -81,10 +106,7 @@ export default async function ImprimirPage({ params }: { params: Promise<{ id: s
                 <Row label="Entrevistador(a)" value={e.recrutador ?? '—'} />
                 <Row label="Unidade / CD" value={filial ? `${filial.codigo} — ${filial.nome}` : '—'} />
                 <Row label="Cargo proposto" value={e.cargoPretendido ?? '—'} />
-                <Row label="Pretensão salarial" value={e.pretensaoSalarial ? `R$ ${Number(e.pretensaoSalarial).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : '—'} />
-                <Row label="Escolaridade" value={e.escolaridade ?? '—'} />
                 <Row label="Estado civil" value={e.estadoCivil ?? '—'} />
-                <Row label="CNH" value={e.possuiCnh ?? '—'} />
                 <Row label="Preferência de turno" value={(e.disponibilidadeTurnos ?? []).join(' · ') || '—'} />
               </tbody>
             </table>
@@ -108,8 +130,8 @@ export default async function ImprimirPage({ params }: { params: Promise<{ id: s
                     <div className="font-semibold text-[12px]">
                       <span className="text-perlog-orange">{String(i + 1).padStart(2, '0')}.</span> {q.pergunta}
                     </div>
-                    <div className="mt-1 rounded border border-slate-200 bg-slate-50 px-3 py-2 text-[12px] whitespace-pre-wrap min-h-[1.8em]">
-                      {resp !== undefined && resp !== null && resp !== '' ? String(resp) : <span className="text-perlog-slate italic">Sem resposta</span>}
+                    <div className="mt-1 rounded border border-slate-200 bg-slate-50 px-3 py-2 text-[12px] min-h-[1.8em]">
+                      {renderResposta(resp)}
                     </div>
                   </div>
                 );
@@ -118,27 +140,26 @@ export default async function ImprimirPage({ params }: { params: Promise<{ id: s
           </section>
 
           <section>
-            <SectionTitle n="5" title="Avaliação por critério" />
+            <SectionTitle n="5" title="Comportamentos" />
             <table className="w-full border-collapse text-[12px]">
               <thead>
                 <tr className="bg-perlog-navy text-white">
-                  <th className="text-left px-3 py-2 font-semibold border border-perlog-navy">Critério</th>
-                  <th className="text-center px-3 py-2 font-semibold border border-perlog-navy w-24">Nota</th>
-                  <th className="text-center px-3 py-2 font-semibold border border-perlog-navy w-24">Escala</th>
+                  <th className="text-left px-3 py-2 font-semibold border border-perlog-navy">Comportamento</th>
+                  <th className="text-center px-3 py-2 font-semibold border border-perlog-navy w-32">Avaliação</th>
                 </tr>
               </thead>
               <tbody>
-                {criterios.map((c) => (
-                  <tr key={c.id}>
-                    <td className="px-3 py-2 border border-slate-300">{c.nome}</td>
-                    <td className="text-center px-3 py-2 border border-slate-300 font-semibold tabular-nums">{notas[c.id] ?? '—'}</td>
-                    <td className="text-center px-3 py-2 border border-slate-300 tabular-nums text-perlog-slate">0–{c.escalaMax}</td>
-                  </tr>
-                ))}
-                <tr className="bg-perlog-orange/10">
-                  <td className="px-3 py-2 border border-slate-300 font-bold">Média geral</td>
-                  <td colSpan={2} className="text-center px-3 py-2 border border-slate-300 font-bold tabular-nums">{media}</td>
-                </tr>
+                {COMPORTAMENTOS_ORDEM.map((slug) => {
+                  const v = notas[slug];
+                  return (
+                    <tr key={slug}>
+                      <td className="px-3 py-2 border border-slate-300">{COMPORTAMENTOS_LABELS[slug]}</td>
+                      <td className="text-center px-3 py-2 border border-slate-300 font-semibold">
+                        {v && NIVEL_LABEL[v] ? NIVEL_LABEL[v] : '—'}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </section>
@@ -149,6 +170,7 @@ export default async function ImprimirPage({ params }: { params: Promise<{ id: s
               <tbody>
                 <Row label="Status" value={e.status} bold />
                 <Row label="Avaliado pelo G&G" value={e.aprovadoPeloGg ? 'Sim' : 'Não'} />
+                {e.parecer && <Row label="Parecer final" value={e.parecer} />}
                 {(e.status === 'Aprovado' || e.status === 'Reprovado') && (
                   <>
                     <Row label="Gestor que decidiu" value={e.gestorAprovador ?? '—'} bold />
@@ -211,4 +233,3 @@ function Row({ label, value, bold }: { label: string; value: string | null | und
     </tr>
   );
 }
-

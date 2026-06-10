@@ -3,7 +3,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { EntrevistaWizard } from '@/components/wizard/EntrevistaWizard';
 import { requireSession } from '@/lib/auth/session';
 import { getEntrevista } from '@/actions/entrevistas';
-import { getCargosAtivos, getRoteiro, getCriterios, getOpcoes } from '@/db/queries/config';
+import { getCargosAtivos, getRoteiro, getOpcoes } from '@/db/queries/config';
 
 export const dynamic = 'force-dynamic';
 
@@ -32,9 +32,8 @@ export default async function EntrevistaPage({
     if (cpfDigits.length === 11) inicial = { cpf: cpfDigits } as Record<string, unknown>;
   }
 
-  const [cargos, criterios, opcoes] = await Promise.all([
+  const [cargos, opcoes] = await Promise.all([
     getCargosAtivos(),
-    getCriterios(),
     getOpcoes(),
   ]);
   const cargoInicial = (inicial?.cargoPretendido as string | undefined) ?? cargos[0]?.nome ?? 'TODOS';
@@ -52,7 +51,6 @@ export default async function EntrevistaPage({
           inicial={inicial}
           cargos={cargos.map((c) => c.nome)}
           roteiro={roteiro}
-          criterios={criterios}
           opcoes={opcoes}
         />
       </div>

@@ -5,7 +5,7 @@ import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { ChevronLeft, ChevronRight, Save, CheckCircle2, UserCircle, Briefcase, MessageSquare, Star } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Save, CheckCircle2, UserCircle, Briefcase, MessageSquare, ClipboardCheck } from 'lucide-react';
 import { ConectaCard } from '@/components/ui/conecta-card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/cn';
@@ -16,7 +16,6 @@ import { Step2Perfil } from './Step2Perfil';
 import { Step3Roteiro } from './Step3Roteiro';
 import { Step4Avaliacao } from './Step4Avaliacao';
 
-type Criterio = { id: string; nome: string; escalaMax: number; peso: string; ativo: boolean; ordem: number };
 type RoteiroItem = { id: string; cargo: string; ordem: number; pergunta: string; tipo: string; opcoes?: string[] | null; ativo: boolean };
 type Inicial = Record<string, unknown> | null;
 
@@ -24,16 +23,15 @@ const STEPS = [
   { id: 1, label: 'Identificação', icon: UserCircle },
   { id: 2, label: 'Perfil',        icon: Briefcase },
   { id: 3, label: 'Roteiro',       icon: MessageSquare },
-  { id: 4, label: 'Avaliação',     icon: Star },
+  { id: 4, label: 'Comportamento', icon: ClipboardCheck },
 ] as const;
 
 export function EntrevistaWizard({
-  inicial, cargos, roteiro, criterios, opcoes,
+  inicial, cargos, roteiro, opcoes,
 }: {
   inicial: Inicial;
   cargos: string[];
   roteiro: RoteiroItem[];
-  criterios: Criterio[];
   opcoes: Record<string, string[]>;
 }) {
   const router = useRouter();
@@ -50,7 +48,8 @@ export function EntrevistaWizard({
       gestorAprovador: (inicial?.gestorAprovador as string) ?? '',
       aprovadoPeloGg: Boolean(inicial?.aprovadoPeloGg),
       respostasRoteiro: (inicial?.respostasRoteiro as Record<string, string | number | boolean>) ?? {},
-      notasCriterios: (inicial?.notasCriterios as Record<string, number>) ?? {},
+      notasCriterios: (inicial?.notasCriterios as Record<string, 'sim' | 'parcial' | 'nao'>) ?? {},
+      parecer: (inicial?.parecer as EntrevistaInput['parecer']) ?? null,
       consentimentoLgpd: Boolean(inicial?.id),
       status: (inicial?.status as EntrevistaInput['status']) ?? 'Em análise',
     } as Partial<EntrevistaInput>,
@@ -108,9 +107,9 @@ export function EntrevistaWizard({
 
         <ConectaCard>
           {step === 1 && <Step1Identificacao entrevistaIdAtual={(inicial?.id as string | undefined)} />}
-          {step === 2 && <Step2Perfil cargos={cargos} opcoes={opcoes} />}
+          {step === 2 && <Step2Perfil cargos={cargos} />}
           {step === 3 && <Step3Roteiro roteiro={roteiro} />}
-          {step === 4 && <Step4Avaliacao criterios={criterios} opcoes={opcoes} />}
+          {step === 4 && <Step4Avaliacao opcoes={opcoes} />}
         </ConectaCard>
 
         <div className="flex items-center justify-between gap-3">

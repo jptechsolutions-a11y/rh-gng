@@ -28,7 +28,7 @@ export function BancoHorasView({ dados, perfil }: { dados: DadosBH; perfil: 'adm
   const filiaisDisponiveis = useMemo(() => {
     const m = new Map<string, string>();
     for (const r of dados.detalhado) {
-      if (r.filialId) m.set(r.filialId, r.filialNome ?? r.filialCodigo ?? r.filialId);
+      if (r.filialId) m.set(r.filialId, r.filialCodigo ?? r.filialNome ?? r.filialId);
     }
     return [...m.entries()]
       .map(([id, nome]) => ({ id, nome }))

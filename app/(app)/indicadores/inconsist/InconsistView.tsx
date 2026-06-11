@@ -25,7 +25,7 @@ export function InconsistView({ dados, perfil }: { dados: DadosInconsist; perfil
   const filiaisDisponiveis = useMemo(() => {
     return dados.porFilial
       .filter((f) => f.filialId)
-      .map((f) => ({ id: f.filialId as string, nome: f.filialNome ?? f.filialCodigo ?? f.filialId as string }))
+      .map((f) => ({ id: f.filialId as string, nome: f.filialCodigo ?? f.filialNome ?? f.filialId as string }))
       .sort((a, b) => a.nome.localeCompare(b.nome));
   }, [dados.porFilial]);
 

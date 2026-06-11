@@ -104,7 +104,7 @@ export function TabelaDetalhado({
     if (filiaisProp) return filiaisProp;
     const m = new Map<string, string>();
     for (const r of rows) {
-      if (r.filialId) m.set(r.filialId, r.filialNome ?? r.filialCodigo ?? r.filialId);
+      if (r.filialId) m.set(r.filialId, r.filialCodigo ?? r.filialNome ?? r.filialId);
     }
     return [...m.entries()]
       .map(([id, nome]) => ({ id, nome }))
@@ -127,7 +127,7 @@ export function TabelaDetalhado({
       switch (ordenarPor) {
         case 'chapa':         return cmpStr(a.chapa, b.chapa);
         case 'nome':          return cmpStr(a.nome, b.nome);
-        case 'filial':        return cmpStr(a.filialNome ?? a.filialCodigo, b.filialNome ?? b.filialCodigo);
+        case 'filial':        return cmpStr(a.filialCodigo ?? a.filialNome, b.filialCodigo ?? b.filialNome);
         case 'funcao':        return cmpStr(a.funcao, b.funcao);
         case 'valor':         return (a.valorPgto - b.valorPgto) * mult;
         case 'saldoAnterior': return ((a.saldoAnterior ?? 0) - (b.saldoAnterior ?? 0)) * mult;
@@ -235,7 +235,7 @@ export function TabelaDetalhado({
                   </div>
                 </td>
                 {mostrarFilialFiltro && (
-                  <td className="text-conecta-muted text-[12px]">{r.filialNome ?? r.filialCodigo ?? '—'}</td>
+                  <td className="text-conecta-muted text-[12px]">{r.filialCodigo ?? r.filialNome ?? '—'}</td>
                 )}
                 <td className="text-conecta-muted">{r.funcao ?? '—'}</td>
                 <td className="text-right">

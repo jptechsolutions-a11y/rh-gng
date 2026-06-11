@@ -87,8 +87,8 @@ export async function importarBH(formData: FormData): Promise<ImportarBHResult> 
 export type DadosBH = {
   meta: { ultimaAtualizacao: string | null; atualizadoPorNome: string | null } | null;
   resumo: Resumo;
-  topFuncoes: Array<{ label: string; valor: number }>;
-  topSecoes: Array<{ label: string; valor: number }>;
+  topFuncoes: Array<{ label: string; valor: number; valorPgto: number }>;
+  topSecoes: Array<{ label: string; valor: number; valorPgto: number }>;
   porFilial: ResumoFilial[];
   detalhado: DetalhadoRow[];
   filtros: { funcoes: string[]; secoes: string[] };

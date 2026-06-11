@@ -89,7 +89,7 @@ export type DadosInconsist = {
   topSecoes: Array<{ label: string; valor: number; pct: number }>;
   porFilial: ResumoFilialInconsist[];
   detalhado: DetalhadoInconsistRow[];
-  filtros: { funcoes: string[] };
+  filtros: { funcoes: string[]; secoes: string[] };
 };
 
 export async function getDadosInconsist(): Promise<DadosInconsist> {
@@ -114,6 +114,7 @@ export async function getDadosInconsist(): Promise<DadosInconsist> {
 
   const detalhado = montarDetalhadoInconsist(filtrados);
   const funcoes = [...new Set(detalhado.map((d) => d.funcao).filter((x): x is string => !!x))].sort();
+  const secoes  = [...new Set(detalhado.map((d) => d.secao ).filter((x): x is string => !!x))].sort();
 
   return {
     meta,
@@ -122,6 +123,6 @@ export async function getDadosInconsist(): Promise<DadosInconsist> {
     topSecoes:  top5PorInconsist(filtrados, 'secao'),
     porFilial:  agregarResumoPorFilialInconsist(todos),
     detalhado,
-    filtros: { funcoes },
+    filtros: { funcoes, secoes },
   };
 }

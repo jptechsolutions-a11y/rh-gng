@@ -32,15 +32,21 @@ export function agregarResumo(rows: SnapshotRow[]): Resumo {
   };
 }
 
-export function top5Por(rows: SnapshotRow[], campo: 'funcao' | 'secao'): Array<{ label: string; valor: number }> {
-  const map = new Map<string, number>();
+export function top5Por(
+  rows: SnapshotRow[],
+  campo: 'funcao' | 'secao',
+): Array<{ label: string; valor: number; valorPgto: number }> {
+  const map = new Map<string, { horas: number; valor: number }>();
   for (const r of rows) {
     const k = (r[campo] ?? '').trim();
     if (!k) continue;
-    map.set(k, (map.get(k) ?? 0) + r.horasDecimal);
+    const cur = map.get(k) ?? { horas: 0, valor: 0 };
+    cur.horas += r.horasDecimal;
+    cur.valor += r.valorPgto;
+    map.set(k, cur);
   }
   return [...map.entries()]
-    .map(([label, valor]) => ({ label, valor: round2(valor) }))
+    .map(([label, v]) => ({ label, valor: round2(v.horas), valorPgto: round2(v.valor) }))
     .sort((a, b) => b.valor - a.valor)
     .slice(0, 5);
 }

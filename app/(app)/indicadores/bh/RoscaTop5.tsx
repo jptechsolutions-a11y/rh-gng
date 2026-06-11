@@ -51,7 +51,7 @@ export function RoscaTop5({
             const valorInterno = pct >= 55;
             const ativo = selecionado === it.label;
             const dim = selecionado && !ativo;
-            const textoBarra = `H ${formatHoras(it.valor)} · ${formatBRL(it.valorPgto)}`;
+            const textoBarra = `${formatHoras(it.valor)}H · ${formatBRL(it.valorPgto)}`;
             return (
               <button
                 type="button"

@@ -2,16 +2,17 @@
 
 import { useMemo, useState } from 'react';
 import { BarChart3, Users } from 'lucide-react';
-import type { DadosInconsist } from '@/actions/indicadores/inconsist';
-import type { ResumoFilialInconsist } from '@/lib/indicadores/inconsist-queries';
-import { CardsResumoInconsist } from './CardsResumo';
-import { RoscaTop5Inconsist } from './RoscaTop5';
-import { TabelaResumoFilialInconsist } from './TabelaResumoFilial';
-import { TabelaDetalhadoInconsist } from './TabelaDetalhado';
-import { ImportarInconsistDialog } from './ImportarInconsistDialog';
+import type { DadosCursos } from '@/actions/indicadores/cursos';
+import type { ResumoFilialCursos } from '@/lib/indicadores/cursos-queries';
+import { calcVariacao } from '../bh/variacao';
+import { CardsResumoCursos } from './CardsResumo';
+import { RoscaTop5Cursos } from './RoscaTop5';
+import { TabelaResumoFilialCursos } from './TabelaResumoFilial';
+import { TabelaDetalhadoCursos } from './TabelaDetalhado';
+import { ImportarCursosDialog } from './ImportarCursosDialog';
 import { SubTabs } from '../_shared/SubTabs';
 
-export function InconsistView({ dados, perfil }: { dados: DadosInconsist; perfil: 'admin' | 'filial' }) {
+export function CursosView({ dados, perfil }: { dados: DadosCursos; perfil: 'admin' | 'filial' }) {
   const ts = dados.meta?.ultimaAtualizacao
     ? new Date(dados.meta.ultimaAtualizacao).toLocaleString('pt-BR')
     : null;
@@ -43,24 +44,36 @@ export function InconsistView({ dados, perfil }: { dados: DadosInconsist; perfil
 
   const resumoEfetivo = useMemo(() => {
     if (!filtroAtivo) return dados.resumo;
-    const totalInconsist = detalhadoFiltrado.reduce((a, r) => a + r.qtdInconsist, 0);
+    const totalPendencias = detalhadoFiltrado.reduce((a, r) => a + r.qtdPendencias, 0);
     const colaboradores = detalhadoFiltrado.length;
-    const mediaPorPessoa = colaboradores === 0 ? 0 : totalInconsist / colaboradores;
+    const mediaPorPessoa = colaboradores === 0 ? 0 : totalPendencias / colaboradores;
     return {
       colaboradores,
-      totalInconsist,
+      totalPendencias,
       mediaPorPessoa: Math.round(mediaPorPessoa * 100) / 100,
     };
   }, [filtroAtivo, detalhadoFiltrado, dados.resumo]);
+
+  const resumoAnteriorEfetivo = useMemo(() => {
+    if (!filtroAtivo) return dados.resumoAnterior;
+    const totalPendencias = detalhadoFiltrado.reduce((a, r) => a + r.qtdAnterior, 0);
+    const colaboradores = detalhadoFiltrado.filter((r) => r.qtdAnterior > 0).length;
+    const mediaPorPessoa = colaboradores === 0 ? 0 : totalPendencias / colaboradores;
+    return {
+      colaboradores,
+      totalPendencias,
+      mediaPorPessoa: Math.round(mediaPorPessoa * 100) / 100,
+    };
+  }, [filtroAtivo, detalhadoFiltrado, dados.resumoAnterior]);
 
   const recomputeTop = (campo: 'funcao' | 'secao') => {
     const map = new Map<string, number>();
     for (const r of detalhadoFiltrado) {
       const k = (r[campo] ?? '').trim();
       if (!k) continue;
-      map.set(k, (map.get(k) ?? 0) + r.qtdInconsist);
+      map.set(k, (map.get(k) ?? 0) + r.qtdPendencias);
     }
-    const total = detalhadoFiltrado.reduce((a, r) => a + r.qtdInconsist, 0) || 1;
+    const total = detalhadoFiltrado.reduce((a, r) => a + r.qtdPendencias, 0) || 1;
     return [...map.entries()]
       .map(([label, valor]) => ({
         label, valor,
@@ -107,19 +120,20 @@ export function InconsistView({ dados, perfil }: { dados: DadosInconsist; perfil
     [filtroAtivo, detalhadoFiltrado, dados.topTipos],
   );
 
-  const porFilialEfetivo = useMemo<ResumoFilialInconsist[]>(() => {
+  const porFilialEfetivo = useMemo<ResumoFilialCursos[]>(() => {
     if (!filtroAtivo) return dados.porFilial;
-    const map = new Map<string, { nome: string | null; codigo: string | null; qtd: number; chapas: Set<string> }>();
+    const map = new Map<string, { nome: string | null; codigo: string | null; atual: number; anterior: number; chapas: Set<string> }>();
     for (const r of detalhadoFiltrado) {
       const key = r.filialId ?? '__sem__';
       const filialRowSrc = dados.porFilial.find((p) => p.filialId === r.filialId);
       const cur = map.get(key) ?? {
         nome: filialRowSrc?.filialNome ?? null,
         codigo: filialRowSrc?.filialCodigo ?? null,
-        qtd: 0,
+        atual: 0, anterior: 0,
         chapas: new Set<string>(),
       };
-      cur.qtd += r.qtdInconsist;
+      cur.atual += r.qtdPendencias;
+      cur.anterior += r.qtdAnterior;
       cur.chapas.add(r.chapa);
       map.set(key, cur);
     }
@@ -128,10 +142,12 @@ export function InconsistView({ dados, perfil }: { dados: DadosInconsist; perfil
         filialId: k === '__sem__' ? null : k,
         filialNome: v.nome,
         filialCodigo: v.codigo,
-        qtdInconsist: v.qtd,
+        qtdAtual: v.atual,
+        qtdAnterior: v.anterior,
         qtdColaboradores: v.chapas.size,
+        variacao: calcVariacao(v.atual, v.anterior),
       }))
-      .sort((a, b) => b.qtdInconsist - a.qtdInconsist);
+      .sort((a, b) => b.qtdAtual - a.qtdAtual);
   }, [filtroAtivo, detalhadoFiltrado, dados.porFilial]);
 
   return (
@@ -141,7 +157,7 @@ export function InconsistView({ dados, perfil }: { dados: DadosInconsist; perfil
           <div className="flex items-center gap-2">
             <span className="h-[2px] w-6 bg-conecta-accent" />
             <span className="font-display text-[10px] uppercase tracking-[0.32em] text-conecta-accent font-semibold">
-              Inconsistências
+              Cursos Obrigatórios
             </span>
           </div>
           <h2 className="font-display text-[22px] font-extrabold text-conecta-primary tracking-tight mt-1.5">
@@ -151,7 +167,7 @@ export function InconsistView({ dados, perfil }: { dados: DadosInconsist; perfil
             {ts ? `Última atualização: ${ts}${dados.meta?.atualizadoPorNome ? ` por ${dados.meta.atualizadoPorNome}` : ''}` : 'Sem dados importados.'}
           </p>
         </div>
-        {perfil === 'admin' && <ImportarInconsistDialog />}
+        {perfil === 'admin' && <ImportarCursosDialog />}
       </div>
 
       <SubTabs
@@ -196,36 +212,36 @@ export function InconsistView({ dados, perfil }: { dados: DadosInconsist; perfil
         </div>
       )}
 
-      <CardsResumoInconsist r={resumoEfetivo} />
+      <CardsResumoCursos r={resumoEfetivo} ant={resumoAnteriorEfetivo} />
 
       {subTab === 'indicadores' ? (
         <>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <RoscaTop5Inconsist
-              titulo="Top 5 funções (qtd)"
+            <RoscaTop5Cursos
+              titulo="Top 5 funções (pendências)"
               dados={topFuncoesEfetivo}
               color="orange"
               selecionado={funcao}
               onSelect={setFuncao}
             />
-            <RoscaTop5Inconsist
-              titulo="Top 5 seções (qtd)"
+            <RoscaTop5Cursos
+              titulo="Top 5 seções (pendências)"
               dados={topSecoesEfetivo}
               color="navy"
               selecionado={secao}
               onSelect={setSecao}
             />
-            <RoscaTop5Inconsist
-              titulo="Top 5 tipos (qtd)"
+            <RoscaTop5Cursos
+              titulo="Top 5 tipos (pendências)"
               dados={topTiposEfetivo}
               color="orange"
             />
           </div>
 
-          <TabelaResumoFilialInconsist rows={porFilialEfetivo} />
+          <TabelaResumoFilialCursos rows={porFilialEfetivo} />
         </>
       ) : (
-        <TabelaDetalhadoInconsist
+        <TabelaDetalhadoCursos
           rows={dados.detalhado}
           funcoes={dados.filtros.funcoes}
           secoes={dados.filtros.secoes}

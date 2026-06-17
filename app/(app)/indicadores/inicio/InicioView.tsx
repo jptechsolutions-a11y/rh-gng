@@ -1,4 +1,4 @@
-import { Clock, AlertTriangle } from 'lucide-react';
+import { Clock, AlertTriangle, GraduationCap } from 'lucide-react';
 import type { RankingsBundle } from '@/actions/indicadores/rankings';
 import { RankingBars } from './RankingBars';
 
@@ -20,7 +20,9 @@ export function InicioView({ dados }: { dados: RankingsBundle }) {
     ? new Date(dados.meta.bh.ultimaAtualizacao).toLocaleString('pt-BR') : null;
   const tsInc = dados.meta.inconsist?.ultimaAtualizacao
     ? new Date(dados.meta.inconsist.ultimaAtualizacao).toLocaleString('pt-BR') : null;
-  const ultimaSync = [tsBH, tsInc].filter(Boolean)[0] ?? null;
+  const tsCursos = dados.meta.cursos?.ultimaAtualizacao
+    ? new Date(dados.meta.cursos.ultimaAtualizacao).toLocaleString('pt-BR') : null;
+  const ultimaSync = [tsBH, tsInc, tsCursos].filter(Boolean)[0] ?? null;
 
   return (
     <div className="space-y-6">
@@ -39,7 +41,7 @@ export function InicioView({ dados }: { dados: RankingsBundle }) {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <RankingBars
           titulo="Ranking Banco de Horas"
           icon={Clock}
@@ -51,6 +53,13 @@ export function InicioView({ dados }: { dados: RankingsBundle }) {
           titulo="Ranking Inconsistências"
           icon={AlertTriangle}
           items={dados.inconsist.items}
+          format={(n) => formatInt(n)}
+          color="orange"
+        />
+        <RankingBars
+          titulo="Ranking Cursos Obrigatórios"
+          icon={GraduationCap}
+          items={dados.cursos.items}
           format={(n) => formatInt(n)}
           color="orange"
         />

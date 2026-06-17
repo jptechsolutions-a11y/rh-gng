@@ -31,7 +31,7 @@ export function agregarResumoInconsist(rows: InconsistRowDb[]): ResumoInconsist 
 }
 
 export function top5PorInconsist(
-  rows: InconsistRowDb[], campo: 'funcao' | 'secao',
+  rows: InconsistRowDb[], campo: 'funcao' | 'secao' | 'tipo',
 ): Array<{ label: string; valor: number; pct: number }> {
   const map = new Map<string, number>();
   for (const r of rows) {

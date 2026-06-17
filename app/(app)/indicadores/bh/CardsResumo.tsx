@@ -1,6 +1,6 @@
 import type { Resumo } from '@/lib/indicadores/bh-queries';
 import { formatBRL, formatHoras } from './variacao';
-import { Users, Clock, Wallet, TrendingUp } from 'lucide-react';
+import { Users, Clock, Wallet, TrendingUp, Receipt } from 'lucide-react';
 
 type KpiColor = 'navy' | 'orange' | 'emerald' | 'rose';
 
@@ -48,11 +48,12 @@ function Kpi({
 
 export function CardsResumo({ r }: { r: Resumo }) {
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
       <Kpi icon={Users}       label="Colaboradores"        value={r.colaboradores.toLocaleString('pt-BR')} color="orange" />
       <Kpi icon={Clock}       label="Total de horas"       value={formatHoras(r.totalHoras)}               color="navy" />
-      <Kpi icon={Wallet}      label="Valor a pagar"        value={formatBRL(r.valorTotal)}                  color="emerald" />
-      <Kpi icon={TrendingUp}  label="Média h/colaborador"  value={formatHoras(r.mediaHoras)}               color="navy" />
+      <Kpi icon={Wallet}      label="Valor base"           value={formatBRL(r.valorTotal)}                  color="navy" />
+      <Kpi icon={Receipt}     label="Encargos (44%)"       value={formatBRL(r.encargos)}                    color="rose" />
+      <Kpi icon={TrendingUp}  label="Total a pagar"        value={formatBRL(r.valorComEncargos)}            color="emerald" />
     </div>
   );
 }

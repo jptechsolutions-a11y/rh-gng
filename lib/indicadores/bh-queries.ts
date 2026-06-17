@@ -1,5 +1,8 @@
 import { calcVariacao, type Variacao } from '@/app/(app)/indicadores/bh/variacao';
 
+// Encargos sobre o valor pago do banco de horas (INSS, FGTS, provisões etc.).
+export const ENCARGOS_BH = 0.44;
+
 export type SnapshotRow = {
   filialId: string | null;
   filialNome: string | null;
@@ -16,18 +19,23 @@ export type Resumo = {
   colaboradores: number;
   totalHoras: number;
   valorTotal: number;
+  encargos: number;
+  valorComEncargos: number;
   mediaHoras: number;
 };
 
 export function agregarResumo(rows: SnapshotRow[]): Resumo {
   const totalHoras = rows.reduce((a, r) => a + r.horasDecimal, 0);
   const valorTotal = rows.reduce((a, r) => a + r.valorPgto, 0);
+  const encargos = valorTotal * ENCARGOS_BH;
   const comSaldo = rows.filter((r) => r.horasDecimal > 0);
   const mediaHoras = comSaldo.length === 0 ? 0 : totalHoras / comSaldo.length;
   return {
     colaboradores: rows.length,
     totalHoras: round2(totalHoras),
     valorTotal: round2(valorTotal),
+    encargos: round2(encargos),
+    valorComEncargos: round2(valorTotal + encargos),
     mediaHoras: round2(mediaHoras),
   };
 }
@@ -89,6 +97,8 @@ export function agregarResumoPorFilial(atual: SnapshotRow[], anterior: SnapshotR
 }
 
 export type DetalhadoRow = SnapshotRow & {
+  encargos: number;
+  valorComEncargos: number;
   saldoAnterior: number | null;
   variacao: Variacao;
   novo: boolean;
@@ -99,8 +109,11 @@ export function montarDetalhado(atual: SnapshotRow[], anterior: SnapshotRow[]): 
   for (const r of anterior) ant.set(r.chapa, (ant.get(r.chapa) ?? 0) + r.horasDecimal);
   return atual.map((r) => {
     const prev = ant.has(r.chapa) ? round2(ant.get(r.chapa)!) : null;
+    const encargos = round2(r.valorPgto * ENCARGOS_BH);
     return {
       ...r,
+      encargos,
+      valorComEncargos: round2(r.valorPgto + encargos),
       saldoAnterior: prev,
       variacao: calcVariacao(r.horasDecimal, prev),
       novo: prev == null,

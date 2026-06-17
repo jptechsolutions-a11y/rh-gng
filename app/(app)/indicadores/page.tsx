@@ -1,18 +1,21 @@
 import { requireSession } from '@/lib/auth/session';
 import { getDadosBH } from '@/actions/indicadores/bh';
 import { getDadosInconsist } from '@/actions/indicadores/inconsist';
+import { getDadosCursos } from '@/actions/indicadores/cursos';
 import { getRankings } from '@/actions/indicadores/rankings';
 import { TopBar } from '@/components/layout/TopBar';
 import { BancoHorasView } from './bh/BancoHorasView';
 import { InconsistView } from './inconsist/InconsistView';
+import { CursosView } from './cursos/CursosView';
 import { InicioView } from './inicio/InicioView';
 
 export const dynamic = 'force-dynamic';
 
-type Tab = 'inicio' | 'banco-horas' | 'inconsistencias';
+type Tab = 'inicio' | 'banco-horas' | 'inconsistencias' | 'cursos';
 function parseTab(v: string | undefined): Tab {
   if (v === 'banco-horas') return 'banco-horas';
   if (v === 'inconsistencias') return 'inconsistencias';
+  if (v === 'cursos') return 'cursos';
   return 'inicio';
 }
 
@@ -29,6 +32,7 @@ export default async function IndicadoresPage({
   const dadosInicio = active === 'inicio' ? await getRankings() : null;
   const dadosBH = active === 'banco-horas' ? await getDadosBH() : null;
   const dadosInc = active === 'inconsistencias' ? await getDadosInconsist() : null;
+  const dadosCursos = active === 'cursos' ? await getDadosCursos() : null;
 
   return (
     <>
@@ -42,6 +46,9 @@ export default async function IndicadoresPage({
         )}
         {active === 'inconsistencias' && dadosInc && (
           <InconsistView dados={dadosInc} perfil={s.perfil} />
+        )}
+        {active === 'cursos' && dadosCursos && (
+          <CursosView dados={dadosCursos} perfil={s.perfil} />
         )}
       </div>
     </>

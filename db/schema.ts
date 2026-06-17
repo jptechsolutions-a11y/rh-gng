@@ -328,3 +328,47 @@ export const inconsistMeta = pgTable('inconsist_meta', {
 }, (t) => ({
   singleton: check('inconsist_meta_singleton', sql`${t.id} = 'singleton'`),
 }));
+
+// =====================================================
+// Indicadores — Cursos Obrigatórios (atual + anterior + meta)
+// =====================================================
+
+const cursosSnapshotColumns = {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  filialId: uuid('filial_id').references(() => filiais.id, { onDelete: 'restrict' }),
+  codfilialOrigem: text('codfilial_origem').notNull(),
+  chapa: text('chapa').notNull(),
+  nome: text('nome').notNull(),
+  funcao: text('funcao'),
+  secao: text('secao'),
+  regional: text('regional'),
+  bandeira: text('bandeira'),
+  codsituacao: text('codsituacao'),
+  tipo: text('tipo'),
+  dataTreinamento: date('data_treinamento'),
+  contagem: integer('contagem').notNull().default(0),
+  pendencia: text('pendencia'),
+  bpNacional: text('bp_nacional'),
+  bpRegional: text('bp_regional'),
+} as const;
+
+export const cursosSnapshotAtual = pgTable('cursos_snapshot_atual', cursosSnapshotColumns, (t) => ({
+  filialIdx: index('cursos_atual_filial_idx').on(t.filialId),
+  chapaIdx:  index('cursos_atual_chapa_idx').on(t.chapa),
+  funcaoIdx: index('cursos_atual_funcao_idx').on(t.funcao),
+  secaoIdx:  index('cursos_atual_secao_idx').on(t.secao),
+}));
+
+export const cursosSnapshotAnterior = pgTable('cursos_snapshot_anterior', cursosSnapshotColumns, (t) => ({
+  chapaIdx: index('cursos_anterior_chapa_idx').on(t.chapa),
+}));
+
+export const cursosMeta = pgTable('cursos_meta', {
+  id: text('id').primaryKey(),
+  ultimaAtualizacao: timestamp('ultima_atualizacao', { withTimezone: true }).notNull().defaultNow(),
+  atualizadoPor: uuid('atualizado_por').references(() => admins.id, { onDelete: 'set null' }),
+  totalLinhas: integer('total_linhas').notNull().default(0),
+  totalFiliais: integer('total_filiais').notNull().default(0),
+}, (t) => ({
+  singleton: check('cursos_meta_singleton', sql`${t.id} = 'singleton'`),
+}));

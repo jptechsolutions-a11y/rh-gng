@@ -28,7 +28,7 @@ const selectClass =
 const inputClass =
   'border-conecta-primary/15 focus-visible:ring-conecta-accent/30 focus-visible:border-conecta-accent';
 
-type OrdenarPor = 'chapa' | 'nome' | 'filial' | 'funcao' | 'valor' | 'saldoAnterior' | 'horas' | 'variacao';
+type OrdenarPor = 'chapa' | 'nome' | 'filial' | 'funcao' | 'valor' | 'encargos' | 'total' | 'saldoAnterior' | 'horas' | 'variacao';
 type OrdenarDir = 'desc' | 'asc';
 
 function ThSort({
@@ -130,6 +130,8 @@ export function TabelaDetalhado({
         case 'filial':        return cmpStr(a.filialCodigo ?? a.filialNome, b.filialCodigo ?? b.filialNome);
         case 'funcao':        return cmpStr(a.funcao, b.funcao);
         case 'valor':         return (a.valorPgto - b.valorPgto) * mult;
+        case 'encargos':      return (a.encargos - b.encargos) * mult;
+        case 'total':         return (a.valorComEncargos - b.valorComEncargos) * mult;
         case 'saldoAnterior': return ((a.saldoAnterior ?? 0) - (b.saldoAnterior ?? 0)) * mult;
         case 'horas':         return (a.horasDecimal - b.horasDecimal) * mult;
         case 'variacao':      return (a.variacao.delta - b.variacao.delta) * mult;
@@ -212,7 +214,7 @@ export function TabelaDetalhado({
                 <ThSort campo="filial" atual={ordenarPor} dir={ordenarDir} onClick={handleSort}>Filial</ThSort>
               )}
               <ThSort campo="funcao" atual={ordenarPor} dir={ordenarDir} onClick={handleSort}>Função</ThSort>
-              <ThSort campo="valor"  atual={ordenarPor} dir={ordenarDir} onClick={handleSort} align="right">Valor a receber</ThSort>
+              <ThSort campo="total"    atual={ordenarPor} dir={ordenarDir} onClick={handleSort} align="right">Total a pagar</ThSort>
               <ThSort campo="saldoAnterior" atual={ordenarPor} dir={ordenarDir} onClick={handleSort} align="right">Saldo anterior</ThSort>
               <ThSort campo="horas"  atual={ordenarPor} dir={ordenarDir} onClick={handleSort} align="right">Saldo atual</ThSort>
               <ThSort campo="variacao" atual={ordenarPor} dir={ordenarDir} onClick={handleSort} align="right">Variação</ThSort>
@@ -240,7 +242,7 @@ export function TabelaDetalhado({
                 <td className="text-conecta-muted">{r.funcao ?? '—'}</td>
                 <td className="text-right">
                   <span className="font-display font-bold text-conecta-accent tabular-nums">
-                    {formatBRL(r.valorPgto)}
+                    {formatBRL(r.valorComEncargos)}
                   </span>
                 </td>
                 <td className="text-right text-conecta-muted tabular-nums">

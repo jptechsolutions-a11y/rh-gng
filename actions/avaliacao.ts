@@ -52,6 +52,7 @@ export async function carregarFormularioNovaAvaliacao() {
 
 export async function salvarAvaliacao(input: NovaAvaliacaoInput) {
   const s = await requireSession();
+  if (s.perfil === 'visualizador') throw new Error('Sem permissão para criar avaliações');
   const data = NovaAvaliacaoSchema.parse(input);
 
   // Rate limit por sessão para evitar abuso de criação em massa.
@@ -127,6 +128,7 @@ export async function salvarAvaliacao(input: NovaAvaliacaoInput) {
 
 export async function atualizarPlanoDesenvolvimento(input: unknown) {
   const s = await requireSession();
+  if (s.perfil === 'visualizador') throw new Error('Sem permissão para editar PDI');
   const { avaliacaoId, planoDesenvolvimento } = AtualizarPdiSchema.parse(input);
   const [av] = await db
     .select()

@@ -3,7 +3,7 @@
 import { db, schema } from '@/db/client';
 import { eq, inArray, sql } from 'drizzle-orm';
 import * as XLSX from 'xlsx';
-import { requireSession } from '@/lib/auth/session';
+import { requireSession, getFiliaisVisiveis, getFiliaisRanking } from '@/lib/auth/session';
 import { revalidatePath } from 'next/cache';
 import { parseCursosWorkbook } from '@/lib/indicadores/cursos-parser';
 import {
@@ -104,18 +104,15 @@ export type DadosCursos = {
 
 export async function getDadosCursos(): Promise<DadosCursos> {
   const s = await requireSession();
-  const isAdmin = s.perfil === 'admin';
-  const filialFiltro = isAdmin ? undefined : s.filialId;
+  const escopoRanking = getFiliaisRanking(s);
+  const escopoDet     = getFiliaisVisiveis(s);
 
-  const atualGlobal    = await fetchCursosRows(schema.cursosSnapshotAtual);
-  const anteriorGlobal = await fetchCursosRows(schema.cursosSnapshotAnterior);
+  const atualGlobal    = await fetchCursosRows(schema.cursosSnapshotAtual, escopoRanking);
+  const anteriorGlobal = await fetchCursosRows(schema.cursosSnapshotAnterior, escopoRanking);
 
-  const atualDet = filialFiltro
-    ? await fetchCursosRows(schema.cursosSnapshotAtual, filialFiltro)
-    : atualGlobal;
-  const anteriorDet = filialFiltro
-    ? await fetchCursosRows(schema.cursosSnapshotAnterior, filialFiltro)
-    : anteriorGlobal;
+  const mesmoEscopo = escopoRanking === escopoDet;
+  const atualDet    = mesmoEscopo ? atualGlobal    : await fetchCursosRows(schema.cursosSnapshotAtual, escopoDet);
+  const anteriorDet = mesmoEscopo ? anteriorGlobal : await fetchCursosRows(schema.cursosSnapshotAnterior, escopoDet);
 
   const metaRow = await db
     .select({ ts: schema.cursosMeta.ultimaAtualizacao, nome: schema.admins.nome })

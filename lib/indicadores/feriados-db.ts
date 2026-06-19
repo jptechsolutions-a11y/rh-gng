@@ -1,8 +1,8 @@
 import { db, schema } from '@/db/client';
-import { eq, sql } from 'drizzle-orm';
+import { eq, inArray, sql } from 'drizzle-orm';
 import type { FeriadosRowDb } from './feriados-queries';
 
-export async function fetchFeriadosRows(filialId?: string): Promise<FeriadosRowDb[]> {
+export async function fetchFeriadosRows(filialIds?: string[] | null): Promise<FeriadosRowDb[]> {
   const t = schema.feriadosSnapshot;
   const q = db
     .select({
@@ -27,7 +27,11 @@ export async function fetchFeriadosRows(filialId?: string): Promise<FeriadosRowD
     .from(t)
     .leftJoin(schema.filiais, eq(t.filialId, schema.filiais.id));
 
-  const rows = filialId ? await q.where(eq(t.filialId, filialId)) : await q;
+  const rows = filialIds && filialIds.length > 0
+    ? await q.where(inArray(t.filialId, filialIds))
+    : !filialIds
+      ? await q
+      : [];
   return rows.map((r) => ({
     ...r,
     valor: Number(r.valor),

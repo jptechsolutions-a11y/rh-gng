@@ -11,7 +11,7 @@ import { TabelaDetalhadoInconsist } from './TabelaDetalhado';
 import { ImportarInconsistDialog } from './ImportarInconsistDialog';
 import { SubTabs } from '../_shared/SubTabs';
 
-export function InconsistView({ dados, perfil }: { dados: DadosInconsist; perfil: 'admin' | 'filial' }) {
+export function InconsistView({ dados, podeImportar, multiFilial }: { dados: DadosInconsist; podeImportar: boolean; multiFilial: boolean }) {
   const ts = dados.meta?.ultimaAtualizacao
     ? new Date(dados.meta.ultimaAtualizacao).toLocaleString('pt-BR')
     : null;
@@ -151,7 +151,7 @@ export function InconsistView({ dados, perfil }: { dados: DadosInconsist; perfil
             {ts ? `Última atualização: ${ts}${dados.meta?.atualizadoPorNome ? ` por ${dados.meta.atualizadoPorNome}` : ''}` : 'Sem dados importados.'}
           </p>
         </div>
-        {perfil === 'admin' && <ImportarInconsistDialog />}
+        {podeImportar && <ImportarInconsistDialog />}
       </div>
 
       <SubTabs
@@ -236,7 +236,7 @@ export function InconsistView({ dados, perfil }: { dados: DadosInconsist; perfil
           setSecao={setSecao}
           filialId={filialId}
           setFilialId={setFilialId}
-          mostrarFilialFiltro={perfil === 'admin'}
+          mostrarFilialFiltro={multiFilial}
         />
       )}
     </div>

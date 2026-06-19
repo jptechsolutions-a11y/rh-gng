@@ -1,6 +1,6 @@
 'use server';
 
-import { requireSession } from '@/lib/auth/session';
+import { requireSession, getFiliaisRanking } from '@/lib/auth/session';
 import { db, schema } from '@/db/client';
 import { fetchSnapshotRows } from '@/lib/indicadores/bh-db';
 import { fetchInconsistRows } from '@/lib/indicadores/inconsist-db';
@@ -27,12 +27,13 @@ export type RankingsBundle = {
 };
 
 export async function getRankings(): Promise<RankingsBundle> {
-  await requireSession();
+  const s = await requireSession();
+  const escopo = getFiliaisRanking(s);
 
-  const bhRows = await fetchSnapshotRows(schema.bhSnapshotAtual);
-  const incRows = await fetchInconsistRows();
-  const cursosRows = await fetchCursosRows(schema.cursosSnapshotAtual);
-  const feriadosRows = await fetchFeriadosRows();
+  const bhRows = await fetchSnapshotRows(schema.bhSnapshotAtual, escopo);
+  const incRows = await fetchInconsistRows(escopo);
+  const cursosRows = await fetchCursosRows(schema.cursosSnapshotAtual, escopo);
+  const feriadosRows = await fetchFeriadosRows(escopo);
 
   // BH: total de horas por filial (top 10)
   const bhMap = new Map<string, { nome: string | null; codigo: string | null; total: number }>();

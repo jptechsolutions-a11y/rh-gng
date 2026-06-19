@@ -12,7 +12,7 @@ import { TabelaDetalhadoCursos } from './TabelaDetalhado';
 import { ImportarCursosDialog } from './ImportarCursosDialog';
 import { SubTabs } from '../_shared/SubTabs';
 
-export function CursosView({ dados, perfil }: { dados: DadosCursos; perfil: 'admin' | 'filial' }) {
+export function CursosView({ dados, podeImportar, multiFilial }: { dados: DadosCursos; podeImportar: boolean; multiFilial: boolean }) {
   const ts = dados.meta?.ultimaAtualizacao
     ? new Date(dados.meta.ultimaAtualizacao).toLocaleString('pt-BR')
     : null;
@@ -167,7 +167,7 @@ export function CursosView({ dados, perfil }: { dados: DadosCursos; perfil: 'adm
             {ts ? `Última atualização: ${ts}${dados.meta?.atualizadoPorNome ? ` por ${dados.meta.atualizadoPorNome}` : ''}` : 'Sem dados importados.'}
           </p>
         </div>
-        {perfil === 'admin' && <ImportarCursosDialog />}
+        {podeImportar && <ImportarCursosDialog />}
       </div>
 
       <SubTabs
@@ -252,7 +252,7 @@ export function CursosView({ dados, perfil }: { dados: DadosCursos; perfil: 'adm
           setSecao={setSecao}
           filialId={filialId}
           setFilialId={setFilialId}
-          mostrarFilialFiltro={perfil === 'admin'}
+          mostrarFilialFiltro={multiFilial}
         />
       )}
     </div>

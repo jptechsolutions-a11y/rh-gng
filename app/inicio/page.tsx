@@ -18,13 +18,16 @@ export const dynamic = 'force-dynamic';
 
 export default async function InicioPage() {
   const s = await requireSession();
-  // Visualizadores (regional/nacional) só têm acesso aos indicadores — as cards
-  // de Entrevistas/Avaliação/Escuta ficam ocultas mais abaixo, mas a landing
-  // continua acessível para que tenham um ponto de retorno.
-  const ehVisualizador = s.perfil === 'visualizador';
 
   const nome = s.perfil === 'filial' ? s.filialNome : (s.nome ?? 'Administrador');
   const sub = s.perfil === 'filial' ? `Filial ${s.filialCodigo}` : `@${s.usuario}`;
+
+  // Destino do card "Entrevistas" por perfil. Visualizador usa o histórico
+  // (somente leitura, listando entrevistas das filiais que ele tem permissão).
+  const hrefEntrevistas =
+    s.perfil === 'admin' ? '/admin' :
+    s.perfil === 'visualizador' ? '/historico' :
+    '/painel';
 
   return (
     <div className="relative h-screen w-full overflow-hidden bg-white text-conecta-text flex flex-col">
@@ -79,12 +82,10 @@ export default async function InicioPage() {
         </div>
 
         {/* ===== Cards de módulos ===== */}
-        <div className={`grid grid-cols-1 md:grid-cols-2 ${ehVisualizador ? 'lg:grid-cols-1' : 'lg:grid-cols-4'} gap-4 w-full max-w-6xl`}>
-          {!ehVisualizador && (
-          <>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 w-full max-w-6xl">
           {/* Entrevistas */}
           <Link
-            href={s.perfil === 'admin' ? '/admin' : '/painel'}
+            href={hrefEntrevistas}
             className="cg-module-card group relative rounded-2xl bg-white text-conecta-text p-5 overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-[0_20px_44px_-12px_rgba(13,43,107,0.45)]"
           >
             <span
@@ -189,8 +190,6 @@ export default async function InicioPage() {
               </div>
             </div>
           </Link>
-          </>
-          )}
 
           {/* Indicadores */}
           <Link

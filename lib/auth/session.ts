@@ -20,7 +20,8 @@ export type VisualizadorSession = {
   usuario: string;
   nome: string;
   escopo: 'lista' | 'nacional';
-  filiaisIds: string[]; // vazio quando escopo='nacional'
+  filiaisIds: string[];      // vazio quando escopo='nacional'
+  filiaisCodigos: string[];  // vazio quando escopo='nacional'
 };
 export type Session = FilialSession | AdminSession | VisualizadorSession;
 
@@ -33,6 +34,18 @@ export function getFiliaisVisiveis(s: Session): string[] | null {
   if (s.perfil === 'filial') return [s.filialId];
   if (s.escopo === 'nacional') return null;
   return s.filiaisIds;
+}
+
+/**
+ * Variante por código (texto) das filiais visíveis. Mesma semântica de
+ * getFiliaisVisiveis: `null` = todas; `[]` = nenhuma. Usada em tabelas que
+ * armazenam o filial_codigo em vez do filial_id (ex.: escuta_reunioes).
+ */
+export function getFiliaisCodigosVisiveis(s: Session): string[] | null {
+  if (s.perfil === 'admin') return null;
+  if (s.perfil === 'filial') return [s.filialCodigo];
+  if (s.escopo === 'nacional') return null;
+  return s.filiaisCodigos;
 }
 
 /**
@@ -179,12 +192,18 @@ export const getSession = cache(async (): Promise<Session | null> => {
   }
   if (s.perfil === 'visualizador' && s.usuarioAcessoId && s.uaUsuario && s.uaEscopo && s.uaAtivo) {
     let filiaisIds: string[] = [];
+    let filiaisCodigos: string[] = [];
     if (s.uaEscopo === 'lista') {
       const rows2 = await db
-        .select({ filialId: schema.usuariosAcessoFiliais.filialId })
+        .select({
+          filialId: schema.usuariosAcessoFiliais.filialId,
+          codigo: schema.filiais.codigo,
+        })
         .from(schema.usuariosAcessoFiliais)
+        .leftJoin(schema.filiais, eq(schema.filiais.id, schema.usuariosAcessoFiliais.filialId))
         .where(eq(schema.usuariosAcessoFiliais.usuarioAcessoId, s.usuarioAcessoId));
       filiaisIds = rows2.map((r) => r.filialId);
+      filiaisCodigos = rows2.map((r) => r.codigo).filter((c): c is string => !!c);
     }
     return store({
       perfil: 'visualizador', token,
@@ -193,6 +212,7 @@ export const getSession = cache(async (): Promise<Session | null> => {
       nome: s.uaNome ?? s.uaUsuario,
       escopo: s.uaEscopo === 'nacional' ? 'nacional' : 'lista',
       filiaisIds,
+      filiaisCodigos,
     });
   }
   return store(null);

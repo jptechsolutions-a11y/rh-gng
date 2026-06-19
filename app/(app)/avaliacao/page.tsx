@@ -25,21 +25,27 @@ export default async function AvaliacaoHome() {
     statsHistorico(),
     listarHistorico({ perPage: 5 }),
   ]);
-  const badge = s.perfil === 'filial' ? `Filial ${s.filialCodigo}` : 'ADMIN';
+  const badge =
+    s.perfil === 'filial' ? `Filial ${s.filialCodigo}` :
+    s.perfil === 'admin'  ? 'ADMIN' :
+    (s.escopo === 'nacional' ? 'NACIONAL' : 'REGIONAL');
   const subtitulo = s.perfil === 'filial' ? s.filialNome : 'Visão geral';
+  const podeCriar = s.perfil !== 'visualizador';
   return (
     <>
       <TopBar titulo="Avaliação de desempenho" subtitulo={subtitulo} badge={badge} />
 
       <div className="space-y-5 p-6">
-        <div className="flex justify-end">
-          <Button asChild variant="conecta" size="conecta" className="text-sm">
-            <Link href="/avaliacao/nova">
-              <Plus className="h-4 w-4" />
-              Nova avaliação
-            </Link>
-          </Button>
-        </div>
+        {podeCriar && (
+          <div className="flex justify-end">
+            <Button asChild variant="conecta" size="conecta" className="text-sm">
+              <Link href="/avaliacao/nova">
+                <Plus className="h-4 w-4" />
+                Nova avaliação
+              </Link>
+            </Button>
+          </div>
+        )}
 
         {/* ===== KPIs ===== */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

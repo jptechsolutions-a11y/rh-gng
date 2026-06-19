@@ -14,7 +14,7 @@ import { calcVariacao } from './variacao';
 
 function round2(n: number) { return Math.round(n * 100) / 100; }
 
-export function BancoHorasView({ dados, perfil }: { dados: DadosBH; perfil: 'admin' | 'filial' }) {
+export function BancoHorasView({ dados, podeImportar, multiFilial }: { dados: DadosBH; podeImportar: boolean; multiFilial: boolean }) {
   const ts = dados.meta?.ultimaAtualizacao
     ? new Date(dados.meta.ultimaAtualizacao).toLocaleString('pt-BR')
     : null;
@@ -103,7 +103,7 @@ export function BancoHorasView({ dados, perfil }: { dados: DadosBH; perfil: 'adm
             {ts ? `Última atualização: ${ts}${dados.meta?.atualizadoPorNome ? ` por ${dados.meta.atualizadoPorNome}` : ''}` : 'Sem dados importados.'}
           </p>
         </div>
-        {perfil === 'admin' && <ImportarBHDialog />}
+        {podeImportar && <ImportarBHDialog />}
       </div>
 
       <SubTabs
@@ -183,7 +183,7 @@ export function BancoHorasView({ dados, perfil }: { dados: DadosBH; perfil: 'adm
           filialId={filialId}
           setFilialId={setFilialId}
           filiais={filiaisDisponiveis}
-          mostrarFilialFiltro={perfil === 'admin'}
+          mostrarFilialFiltro={multiFilial}
         />
       )}
     </div>

@@ -27,6 +27,13 @@ export const ADMIN_NAV: NavItem[] = [
   { href: '/admin/seguranca',  label: 'Segurança',    icon: ShieldCheck },
 ];
 
+// Nav para usuários "visualizadores" (regional/nacional): só leitura, acesso a
+// indicadores cobrindo as filiais permitidas. Sem rotas de admin nem de filial.
+export const VISUALIZADOR_NAV: NavItem[] = [
+  { href: '/inicio',                          label: 'Início',      icon: LayoutDashboard },
+  { href: '/indicadores?tab=inicio',          label: 'Indicadores', icon: BarChart3 },
+];
+
 export const AVALIACAO_NAV_BASE: NavItem[] = [
   { href: '/avaliacao',            label: 'Visão geral',    icon: LayoutDashboard },
   { href: '/avaliacao/nova',       label: 'Nova avaliação', icon: Plus },

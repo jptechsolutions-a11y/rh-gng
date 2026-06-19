@@ -3,7 +3,7 @@
 import { db, schema } from '@/db/client';
 import { eq, inArray, sql } from 'drizzle-orm';
 import * as XLSX from 'xlsx';
-import { requireSession } from '@/lib/auth/session';
+import { requireSession, getFiliaisVisiveis, getFiliaisRanking } from '@/lib/auth/session';
 import { revalidatePath } from 'next/cache';
 import { parseFeriadosWorkbook } from '@/lib/indicadores/feriados-parser';
 import {
@@ -108,13 +108,11 @@ export type DadosFeriados = {
 
 export async function getDadosFeriados(): Promise<DadosFeriados> {
   const s = await requireSession();
-  const isAdmin = s.perfil === 'admin';
-  const filialFiltro = isAdmin ? undefined : s.filialId;
+  const escopoRanking = getFiliaisRanking(s);
+  const escopoDet     = getFiliaisVisiveis(s);
 
-  const todos = await fetchFeriadosRows();
-  const filtrados = filialFiltro
-    ? await fetchFeriadosRows(filialFiltro)
-    : todos;
+  const todos     = await fetchFeriadosRows(escopoRanking);
+  const filtrados = escopoRanking === escopoDet ? todos : await fetchFeriadosRows(escopoDet);
 
   const metaRow = await db
     .select({ ts: schema.feriadosMeta.ultimaAtualizacao, nome: schema.admins.nome })

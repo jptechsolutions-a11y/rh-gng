@@ -1,6 +1,7 @@
 import 'server-only';
 import { cache } from 'react';
 import { cookies, headers } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { createHash, randomBytes } from 'crypto';
 import { eq, lt } from 'drizzle-orm';
 import { db, schema } from '@/db/client';
@@ -12,7 +13,44 @@ const TTL_HOURS_LEMBRAR = 24 * 30; // 30 dias quando "Lembrar senha" marcado
 
 export type FilialSession = { perfil: 'filial'; token: string; filialId: string; filialCodigo: string; filialNome: string };
 export type AdminSession  = { perfil: 'admin';  token: string; adminId: string; usuario: string; nome: string | null };
-export type Session = FilialSession | AdminSession;
+export type VisualizadorSession = {
+  perfil: 'visualizador';
+  token: string;
+  usuarioAcessoId: string;
+  usuario: string;
+  nome: string;
+  escopo: 'lista' | 'nacional';
+  filiaisIds: string[]; // vazio quando escopo='nacional'
+};
+export type Session = FilialSession | AdminSession | VisualizadorSession;
+
+/**
+ * Retorna o conjunto de filial_ids visíveis no detalhamento (próprio recorte do usuário).
+ * `null` significa "todas" (admin ou visualizador nacional).
+ */
+export function getFiliaisVisiveis(s: Session): string[] | null {
+  if (s.perfil === 'admin') return null;
+  if (s.perfil === 'filial') return [s.filialId];
+  if (s.escopo === 'nacional') return null;
+  return s.filiaisIds;
+}
+
+/**
+ * Escopo do ranking cross-filial (resumos comparativos por filial).
+ * Difere de getFiliaisVisiveis apenas para perfil filial: filial vê todos no ranking
+ * (para comparar-se às outras), enquanto seu detalhamento é restrito.
+ */
+export function getFiliaisRanking(s: Session): string[] | null {
+  if (s.perfil === 'admin') return null;
+  if (s.perfil === 'filial') return null;
+  if (s.escopo === 'nacional') return null;
+  return s.filiaisIds;
+}
+
+/** Verifica se a sessão tem privilégios administrativos. */
+export function isAdmin(s: Session): s is AdminSession {
+  return s.perfil === 'admin';
+}
 
 function genToken() {
   return randomBytes(48).toString('base64url'); // 64 chars
@@ -25,6 +63,7 @@ const hashToken = (t: string) => createHash('sha256').update(t).digest('hex');
 export async function createSession(opts:
   | { perfil: 'filial'; filialId: string; lembrar?: boolean }
   | { perfil: 'admin'; adminId: string; lembrar?: boolean }
+  | { perfil: 'visualizador'; usuarioAcessoId: string; lembrar?: boolean }
 ) {
   const token = genToken();
   const horas = opts.lembrar ? TTL_HOURS_LEMBRAR : TTL_HOURS;
@@ -38,6 +77,7 @@ export async function createSession(opts:
     perfil: opts.perfil,
     filialId: opts.perfil === 'filial' ? opts.filialId : null,
     adminId:  opts.perfil === 'admin'  ? opts.adminId  : null,
+    usuarioAcessoId: opts.perfil === 'visualizador' ? opts.usuarioAcessoId : null,
     ip, userAgent: ua, expiraEm: expira,
   });
 
@@ -95,14 +135,20 @@ export const getSession = cache(async (): Promise<Session | null> => {
       expiraEm: schema.sessoes.expiraEm,
       filialId: schema.sessoes.filialId,
       adminId: schema.sessoes.adminId,
+      usuarioAcessoId: schema.sessoes.usuarioAcessoId,
       filialCodigo: schema.filiais.codigo,
       filialNome: schema.filiais.nome,
       adminUsuario: schema.admins.usuario,
       adminNome: schema.admins.nome,
+      uaUsuario: schema.usuariosAcesso.usuario,
+      uaNome: schema.usuariosAcesso.nome,
+      uaEscopo: schema.usuariosAcesso.escopo,
+      uaAtivo: schema.usuariosAcesso.ativo,
     })
     .from(schema.sessoes)
     .leftJoin(schema.filiais, eq(schema.filiais.id, schema.sessoes.filialId))
     .leftJoin(schema.admins,  eq(schema.admins.id,  schema.sessoes.adminId))
+    .leftJoin(schema.usuariosAcesso, eq(schema.usuariosAcesso.id, schema.sessoes.usuarioAcessoId))
     .where(eq(schema.sessoes.token, hashToken(token)))
     .limit(1);
 
@@ -131,16 +177,38 @@ export const getSession = cache(async (): Promise<Session | null> => {
       adminId: s.adminId, usuario: s.adminUsuario, nome: s.adminNome,
     });
   }
+  if (s.perfil === 'visualizador' && s.usuarioAcessoId && s.uaUsuario && s.uaEscopo && s.uaAtivo) {
+    let filiaisIds: string[] = [];
+    if (s.uaEscopo === 'lista') {
+      const rows2 = await db
+        .select({ filialId: schema.usuariosAcessoFiliais.filialId })
+        .from(schema.usuariosAcessoFiliais)
+        .where(eq(schema.usuariosAcessoFiliais.usuarioAcessoId, s.usuarioAcessoId));
+      filiaisIds = rows2.map((r) => r.filialId);
+    }
+    return store({
+      perfil: 'visualizador', token,
+      usuarioAcessoId: s.usuarioAcessoId,
+      usuario: s.uaUsuario,
+      nome: s.uaNome ?? s.uaUsuario,
+      escopo: s.uaEscopo === 'nacional' ? 'nacional' : 'lista',
+      filiaisIds,
+    });
+  }
   return store(null);
 });
 
 export async function requireSession(perfilEsperado: 'filial'): Promise<FilialSession>;
 export async function requireSession(perfilEsperado: 'admin'):  Promise<AdminSession>;
+export async function requireSession(perfilEsperado: 'visualizador'): Promise<VisualizadorSession>;
 export async function requireSession(): Promise<Session>;
-export async function requireSession(perfilEsperado?: 'filial' | 'admin'): Promise<Session> {
+export async function requireSession(perfilEsperado?: 'filial' | 'admin' | 'visualizador'): Promise<Session> {
   const s = await getSession();
-  if (!s) throw new Error('UNAUTHENTICATED');
-  if (perfilEsperado && s.perfil !== perfilEsperado) throw new Error('FORBIDDEN');
+  if (!s) redirect('/login');
+  if (perfilEsperado && s.perfil !== perfilEsperado) {
+    // Sem privilégio para a rota: redireciona para o painel adequado em vez de quebrar.
+    redirect('/inicio');
+  }
   return s;
 }
 

@@ -34,6 +34,7 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
   const lembrar = formData.get('lembrar') === 'on' || formData.get('lembrar') === 'true';
 
   if (usuario && usuario.length > 0) {
+    // 1) Tenta admin.
     const rows = await db.select().from(schema.admins).where(eq(schema.admins.usuario, usuario)).limit(1);
     const adm = rows[0];
     if (adm && (await verifyPassword(adm.senhaHash, senha))) {
@@ -44,6 +45,21 @@ export async function loginAction(_prev: LoginState, formData: FormData): Promis
       });
       redirect('/inicio');
     }
+    // 2) Tenta usuário personalizado (visualizador regional/nacional).
+    const uaRows = await db.select().from(schema.usuariosAcesso)
+      .where(and(eq(schema.usuariosAcesso.usuario, usuario), eq(schema.usuariosAcesso.ativo, true)))
+      .limit(1);
+    const ua = uaRows[0];
+    if (ua && (await verifyPassword(ua.senhaHash, senha))) {
+      await createSession({ perfil: 'visualizador', usuarioAcessoId: ua.id, lembrar });
+      await db.insert(schema.logAcessos).values({
+        usuario: `visualizador:${ua.usuario}`, acao: 'login', ip,
+        userAgent: h.get('user-agent') ?? null,
+      });
+      redirect('/inicio');
+    }
+    // Tempo constante quando usuário inexistente.
+    if (!adm && !ua) await verifyPassword(DUMMY_HASH, senha);
     return { erro: 'Usuário ou senha inválidos' };
   }
 

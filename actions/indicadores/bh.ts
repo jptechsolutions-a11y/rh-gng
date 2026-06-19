@@ -3,7 +3,7 @@
 import { db, schema } from '@/db/client';
 import { eq, inArray, sql } from 'drizzle-orm';
 import * as XLSX from 'xlsx';
-import { requireSession } from '@/lib/auth/session';
+import { requireSession, getFiliaisVisiveis, getFiliaisRanking } from '@/lib/auth/session';
 import { revalidatePath } from 'next/cache';
 import { parseBHWorkbook } from '@/lib/indicadores/bh-parser';
 import {
@@ -96,18 +96,17 @@ export type DadosBH = {
 
 export async function getDadosBH(): Promise<DadosBH> {
   const s = await requireSession();
-  const isAdmin = s.perfil === 'admin';
-  const filialFiltro = isAdmin ? undefined : s.filialId;
+  // Ranking cross-filial: filial vê todos para comparar; visualizador 'lista' vê só seu recorte.
+  const escopoRanking = getFiliaisRanking(s);
+  // Detalhamento (cards, tabela própria): restrito ao recorte do usuário.
+  const escopoDet = getFiliaisVisiveis(s);
 
-  const atualGlobal = await fetchSnapshotRows(schema.bhSnapshotAtual);
-  const anteriorGlobal = await fetchSnapshotRows(schema.bhSnapshotAnterior);
+  const atualGlobal    = await fetchSnapshotRows(schema.bhSnapshotAtual, escopoRanking);
+  const anteriorGlobal = await fetchSnapshotRows(schema.bhSnapshotAnterior, escopoRanking);
 
-  const atualDet = filialFiltro
-    ? await fetchSnapshotRows(schema.bhSnapshotAtual, filialFiltro)
-    : atualGlobal;
-  const anteriorDet = filialFiltro
-    ? await fetchSnapshotRows(schema.bhSnapshotAnterior, filialFiltro)
-    : anteriorGlobal;
+  const mesmoEscopo = escopoRanking === escopoDet;
+  const atualDet    = mesmoEscopo ? atualGlobal    : await fetchSnapshotRows(schema.bhSnapshotAtual, escopoDet);
+  const anteriorDet = mesmoEscopo ? anteriorGlobal : await fetchSnapshotRows(schema.bhSnapshotAnterior, escopoDet);
 
   const metaRow = await db
     .select({ ts: schema.bhMeta.ultimaAtualizacao, nome: schema.admins.nome })

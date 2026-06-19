@@ -11,7 +11,7 @@ import { TabelaDetalhadoFeriados } from './TabelaDetalhado';
 import { ImportarFeriadosDialog } from './ImportarFeriadosDialog';
 import { SubTabs } from '../_shared/SubTabs';
 
-export function FeriadosView({ dados, perfil }: { dados: DadosFeriados; perfil: 'admin' | 'filial' }) {
+export function FeriadosView({ dados, podeImportar, multiFilial }: { dados: DadosFeriados; podeImportar: boolean; multiFilial: boolean }) {
   const ts = dados.meta?.ultimaAtualizacao
     ? new Date(dados.meta.ultimaAtualizacao).toLocaleString('pt-BR')
     : null;
@@ -154,7 +154,7 @@ export function FeriadosView({ dados, perfil }: { dados: DadosFeriados; perfil: 
             {ts ? `Última atualização: ${ts}${dados.meta?.atualizadoPorNome ? ` por ${dados.meta.atualizadoPorNome}` : ''}` : 'Sem dados importados.'}
           </p>
         </div>
-        {perfil === 'admin' && <ImportarFeriadosDialog />}
+        {podeImportar && <ImportarFeriadosDialog />}
       </div>
 
       <SubTabs
@@ -239,7 +239,7 @@ export function FeriadosView({ dados, perfil }: { dados: DadosFeriados; perfil: 
           setSecao={setSecao}
           filialId={filialId}
           setFilialId={setFilialId}
-          mostrarFilialFiltro={perfil === 'admin'}
+          mostrarFilialFiltro={multiFilial}
         />
       )}
     </div>

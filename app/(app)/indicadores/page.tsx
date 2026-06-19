@@ -29,8 +29,17 @@ export default async function IndicadoresPage({
   const { tab } = await searchParams;
   const active = parseTab(tab);
 
-  const badge = s.perfil === 'filial' ? `Filial ${s.filialCodigo}` : 'ADMIN';
-  const subtitulo = s.perfil === 'filial' ? s.filialNome : 'Gente e Gestão · Perlog';
+  const badge =
+    s.perfil === 'filial' ? `Filial ${s.filialCodigo}` :
+    s.perfil === 'admin'  ? 'ADMIN' :
+    (s.escopo === 'nacional' ? 'NACIONAL' : 'REGIONAL');
+  const subtitulo =
+    s.perfil === 'filial' ? s.filialNome :
+    s.perfil === 'admin'  ? 'Gente e Gestão · Perlog' :
+    s.nome;
+
+  const podeImportar = s.perfil === 'admin';
+  const multiFilial  = s.perfil !== 'filial';
 
   const dadosInicio = active === 'inicio' ? await getRankings() : null;
   const dadosBH = active === 'banco-horas' ? await getDadosBH() : null;
@@ -46,16 +55,16 @@ export default async function IndicadoresPage({
           <InicioView dados={dadosInicio} />
         )}
         {active === 'banco-horas' && dadosBH && (
-          <BancoHorasView dados={dadosBH} perfil={s.perfil} />
+          <BancoHorasView dados={dadosBH} podeImportar={podeImportar} multiFilial={multiFilial} />
         )}
         {active === 'inconsistencias' && dadosInc && (
-          <InconsistView dados={dadosInc} perfil={s.perfil} />
+          <InconsistView dados={dadosInc} podeImportar={podeImportar} multiFilial={multiFilial} />
         )}
         {active === 'cursos' && dadosCursos && (
-          <CursosView dados={dadosCursos} perfil={s.perfil} />
+          <CursosView dados={dadosCursos} podeImportar={podeImportar} multiFilial={multiFilial} />
         )}
         {active === 'feriados' && dadosFeriados && (
-          <FeriadosView dados={dadosFeriados} perfil={s.perfil} />
+          <FeriadosView dados={dadosFeriados} podeImportar={podeImportar} multiFilial={multiFilial} />
         )}
       </div>
     </>

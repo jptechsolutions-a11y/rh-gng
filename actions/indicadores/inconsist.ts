@@ -3,7 +3,7 @@
 import { db, schema } from '@/db/client';
 import { eq, inArray, sql } from 'drizzle-orm';
 import * as XLSX from 'xlsx';
-import { requireSession } from '@/lib/auth/session';
+import { requireSession, getFiliaisVisiveis, getFiliaisRanking } from '@/lib/auth/session';
 import { revalidatePath } from 'next/cache';
 import { parseInconsistWorkbook } from '@/lib/indicadores/inconsist-parser';
 import {
@@ -95,13 +95,11 @@ export type DadosInconsist = {
 
 export async function getDadosInconsist(): Promise<DadosInconsist> {
   const s = await requireSession();
-  const isAdmin = s.perfil === 'admin';
-  const filialFiltro = isAdmin ? undefined : s.filialId;
+  const escopoRanking = getFiliaisRanking(s);
+  const escopoDet     = getFiliaisVisiveis(s);
 
-  const todos = await fetchInconsistRows();
-  const filtrados = filialFiltro
-    ? await fetchInconsistRows(filialFiltro)
-    : todos;
+  const todos     = await fetchInconsistRows(escopoRanking);
+  const filtrados = escopoRanking === escopoDet ? todos : await fetchInconsistRows(escopoDet);
 
   const metaRow = await db
     .select({ ts: schema.inconsistMeta.ultimaAtualizacao, nome: schema.admins.nome })

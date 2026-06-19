@@ -9,6 +9,7 @@ import {
   UserCog,
   Target,
   MessagesSquare,
+  ShieldCheck,
 } from 'lucide-react';
 import { requireSession } from '@/lib/auth/session';
 
@@ -56,6 +57,12 @@ export default async function ConfigPage() {
       title: 'Roteiro Escuta G&G',
       desc: 'Editar hero, etapas e perguntas dos 5 pilares.',
       href: '/admin/config/escuta',
+    },
+    {
+      icon: ShieldCheck,
+      title: 'Usuários personalizados',
+      desc: 'Criar acessos regionais/nacionais (só leitura) para indicadores.',
+      href: '/admin/config/usuarios',
     },
   ];
   return (

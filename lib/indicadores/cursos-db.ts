@@ -1,10 +1,10 @@
 import { db, schema } from '@/db/client';
-import { eq, sql } from 'drizzle-orm';
+import { eq, inArray, sql } from 'drizzle-orm';
 import type { CursosSnapshotRow } from './cursos-queries';
 
 export async function fetchCursosRows(
   table: typeof schema.cursosSnapshotAtual | typeof schema.cursosSnapshotAnterior,
-  filialId?: string,
+  filialIds?: string[] | null,
 ): Promise<CursosSnapshotRow[]> {
   const q = db
     .select({
@@ -26,6 +26,10 @@ export async function fetchCursosRows(
     .from(table)
     .leftJoin(schema.filiais, eq(table.filialId, schema.filiais.id));
 
-  const rows = filialId ? await q.where(eq(table.filialId, filialId)) : await q;
+  const rows = filialIds && filialIds.length > 0
+    ? await q.where(inArray(table.filialId, filialIds))
+    : !filialIds
+      ? await q
+      : [];
   return rows as CursosSnapshotRow[];
 }

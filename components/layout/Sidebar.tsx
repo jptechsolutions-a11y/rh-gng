@@ -9,7 +9,8 @@ import { ConectaSymbol } from '@/components/brand/ConectaSymbol';
 import { cn } from '@/lib/cn';
 import { logoutAction } from '@/actions/auth';
 import {
-  FILIAL_NAV, ADMIN_NAV, AVALIACAO_NAV_BASE, AVALIACAO_NAV_ADMIN_EXTRAS,
+  FILIAL_NAV, ADMIN_NAV, VISUALIZADOR_NAV,
+  AVALIACAO_NAV_BASE, AVALIACAO_NAV_ADMIN_EXTRAS,
   ESCUTA_NAV_BASE, ESCUTA_NAV_ADMIN_EXTRAS,
   INDICADORES_NAV_BASE,
 } from './nav-config';
@@ -19,7 +20,7 @@ const STORAGE_KEY = 'sidebar:collapsed';
 
 export function Sidebar({
   perfil, nome, subtitulo,
-}: { perfil: 'filial' | 'admin'; nome: string; subtitulo: string }) {
+}: { perfil: 'filial' | 'admin' | 'visualizador'; nome: string; subtitulo: string }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const currentTab = searchParams.get('tab');
@@ -47,7 +48,9 @@ export function Sidebar({
           : AVALIACAO_NAV_BASE
         : perfil === 'admin'
           ? ADMIN_NAV
-          : FILIAL_NAV;
+          : perfil === 'visualizador'
+            ? VISUALIZADOR_NAV
+            : FILIAL_NAV;
   const moduleLabel = inIndicadores
     ? 'Indicadores'
     : inEscuta

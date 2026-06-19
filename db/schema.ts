@@ -21,11 +21,30 @@ export const admins = pgTable('admins', {
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const usuariosAcesso = pgTable('usuarios_acesso', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  usuario: text('usuario').notNull().unique(),
+  nome: text('nome').notNull(),
+  senhaHash: text('senha_hash').notNull(),
+  escopo: text('escopo').notNull(), // 'lista' | 'nacional'
+  ativo: boolean('ativo').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  createdBy: uuid('created_by').references(() => admins.id, { onDelete: 'set null' }),
+});
+
+export const usuariosAcessoFiliais = pgTable('usuarios_acesso_filiais', {
+  usuarioAcessoId: uuid('usuario_acesso_id').notNull().references(() => usuariosAcesso.id, { onDelete: 'cascade' }),
+  filialId: uuid('filial_id').notNull().references(() => filiais.id, { onDelete: 'cascade' }),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.usuarioAcessoId, t.filialId] }),
+}));
+
 export const sessoes = pgTable('sessoes', {
   token: text('token').primaryKey(),
   perfil: text('perfil').notNull(),
   filialId: uuid('filial_id').references(() => filiais.id, { onDelete: 'cascade' }),
   adminId: uuid('admin_id').references(() => admins.id, { onDelete: 'cascade' }),
+  usuarioAcessoId: uuid('usuario_acesso_id').references(() => usuariosAcesso.id, { onDelete: 'cascade' }),
   ip: text('ip'),
   userAgent: text('user_agent'),
   expiraEm: timestamp('expira_em', { withTimezone: true }).notNull(),

@@ -85,7 +85,7 @@ export function LoginForm() {
           id="usuario"
           name="usuario"
           type="text"
-          label="Usuário administrador"
+          label="Usuário"
           autoComplete="username"
           required
           icon={<UserCog className="h-4 w-4" />}
@@ -106,7 +106,7 @@ export function LoginForm() {
         id="senha"
         name="senha"
         type={showPwd ? 'text' : 'password'}
-        label={modoAdmin ? 'Senha do administrador' : 'Senha da filial'}
+        label={modoAdmin ? 'Senha' : 'Senha da filial'}
         autoComplete="current-password"
         required
         icon={showPwd ? <Mail className="h-4 w-4 opacity-0" /> : <Lock className="h-4 w-4" />}
@@ -152,7 +152,7 @@ export function LoginForm() {
         className="w-full inline-flex items-center justify-center gap-2 text-xs text-conecta-muted hover:text-conecta-primary transition-colors"
       >
         <UserCog className="h-3.5 w-3.5" />
-        {modoAdmin ? 'Sou usuário de filial' : 'Sou administrador'}
+        {modoAdmin ? 'Sou usuário de filial' : 'Sou administrador / usuário interno'}
       </button>
     </form>
   );

@@ -107,7 +107,9 @@ export function agregarResumoPorFilialCursos(
       variacao: calcVariacao(qtdAtual, qtdAnterior),
     });
   }
-  return out.sort((x, y) => y.qtdAtual - x.qtdAtual);
+  // Ordena por quem mais reduziu (delta mais negativo) para quem menos reduziu
+  // (ou aumentou). Empate cai no maior volume atual.
+  return out.sort((x, y) => (x.variacao.delta - y.variacao.delta) || (y.qtdAtual - x.qtdAtual));
 }
 
 export type DetalhadoCursosRow = {

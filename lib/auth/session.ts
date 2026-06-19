@@ -204,10 +204,13 @@ export async function requireSession(perfilEsperado: 'visualizador'): Promise<Vi
 export async function requireSession(): Promise<Session>;
 export async function requireSession(perfilEsperado?: 'filial' | 'admin' | 'visualizador'): Promise<Session> {
   const s = await getSession();
-  if (!s) redirect('/login');
+  if (!s) throw new Error('UNAUTHENTICATED');
   if (perfilEsperado && s.perfil !== perfilEsperado) {
-    // Sem privilégio para a rota: redireciona para o painel adequado em vez de quebrar.
-    redirect('/inicio');
+    // Visualizador (read-only multi-filial) é redirecionado para os indicadores
+    // quando tenta acessar rotas restritas a admin ou filial. Outros perfis
+    // seguem o comportamento original (erro) para preservar contrato anterior.
+    if (s.perfil === 'visualizador') redirect('/indicadores?tab=inicio');
+    throw new Error('FORBIDDEN');
   }
   return s;
 }

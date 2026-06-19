@@ -147,7 +147,7 @@ export function CursosView({ dados, perfil }: { dados: DadosCursos; perfil: 'adm
         qtdColaboradores: v.chapas.size,
         variacao: calcVariacao(v.atual, v.anterior),
       }))
-      .sort((a, b) => b.qtdAtual - a.qtdAtual);
+      .sort((a, b) => (a.variacao.delta - b.variacao.delta) || (b.qtdAtual - a.qtdAtual));
   }, [filtroAtivo, detalhadoFiltrado, dados.porFilial]);
 
   return (

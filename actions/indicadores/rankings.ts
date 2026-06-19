@@ -5,6 +5,7 @@ import { db, schema } from '@/db/client';
 import { fetchSnapshotRows } from '@/lib/indicadores/bh-db';
 import { fetchInconsistRows } from '@/lib/indicadores/inconsist-db';
 import { fetchCursosRows } from '@/lib/indicadores/cursos-db';
+import { fetchFeriadosRows } from '@/lib/indicadores/feriados-db';
 
 export type RankingItem = {
   filialCodigo: string | null;
@@ -16,10 +17,12 @@ export type RankingsBundle = {
   bh: { items: RankingItem[]; totalFiliais: number };
   inconsist: { items: RankingItem[]; totalFiliais: number };
   cursos: { items: RankingItem[]; totalFiliais: number };
+  feriados: { items: RankingItem[]; totalFiliais: number };
   meta: {
     bh:        { ultimaAtualizacao: string | null } | null;
     inconsist: { ultimaAtualizacao: string | null } | null;
     cursos:    { ultimaAtualizacao: string | null } | null;
+    feriados:  { ultimaAtualizacao: string | null } | null;
   };
 };
 
@@ -29,6 +32,7 @@ export async function getRankings(): Promise<RankingsBundle> {
   const bhRows = await fetchSnapshotRows(schema.bhSnapshotAtual);
   const incRows = await fetchInconsistRows();
   const cursosRows = await fetchCursosRows(schema.cursosSnapshotAtual);
+  const feriadosRows = await fetchFeriadosRows();
 
   // BH: total de horas por filial (top 10)
   const bhMap = new Map<string, { nome: string | null; codigo: string | null; total: number }>();
@@ -97,15 +101,40 @@ export async function getRankings(): Promise<RankingsBundle> {
     .from(schema.inconsistMeta).limit(1);
   const cursosMetaRow = await db.select({ ts: schema.cursosMeta.ultimaAtualizacao })
     .from(schema.cursosMeta).limit(1);
+  const feriadosMetaRow = await db.select({ ts: schema.feriadosMeta.ultimaAtualizacao })
+    .from(schema.feriadosMeta).limit(1);
+
+  // Feriados Pendentes: total de pendências por filial (top 10)
+  const feriadosMap = new Map<string, { nome: string | null; codigo: string | null; qtd: number }>();
+  for (const r of feriadosRows) {
+    const key = r.filialId ?? `__sem__:${r.filialCodigo ?? r.codfilialOrigem ?? ''}`;
+    const cur = feriadosMap.get(key) ?? {
+      nome: r.filialNome,
+      codigo: r.filialCodigo ?? r.codfilialOrigem,
+      qtd: 0,
+    };
+    cur.qtd += 1;
+    feriadosMap.set(key, cur);
+  }
+  const feriadosItems: RankingItem[] = [...feriadosMap.values()]
+    .map((v) => ({
+      filialCodigo: v.codigo,
+      filialNome:   v.nome,
+      valor: v.qtd,
+    }))
+    .sort((a, b) => b.valor - a.valor)
+    .slice(0, 10);
 
   return {
-    bh:        { items: bhItems,     totalFiliais: bhMap.size },
-    inconsist: { items: incItems,    totalFiliais: incMap.size },
-    cursos:    { items: cursosItems, totalFiliais: cursosMap.size },
+    bh:        { items: bhItems,       totalFiliais: bhMap.size },
+    inconsist: { items: incItems,      totalFiliais: incMap.size },
+    cursos:    { items: cursosItems,   totalFiliais: cursosMap.size },
+    feriados:  { items: feriadosItems, totalFiliais: feriadosMap.size },
     meta: {
-      bh:        bhMetaRow[0]     ? { ultimaAtualizacao: bhMetaRow[0].ts.toISOString() }     : null,
-      inconsist: incMetaRow[0]    ? { ultimaAtualizacao: incMetaRow[0].ts.toISOString() }    : null,
-      cursos:    cursosMetaRow[0] ? { ultimaAtualizacao: cursosMetaRow[0].ts.toISOString() } : null,
+      bh:        bhMetaRow[0]       ? { ultimaAtualizacao: bhMetaRow[0].ts.toISOString() }       : null,
+      inconsist: incMetaRow[0]      ? { ultimaAtualizacao: incMetaRow[0].ts.toISOString() }      : null,
+      cursos:    cursosMetaRow[0]   ? { ultimaAtualizacao: cursosMetaRow[0].ts.toISOString() }   : null,
+      feriados:  feriadosMetaRow[0] ? { ultimaAtualizacao: feriadosMetaRow[0].ts.toISOString() } : null,
     },
   };
 }

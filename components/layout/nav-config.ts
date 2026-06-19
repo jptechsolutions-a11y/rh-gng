@@ -2,7 +2,7 @@ import type { LucideIcon } from 'lucide-react';
 import {
   LayoutDashboard, Users, FileText, Settings, ShieldCheck, ClipboardList, History,
   CalendarClock, Plus, BarChart3, UserCog, Target, BookOpen, Printer, ClipboardCheck,
-  GalleryHorizontal, Cloud, Clock, AlertTriangle, Trophy, GraduationCap,
+  GalleryHorizontal, Cloud, Clock, AlertTriangle, Trophy, GraduationCap, CalendarOff,
 } from 'lucide-react';
 
 // Fonte ÚNICA de navegação — consumida pela Sidebar (desktop) e pela MobileNav.
@@ -43,6 +43,7 @@ export const INDICADORES_NAV_BASE: NavItem[] = [
   { href: '/indicadores?tab=banco-horas',     label: 'Banco de Horas',  icon: Clock },
   { href: '/indicadores?tab=inconsistencias', label: 'Inconsistências', icon: AlertTriangle },
   { href: '/indicadores?tab=cursos',          label: 'Cursos Obrigatórios', icon: GraduationCap },
+  { href: '/indicadores?tab=feriados',        label: 'Feriados Pendentes',  icon: CalendarOff },
 ];
 
 export const ESCUTA_NAV_BASE: NavItem[] = [

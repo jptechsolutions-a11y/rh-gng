@@ -1,4 +1,4 @@
-import { Clock, AlertTriangle, GraduationCap } from 'lucide-react';
+import { Clock, AlertTriangle, GraduationCap, CalendarOff } from 'lucide-react';
 import type { RankingsBundle } from '@/actions/indicadores/rankings';
 import { RankingBars } from './RankingBars';
 
@@ -22,7 +22,9 @@ export function InicioView({ dados }: { dados: RankingsBundle }) {
     ? new Date(dados.meta.inconsist.ultimaAtualizacao).toLocaleString('pt-BR') : null;
   const tsCursos = dados.meta.cursos?.ultimaAtualizacao
     ? new Date(dados.meta.cursos.ultimaAtualizacao).toLocaleString('pt-BR') : null;
-  const ultimaSync = [tsBH, tsInc, tsCursos].filter(Boolean)[0] ?? null;
+  const tsFeriados = dados.meta.feriados?.ultimaAtualizacao
+    ? new Date(dados.meta.feriados.ultimaAtualizacao).toLocaleString('pt-BR') : null;
+  const ultimaSync = [tsBH, tsInc, tsCursos, tsFeriados].filter(Boolean)[0] ?? null;
 
   return (
     <div className="space-y-6">
@@ -62,6 +64,13 @@ export function InicioView({ dados }: { dados: RankingsBundle }) {
           items={dados.cursos.items}
           format={(n) => formatInt(n)}
           color="orange"
+        />
+        <RankingBars
+          titulo="Ranking Feriados Pendentes"
+          icon={CalendarOff}
+          items={dados.feriados.items}
+          format={(n) => formatInt(n)}
+          color="navy"
         />
       </div>
     </div>

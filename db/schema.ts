@@ -372,3 +372,42 @@ export const cursosMeta = pgTable('cursos_meta', {
 }, (t) => ({
   singleton: check('cursos_meta_singleton', sql`${t.id} = 'singleton'`),
 }));
+
+// =====================================================
+// Indicadores — Feriados Pendentes (substitui a cada import; sem anterior)
+// =====================================================
+
+export const feriadosSnapshot = pgTable('feriados_snapshot', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  filialId: uuid('filial_id').references(() => filiais.id, { onDelete: 'restrict' }),
+  codfilialOrigem: text('codfilial_origem').notNull(),
+  chapa: text('chapa').notNull(),
+  nome: text('nome').notNull(),
+  funcao: text('funcao'),
+  secao: text('secao'),
+  codsecao: text('codsecao'),
+  regional: text('regional'),
+  bandeira: text('bandeira'),
+  pendencia: text('pendencia'),
+  dataFeriado: date('data_feriado'),
+  valor: numeric('valor', { precision: 12, scale: 2 }).notNull().default('0'),
+  dsr: numeric('dsr', { precision: 12, scale: 2 }).notNull().default('0'),
+  encargos: numeric('encargos', { precision: 12, scale: 2 }).notNull().default('0'),
+  total: numeric('total', { precision: 12, scale: 2 }).notNull().default('0'),
+  abaOrigem: text('aba_origem'),
+}, (t) => ({
+  filialIdx: index('feriados_filial_idx').on(t.filialId),
+  chapaIdx:  index('feriados_chapa_idx').on(t.chapa),
+  funcaoIdx: index('feriados_funcao_idx').on(t.funcao),
+  secaoIdx:  index('feriados_secao_idx').on(t.secao),
+}));
+
+export const feriadosMeta = pgTable('feriados_meta', {
+  id: text('id').primaryKey(),
+  ultimaAtualizacao: timestamp('ultima_atualizacao', { withTimezone: true }).notNull().defaultNow(),
+  atualizadoPor: uuid('atualizado_por').references(() => admins.id, { onDelete: 'set null' }),
+  totalLinhas: integer('total_linhas').notNull().default(0),
+  totalFiliais: integer('total_filiais').notNull().default(0),
+}, (t) => ({
+  singleton: check('feriados_meta_singleton', sql`${t.id} = 'singleton'`),
+}));

@@ -2,7 +2,7 @@
 
 import { db, schema } from '@/db/client';
 import { and, eq, asc, desc, sql } from 'drizzle-orm';
-import { requireSession } from '@/lib/auth/session';
+import { requireSession, getFiliaisVisiveis } from '@/lib/auth/session';
 import { checkRateLimit } from '@/lib/auth/rate-limit';
 import {
   NovaAvaliacaoSchema,
@@ -243,8 +243,11 @@ export async function listarHistorico(f: HistoricoFiltros = {}): Promise<Histori
   const perPage = Math.min(f.perPage ?? 25, 100);
   const page = Math.max(f.page ?? 1, 1);
 
-  const filialScopeSql =
-    s.perfil === 'filial' && s.filialId ? sql`AND filial_id = ${s.filialId}` : sql``;
+  const escopo = getFiliaisVisiveis(s);
+  if (escopo && escopo.length === 0) return [];
+  const filialScopeSql = escopo
+    ? sql`AND filial_id::text = ANY(${escopo})`
+    : sql``;
   const filialFilterSql =
     f.filialId && s.perfil === 'admin' ? sql`AND filial_id = ${f.filialId}` : sql``;
   const classifSql = f.classificacao
@@ -303,8 +306,13 @@ export async function listarHistorico(f: HistoricoFiltros = {}): Promise<Histori
 
 export async function statsHistorico() {
   const s = await requireSession();
-  const filialFilter =
-    s.perfil === 'filial' && s.filialId ? sql`WHERE filial_id = ${s.filialId}` : sql``;
+  const escopo = getFiliaisVisiveis(s);
+  if (escopo && escopo.length === 0) {
+    return { total: 0, media: null, excelentes: 0, precisam_melhorar: 0 };
+  }
+  const filialFilter = escopo
+    ? sql`WHERE filial_id::text = ANY(${escopo})`
+    : sql``;
   const res = await db.execute(sql`
     SELECT
       COUNT(*)::int AS total,

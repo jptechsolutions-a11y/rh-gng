@@ -31,7 +31,10 @@ export default async function EscutaPage({
     active === 'nuvem' && ehAdmin ? listarFiliaisComPercepcoes() : Promise.resolve([]),
   ]);
 
-  const badge = s.perfil === 'filial' ? `Filial ${s.filialCodigo}` : 'ADMIN';
+  const badge =
+    s.perfil === 'filial' ? `Filial ${s.filialCodigo}` :
+    s.perfil === 'admin'  ? 'ADMIN' :
+    (s.escopo === 'nacional' ? 'NACIONAL' : 'REGIONAL');
   const subtitulo = s.perfil === 'filial' ? s.filialNome : 'Gente e Gestão · Perlog';
 
   return (

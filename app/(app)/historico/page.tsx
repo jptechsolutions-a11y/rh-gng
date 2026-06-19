@@ -30,9 +30,14 @@ function maskCpf(cpf: string) {
 }
 
 export default async function HistoricoPage({ searchParams }: { searchParams: Promise<SP> }) {
-  const s = await requireSession('filial');
+  const s = await requireSession();
+  // Visualizador (regional/nacional) também acessa em modo leitura, com escopo
+  // limitado às filiais permitidas pela função interna listarEntrevistasFilialSlim.
+  if (s.perfil === 'admin') return null; // admin ainda não tem histórico próprio
   const sp = await searchParams;
   const [all, cargos] = await Promise.all([listarEntrevistasFilialSlim(), getCargosAtivos()]);
+  const ehVisualizador = s.perfil === 'visualizador';
+  const podeCriar = !ehVisualizador;
 
   const q = (sp.q ?? '').trim().toLowerCase();
   const qDigits = q.replace(/\D/g, '');
@@ -64,7 +69,7 @@ export default async function HistoricoPage({ searchParams }: { searchParams: Pr
       <TopBar
         titulo="Histórico de entrevistas"
         subtitulo={`${filtradas.length} de ${all.length} entrevistas`}
-        badge={`Filial ${s.filialCodigo}`}
+        badge={s.perfil === 'filial' ? `Filial ${s.filialCodigo}` : (s.escopo === 'nacional' ? 'NACIONAL' : 'REGIONAL')}
       />
 
       <div className="p-6 space-y-5">
@@ -83,11 +88,13 @@ export default async function HistoricoPage({ searchParams }: { searchParams: Pr
             >
               <FileSpreadsheet className="h-4 w-4" /> Exportar Excel
             </a>
-            <Button asChild variant="conecta" size="conecta" className="text-sm">
-              <Link href="/entrevista/nova">
-                <Plus className="h-4 w-4" /> Nova
-              </Link>
-            </Button>
+            {podeCriar && (
+              <Button asChild variant="conecta" size="conecta" className="text-sm">
+                <Link href="/entrevista/nova">
+                  <Plus className="h-4 w-4" /> Nova
+                </Link>
+              </Button>
+            )}
           </div>
         </div>
 
@@ -179,15 +186,17 @@ export default async function HistoricoPage({ searchParams }: { searchParams: Pr
                           )}
                         </td>
                         <td className="text-right">
-                          <EditarDecisaoButton
-                            entrevistaId={e.id}
-                            candidatoNome={e.nome}
-                            status={e.status}
-                            gestorAprovador={e.gestorAprovador}
-                            motivoDecisao={e.motivoDecisao}
-                            dataRetorno={e.dataRetorno}
-                            aprovadoPeloGg={e.aprovadoPeloGg}
-                          />
+                          {podeCriar && (
+                            <EditarDecisaoButton
+                              entrevistaId={e.id}
+                              candidatoNome={e.nome}
+                              status={e.status}
+                              gestorAprovador={e.gestorAprovador}
+                              motivoDecisao={e.motivoDecisao}
+                              dataRetorno={e.dataRetorno}
+                              aprovadoPeloGg={e.aprovadoPeloGg}
+                            />
+                          )}
                         </td>
                       </tr>
                     );

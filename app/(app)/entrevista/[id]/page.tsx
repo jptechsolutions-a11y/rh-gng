@@ -13,17 +13,21 @@ export default async function EntrevistaPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ cpf?: string }>;
 }) {
-  const s = await requireSession('filial');
   const { id } = await params;
   const sp = await searchParams;
 
   // Entrevistas existentes não podem ser editadas — apenas decisão/status.
   // Redireciona para a visualização (impressão), onde fica o botão "Editar decisão".
+  // Esse caminho é leitura: aceita admin/filial/visualizador.
   if (id !== 'nova') {
+    await requireSession();
     const existente = await getEntrevista(id);
     if (!existente) notFound();
     redirect(`/entrevista/${id}/imprimir`);
   }
+
+  // Criação de nova entrevista é restrito a filial.
+  const s = await requireSession('filial');
 
   // Pré-preenchimento de CPF via ?cpf= ao vir do alerta de duplicata
   let inicial: Record<string, unknown> | null = null;

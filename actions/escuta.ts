@@ -1,8 +1,8 @@
 'use server';
 
 import { db, schema } from '@/db/client';
-import { and, desc, eq, gte, lte, sql, type SQL } from 'drizzle-orm';
-import { requireSession } from '@/lib/auth/session';
+import { and, desc, eq, gte, inArray, lte, sql, type SQL } from 'drizzle-orm';
+import { requireSession, getFiliaisCodigosVisiveis } from '@/lib/auth/session';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import {
@@ -122,9 +122,12 @@ export async function carregarReuniao(id: string) {
 }
 
 // Álbum cross-filial das últimas 3 semanas (semana atual + 2 anteriores).
-// Ignora isolamento por filial — é leitura tipo benchmarking.
+// Leitura em modo benchmarking — admin/visualizador-nacional veem todas, demais
+// veem só as filiais que lhes pertencem.
 export async function listarReunioesAlbum() {
-  await requireSession();
+  const s = await requireSession();
+  const escopo = getFiliaisCodigosVisiveis(s);
+  if (escopo && escopo.length === 0) return [];
 
   // Início da semana de 2 semanas atrás (segunda-feira 00:00 local).
   const hoje = new Date();
@@ -144,7 +147,9 @@ export async function listarReunioesAlbum() {
     fotos: schema.escutaReunioes.fotos,
   })
     .from(schema.escutaReunioes)
-    .where(gte(schema.escutaReunioes.dataReuniao, inicioStr))
+    .where(escopo
+      ? and(gte(schema.escutaReunioes.dataReuniao, inicioStr), inArray(schema.escutaReunioes.filialCodigo, escopo))
+      : gte(schema.escutaReunioes.dataReuniao, inicioStr))
     .orderBy(desc(schema.escutaReunioes.dataReuniao), desc(schema.escutaReunioes.criadoEm))
     .limit(200);
 
@@ -169,10 +174,11 @@ export async function listarReunioesAlbum() {
 // Filial: forca isolamento. Admin: pode filtrar por filialCodigo.
 export async function listarPercepcoesNuvem(filtro?: { filialCodigo?: string }) {
   const s = await requireSession();
+  const escopo = getFiliaisCodigosVisiveis(s);
+  if (escopo && escopo.length === 0) return [];
   const where: SQL[] = [];
-  if (s.perfil === 'filial') {
-    where.push(eq(schema.escutaReunioes.filialCodigo, s.filialCodigo));
-  } else if (filtro?.filialCodigo) {
+  if (escopo) where.push(inArray(schema.escutaReunioes.filialCodigo, escopo));
+  if (filtro?.filialCodigo && s.perfil === 'admin') {
     where.push(eq(schema.escutaReunioes.filialCodigo, filtro.filialCodigo));
   }
   return db.select({

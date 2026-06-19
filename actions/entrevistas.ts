@@ -1,9 +1,9 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { and, desc, eq, ilike, or } from 'drizzle-orm';
+import { and, desc, eq, ilike, inArray, or } from 'drizzle-orm';
 import { db, schema } from '@/db/client';
-import { requireSession } from '@/lib/auth/session';
+import { requireSession, getFiliaisVisiveis } from '@/lib/auth/session';
 import { checkRateLimit } from '@/lib/auth/rate-limit';
 import { atualizarStatusSchema, entrevistaInputSchema, type EntrevistaInput } from '@/lib/validators';
 
@@ -18,15 +18,31 @@ export async function listarEntrevistasFilial(filtroStatus?: string) {
 // Projeção enxuta usada pelas páginas de listagem (painel/agenda/histórico/banco-talentos).
 // Evita transferir os JSONB pesados (`respostasRoteiro`, `notasCriterios`) e o texto longo de
 // `experiencias` em cada navegação — esses só são necessários no detalhe da entrevista.
+/**
+ * Listagem enxuta de entrevistas no escopo do usuário:
+ *  - filial → apenas a própria
+ *  - visualizador → filiais permitidas (vazio quando regional sem filiais marcadas)
+ *  - admin → todas
+ * Inclui filialCodigo/filialNome para que UIs multi-filial possam exibir a origem.
+ */
 export async function listarEntrevistasFilialSlim(filtroStatus?: string) {
-  const s = await requireSession('filial');
-  const where = filtroStatus
-    ? and(eq(schema.entrevistas.filialId, s.filialId), eq(schema.entrevistas.status, filtroStatus))
-    : eq(schema.entrevistas.filialId, s.filialId);
+  const s = await requireSession();
+  const escopo = getFiliaisVisiveis(s);
+  if (escopo && escopo.length === 0) return [];
+
+  const conditions = [] as Array<ReturnType<typeof eq>>;
+  if (escopo) conditions.push(inArray(schema.entrevistas.filialId, escopo));
+  if (filtroStatus) conditions.push(eq(schema.entrevistas.status, filtroStatus));
+  const where = conditions.length === 0
+    ? undefined
+    : conditions.length === 1 ? conditions[0] : and(...conditions);
+
   return db
     .select({
       id: schema.entrevistas.id,
       filialId: schema.entrevistas.filialId,
+      filialCodigo: schema.filiais.codigo,
+      filialNome: schema.filiais.nome,
       dataHora: schema.entrevistas.dataHora,
       cpf: schema.entrevistas.cpf,
       nome: schema.entrevistas.nome,
@@ -43,6 +59,7 @@ export async function listarEntrevistasFilialSlim(filtroStatus?: string) {
       notaGeral: schema.entrevistas.notaGeral,
     })
     .from(schema.entrevistas)
+    .leftJoin(schema.filiais, eq(schema.filiais.id, schema.entrevistas.filialId))
     .where(where)
     .orderBy(desc(schema.entrevistas.dataHora))
     .limit(500);
@@ -85,8 +102,11 @@ export async function buscarPorCpf(cpf: string) {
 
 export async function getEntrevista(id: string) {
   const s = await requireSession();
-  const where = s.perfil === 'filial'
-    ? and(eq(schema.entrevistas.id, id), eq(schema.entrevistas.filialId, s.filialId))
+  const escopo = getFiliaisVisiveis(s);
+  // Sem filiais permitidas (visualizador regional sem vínculos) → nada visível.
+  if (escopo && escopo.length === 0) return null;
+  const where = escopo
+    ? and(eq(schema.entrevistas.id, id), inArray(schema.entrevistas.filialId, escopo))
     : eq(schema.entrevistas.id, id);
   const rows = await db.select().from(schema.entrevistas).where(where).limit(1);
   return rows[0] ?? null;

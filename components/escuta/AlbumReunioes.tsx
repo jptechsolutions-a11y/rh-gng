@@ -240,14 +240,14 @@ function Polaroid({
   const baseClass = 'absolute inset-0 m-auto rounded-md bg-white shadow-[0_24px_60px_-15px_rgba(7,24,64,0.45),0_8px_20px_-6px_rgba(7,24,64,0.35)] border border-black/5 select-none';
   const variantClass = {
     top: 'album-polaroid-top z-10',
-    'behind-left': 'album-polaroid-left z-[1] opacity-90 pointer-events-none',
-    'behind-right': 'album-polaroid-right z-[1] opacity-90 pointer-events-none',
-    'behind-far-left': 'album-polaroid-far-left z-0 pointer-events-none',
-    'behind-far-right': 'album-polaroid-far-right z-0 pointer-events-none',
-    'behind-top-left': 'album-polaroid-top-left z-0 pointer-events-none',
-    'behind-top-right': 'album-polaroid-top-right z-0 pointer-events-none',
-    'behind-bottom-left': 'album-polaroid-bottom-left z-0 pointer-events-none',
-    'behind-bottom-right': 'album-polaroid-bottom-right z-0 pointer-events-none',
+    'behind-left': 'album-polaroid-left z-[5] pointer-events-none',
+    'behind-right': 'album-polaroid-right z-[5] pointer-events-none',
+    'behind-far-left': 'album-polaroid-far-left z-[4] pointer-events-none',
+    'behind-far-right': 'album-polaroid-far-right z-[4] pointer-events-none',
+    'behind-top-left': 'album-polaroid-top-left z-[3] pointer-events-none',
+    'behind-top-right': 'album-polaroid-top-right z-[3] pointer-events-none',
+    'behind-bottom-left': 'album-polaroid-bottom-left z-[2] pointer-events-none',
+    'behind-bottom-right': 'album-polaroid-bottom-right z-[2] pointer-events-none',
     'flying-out-next': 'album-polaroid-fly-next z-10',
     'flying-out-prev': 'album-polaroid-fly-prev z-10',
   }[variant];

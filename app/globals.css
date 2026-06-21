@@ -202,52 +202,54 @@
   animation: album-pop-top 600ms cubic-bezier(0.22, 1, 0.36, 1) both;
   transform-origin: center 70%;
 }
+/* Linha reta de polaroids — todas no mesmo eixo horizontal, uma sobrepondo
+   a outra. A do meio (top) fica em destaque à frente; as laterais usam apenas
+   leve redução de escala/inclinação conforme se afastam, mantendo Y=0. */
 .album-polaroid-left {
-  transform: translate(-22%, 4%) rotate(-8deg) scale(0.88);
-  transform-origin: center 70%;
-  filter: blur(0.2px);
+  transform: translate(-18%, 0) rotate(-2deg) scale(0.94);
+  transform-origin: center center;
+  filter: blur(0.15px);
 }
 .album-polaroid-right {
-  transform: translate(22%, 4%) rotate(8deg) scale(0.88);
-  transform-origin: center 70%;
-  filter: blur(0.2px);
+  transform: translate(18%, 0) rotate(2deg) scale(0.94);
+  transform-origin: center center;
+  filter: blur(0.15px);
 }
-/* Pilhas mais distantes — preenchem o espaço azul ao redor do polaroid central */
 .album-polaroid-far-left {
-  transform: translate(-44%, -12%) rotate(-16deg) scale(0.66);
-  transform-origin: center 70%;
-  filter: blur(0.5px);
-  opacity: 0.78;
+  transform: translate(-32%, 0) rotate(-3deg) scale(0.88);
+  transform-origin: center center;
+  filter: blur(0.3px);
+  opacity: 0.88;
 }
 .album-polaroid-far-right {
-  transform: translate(44%, -12%) rotate(16deg) scale(0.66);
-  transform-origin: center 70%;
-  filter: blur(0.5px);
-  opacity: 0.78;
+  transform: translate(32%, 0) rotate(3deg) scale(0.88);
+  transform-origin: center center;
+  filter: blur(0.3px);
+  opacity: 0.88;
 }
 .album-polaroid-top-left {
-  transform: translate(-30%, -28%) rotate(-6deg) scale(0.62);
-  transform-origin: center 70%;
-  filter: blur(0.6px);
-  opacity: 0.62;
+  transform: translate(-44%, 0) rotate(-4deg) scale(0.82);
+  transform-origin: center center;
+  filter: blur(0.45px);
+  opacity: 0.74;
 }
 .album-polaroid-top-right {
-  transform: translate(30%, -28%) rotate(6deg) scale(0.62);
-  transform-origin: center 70%;
-  filter: blur(0.6px);
-  opacity: 0.62;
+  transform: translate(44%, 0) rotate(4deg) scale(0.82);
+  transform-origin: center center;
+  filter: blur(0.45px);
+  opacity: 0.74;
 }
 .album-polaroid-bottom-left {
-  transform: translate(-36%, 22%) rotate(-22deg) scale(0.58);
-  transform-origin: center 70%;
-  filter: blur(0.7px);
-  opacity: 0.55;
+  transform: translate(-54%, 0) rotate(-5deg) scale(0.76);
+  transform-origin: center center;
+  filter: blur(0.6px);
+  opacity: 0.6;
 }
 .album-polaroid-bottom-right {
-  transform: translate(36%, 22%) rotate(22deg) scale(0.58);
-  transform-origin: center 70%;
-  filter: blur(0.7px);
-  opacity: 0.55;
+  transform: translate(54%, 0) rotate(5deg) scale(0.76);
+  transform-origin: center center;
+  filter: blur(0.6px);
+  opacity: 0.6;
 }
 
 /* Saída do polaroid de topo (vira a "página" pra direita ou esquerda) */

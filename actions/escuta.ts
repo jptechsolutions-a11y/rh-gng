@@ -38,6 +38,40 @@ export async function salvarReuniao(payload: unknown) {
   redirect(`/escuta/${row.id}?ok=1`);
 }
 
+/** Admin: atualiza uma reunião existente (todos os campos). */
+export async function atualizarReuniao(id: string, payload: unknown) {
+  await requireSession('admin');
+  const data = NovaReuniaoSchema.parse(payload);
+
+  const existe = await db.select({ id: schema.escutaReunioes.id })
+    .from(schema.escutaReunioes)
+    .where(eq(schema.escutaReunioes.id, id))
+    .limit(1);
+  if (!existe[0]) throw new Error('Reunião não encontrada');
+
+  await db.update(schema.escutaReunioes).set({
+    turma: data.turma.trim(),
+    dataReuniao: data.dataReuniao,
+    responsavel: data.responsavel.trim(),
+    percepcoes: data.percepcoes,
+    percepcaoFinal: data.percepcaoFinal.trim(),
+    fotos: data.fotos.map((f) => ({ path: f.path, size: f.size })),
+    presenca: data.presenca,
+  }).where(eq(schema.escutaReunioes.id, id));
+
+  revalidatePath('/escuta/historico');
+  revalidatePath(`/escuta/${id}`);
+  redirect(`/escuta/${id}?ok=1`);
+}
+
+/** Admin: exclui uma reunião. */
+export async function excluirReuniao(id: string) {
+  await requireSession('admin');
+  await db.delete(schema.escutaReunioes).where(eq(schema.escutaReunioes.id, id));
+  revalidatePath('/escuta/historico');
+  return { ok: true };
+}
+
 export async function salvarConfigRoteiro(payload: unknown) {
   const s = await requireSession('admin');
   const data = ConfigRoteiroSchema.parse(payload);
@@ -153,21 +187,24 @@ export async function listarReunioesAlbum() {
     .orderBy(desc(schema.escutaReunioes.dataReuniao), desc(schema.escutaReunioes.criadoEm))
     .limit(200);
 
-  return rows
-    .map((r) => {
-      const fotos = (r.fotos as Array<{ path: string }> | null) ?? [];
-      const principal = fotos[0]?.path;
-      if (!principal) return null;
-      return {
-        id: r.id,
+  // Expande cada reunião em N itens (1 por foto), preservando a ordem.
+  // Assim o álbum passa todas as evidências, não apenas a foto principal.
+  return rows.flatMap((r) => {
+    const fotos = (r.fotos as Array<{ path: string }> | null) ?? [];
+    return fotos
+      .filter((f) => !!f?.path)
+      .map((f, i) => ({
+        id: `${r.id}:${i}`,
+        reuniaoId: r.id,
         filialCodigo: r.filialCodigo,
         filialNome: r.filialNome,
         turma: r.turma,
         dataReuniao: r.dataReuniao,
-        fotoUrl: `/api/escuta/foto?path=${encodeURIComponent(principal)}`,
-      };
-    })
-    .filter((x): x is NonNullable<typeof x> => x !== null);
+        fotoUrl: `/api/escuta/foto?path=${encodeURIComponent(f.path)}`,
+        fotoIndex: i + 1,
+        fotoTotal: fotos.length,
+      }));
+  });
 }
 
 // Percepcoes finais para a aba Nuvem.

@@ -5,6 +5,7 @@ import { carregarReuniao, urlsAssinadasFotos } from '@/actions/escuta';
 import { requireSession } from '@/lib/auth/session';
 import { TopBar } from '@/components/layout/TopBar';
 import { ReuniaoLeitura } from './ReuniaoLeitura';
+import { AdminReuniaoActions } from '@/components/escuta/AdminReuniaoActions';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,16 +32,21 @@ export default async function ReuniaoPage({
     <>
       <TopBar titulo="Escuta G&G" subtitulo={subtitulo} badge={badge} />
       <div className="space-y-5 p-4 lg:p-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <Link href="/escuta/historico"
               className="inline-flex items-center gap-2 text-sm text-conecta-muted hover:text-conecta-primary">
           <ArrowLeft className="h-4 w-4" /> Voltar ao histórico
         </Link>
-        {ok && (
-          <div className="text-sm bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg px-3 py-1.5">
-            Reunião salva com sucesso.
-          </div>
-        )}
+        <div className="flex items-center gap-3 flex-wrap">
+          {ok && (
+            <div className="text-sm bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-lg px-3 py-1.5">
+              Reunião salva com sucesso.
+            </div>
+          )}
+          {s.perfil === 'admin' && (
+            <AdminReuniaoActions reuniaoId={id} redirectApos="/escuta/historico" />
+          )}
+        </div>
       </div>
       <ReuniaoLeitura
         reuniao={{

@@ -34,6 +34,14 @@ export const VISUALIZADOR_NAV: NavItem[] = [
   { href: '/indicadores?tab=inicio',          label: 'Indicadores', icon: BarChart3 },
 ];
 
+// Sidebar contextual quando o visualizador navega dentro do módulo Entrevistas
+// (/historico, /entrevista/[id], /candidato/[cpf]). Evita oferecer "Indicadores"
+// no menu lateral — que apontaria para o módulo errado.
+export const ENTREVISTAS_VISUALIZADOR_NAV: NavItem[] = [
+  { href: '/inicio',    label: 'Início',    icon: LayoutDashboard },
+  { href: '/historico', label: 'Histórico', icon: History },
+];
+
 export const AVALIACAO_NAV_BASE: NavItem[] = [
   { href: '/avaliacao',            label: 'Visão geral',    icon: LayoutDashboard },
   { href: '/avaliacao/nova',       label: 'Nova avaliação', icon: Plus },

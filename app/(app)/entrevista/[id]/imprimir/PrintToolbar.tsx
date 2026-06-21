@@ -14,7 +14,7 @@ type EntrevistaResumo = {
   aprovadoPeloGg: boolean | null;
 };
 
-export function PrintToolbar({ id, entrevista }: { id: string; entrevista: EntrevistaResumo }) {
+export function PrintToolbar({ id, entrevista, podeEditarDecisao = true }: { id: string; entrevista: EntrevistaResumo; podeEditarDecisao?: boolean }) {
   return (
     <div className="print:hidden bg-white border-b border-slate-200 px-6 py-3 flex flex-wrap items-center gap-3 sticky top-0 z-10">
       <Link href="/historico" className="inline-flex items-center gap-2 text-sm text-perlog-slate hover:text-perlog-navy">
@@ -24,15 +24,17 @@ export function PrintToolbar({ id, entrevista }: { id: string; entrevista: Entre
         <Lock className="h-3 w-3" /> Entrevista bloqueada para edição
       </span>
       <div className="flex-1" />
-      <EditarDecisaoButton
-        entrevistaId={entrevista.id}
-        candidatoNome={entrevista.nome}
-        status={entrevista.status}
-        gestorAprovador={entrevista.gestorAprovador}
-        motivoDecisao={entrevista.motivoDecisao}
-        dataRetorno={entrevista.dataRetorno}
-        aprovadoPeloGg={entrevista.aprovadoPeloGg}
-      />
+      {podeEditarDecisao && (
+        <EditarDecisaoButton
+          entrevistaId={entrevista.id}
+          candidatoNome={entrevista.nome}
+          status={entrevista.status}
+          gestorAprovador={entrevista.gestorAprovador}
+          motivoDecisao={entrevista.motivoDecisao}
+          dataRetorno={entrevista.dataRetorno}
+          aprovadoPeloGg={entrevista.aprovadoPeloGg}
+        />
+      )}
       <a
         href={`/api/entrevista/${id}/docx`}
         className="inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium border border-slate-200 hover:bg-slate-50"

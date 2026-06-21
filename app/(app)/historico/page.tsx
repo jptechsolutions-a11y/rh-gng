@@ -76,18 +76,22 @@ export default async function HistoricoPage({ searchParams }: { searchParams: Pr
         <div className="flex flex-wrap items-center justify-between gap-3">
           <FiltrosHistorico initial={sp} cargos={cargos.map((c) => c.nome)} />
           <div className="flex gap-2">
-            <Link
-              href={`/comparar${sp.cargo ? `?cargo=${encodeURIComponent(sp.cargo)}` : ''}`}
-              className="inline-flex items-center gap-2 h-9 px-3 rounded-lg text-sm font-display font-medium border border-conecta-primary/15 text-conecta-primary bg-white hover:border-conecta-accent/40 hover:text-conecta-accent hover:bg-conecta-accent/5 transition-colors"
-            >
-              <Scale className="h-4 w-4" /> Comparar
-            </Link>
-            <a
-              href={`/api/historico/export?${exportQs.toString()}`}
-              className="inline-flex items-center gap-2 h-9 px-3 rounded-lg text-sm font-display font-medium border border-conecta-primary/15 text-conecta-primary bg-white hover:border-conecta-accent/40 hover:text-conecta-accent hover:bg-conecta-accent/5 transition-colors"
-            >
-              <FileSpreadsheet className="h-4 w-4" /> Exportar Excel
-            </a>
+            {!ehVisualizador && (
+              <Link
+                href={`/comparar${sp.cargo ? `?cargo=${encodeURIComponent(sp.cargo)}` : ''}`}
+                className="inline-flex items-center gap-2 h-9 px-3 rounded-lg text-sm font-display font-medium border border-conecta-primary/15 text-conecta-primary bg-white hover:border-conecta-accent/40 hover:text-conecta-accent hover:bg-conecta-accent/5 transition-colors"
+              >
+                <Scale className="h-4 w-4" /> Comparar
+              </Link>
+            )}
+            {!ehVisualizador && (
+              <a
+                href={`/api/historico/export?${exportQs.toString()}`}
+                className="inline-flex items-center gap-2 h-9 px-3 rounded-lg text-sm font-display font-medium border border-conecta-primary/15 text-conecta-primary bg-white hover:border-conecta-accent/40 hover:text-conecta-accent hover:bg-conecta-accent/5 transition-colors"
+              >
+                <FileSpreadsheet className="h-4 w-4" /> Exportar Excel
+              </a>
+            )}
             {podeCriar && (
               <Button asChild variant="conecta" size="conecta" className="text-sm">
                 <Link href="/entrevista/nova">
@@ -139,12 +143,14 @@ export default async function HistoricoPage({ searchParams }: { searchParams: Pr
                           <div className="text-xs text-conecta-muted font-mono mt-0.5">
                             {maskCpf(e.cpf)}
                           </div>
-                          <Link
-                            href={`/candidato/${e.cpf}`}
-                            className="text-[11px] text-conecta-accent hover:underline"
-                          >
-                            timeline
-                          </Link>
+                          {!ehVisualizador && (
+                            <Link
+                              href={`/candidato/${e.cpf}`}
+                              className="text-[11px] text-conecta-accent hover:underline"
+                            >
+                              timeline
+                            </Link>
+                          )}
                         </td>
                         <td className="text-conecta-text">{e.cargoPretendido ?? '—'}</td>
                         <td className="text-conecta-muted text-xs">{e.recrutador ?? '—'}</td>

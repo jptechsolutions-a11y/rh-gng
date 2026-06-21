@@ -41,10 +41,11 @@ function renderResposta(v: unknown): React.ReactNode {
 }
 
 export default async function ImprimirPage({ params }: { params: Promise<{ id: string }> }) {
-  await requireSession();
+  const s = await requireSession();
   const { id } = await params;
   const e = await getEntrevista(id);
   if (!e) notFound();
+  const podeEditarDecisao = s.perfil === 'filial' || s.perfil === 'admin';
 
   const [roteiro, filialRow] = await Promise.all([
     getRoteiro(e.cargoPretendido ?? 'TODOS'),
@@ -64,7 +65,7 @@ export default async function ImprimirPage({ params }: { params: Promise<{ id: s
 
   return (
     <>
-      <PrintToolbar id={id} entrevista={{
+      <PrintToolbar id={id} podeEditarDecisao={podeEditarDecisao} entrevista={{
         id: e.id,
         nome: e.nome,
         status: e.status,

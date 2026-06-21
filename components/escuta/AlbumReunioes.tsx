@@ -11,6 +11,8 @@ export type AlbumItem = {
   turma: string;
   dataReuniao: string;
   fotoUrl: string;
+  fotoIndex?: number;
+  fotoTotal?: number;
 };
 
 const AUTOPLAY_MS = 5500;
@@ -64,6 +66,14 @@ export function AlbumReunioes({ itens }: { itens: AlbumItem[] }) {
   const atual = itens[idx]!;
   const proximo = itens[(idx + 1) % total]!;
   const anterior = itens[(idx - 1 + total) % total]!;
+  // Polaroids de fundo extras — só aparecem quando há acervo suficiente.
+  // Usam fotos diferentes para evitar duplicar a foto atual ao lado dela.
+  const farLeft  = total > 3 ? itens[(idx - 2 + total) % total]! : null;
+  const farRight = total > 3 ? itens[(idx + 2) % total]! : null;
+  const topLeft     = total > 5 ? itens[(idx - 3 + total) % total]! : null;
+  const topRight    = total > 5 ? itens[(idx + 3) % total]! : null;
+  const bottomLeft  = total > 7 ? itens[(idx - 4 + total) % total]! : null;
+  const bottomRight = total > 7 ? itens[(idx + 4) % total]! : null;
 
   return (
     <div
@@ -111,6 +121,13 @@ export function AlbumReunioes({ itens }: { itens: AlbumItem[] }) {
             className="relative mx-auto"
             style={{ perspective: '1800px', width: 'min(100%, 560px)', height: 'min(72vh, 620px)' }}
           >
+            {/* Pilhas de fundo mais distantes (renderizadas primeiro = atrás) */}
+            {bottomLeft  && <Polaroid item={bottomLeft}  variant="behind-bottom-left"  key={`bl-${bottomLeft.id}`} />}
+            {bottomRight && <Polaroid item={bottomRight} variant="behind-bottom-right" key={`br-${bottomRight.id}`} />}
+            {topLeft     && <Polaroid item={topLeft}     variant="behind-top-left"     key={`tl-${topLeft.id}`} />}
+            {topRight    && <Polaroid item={topRight}    variant="behind-top-right"    key={`tr-${topRight.id}`} />}
+            {farLeft     && <Polaroid item={farLeft}     variant="behind-far-left"     key={`fl-${farLeft.id}`} />}
+            {farRight    && <Polaroid item={farRight}    variant="behind-far-right"    key={`fr-${farRight.id}`} />}
             {total > 1 && (
               <>
                 {/* Polaroid trás-direita (próximo) */}
@@ -207,7 +224,13 @@ function Polaroid({
   item, variant, kenBurns = false,
 }: {
   item: AlbumItem;
-  variant: 'top' | 'behind-left' | 'behind-right' | 'flying-out-next' | 'flying-out-prev';
+  variant:
+    | 'top'
+    | 'behind-left' | 'behind-right'
+    | 'behind-far-left' | 'behind-far-right'
+    | 'behind-top-left' | 'behind-top-right'
+    | 'behind-bottom-left' | 'behind-bottom-right'
+    | 'flying-out-next' | 'flying-out-prev';
   kenBurns?: boolean;
 }) {
   const data = new Date(item.dataReuniao);
@@ -217,8 +240,14 @@ function Polaroid({
   const baseClass = 'absolute inset-0 m-auto rounded-md bg-white shadow-[0_24px_60px_-15px_rgba(7,24,64,0.45),0_8px_20px_-6px_rgba(7,24,64,0.35)] border border-black/5 select-none';
   const variantClass = {
     top: 'album-polaroid-top z-10',
-    'behind-left': 'album-polaroid-left z-0 opacity-90 pointer-events-none',
-    'behind-right': 'album-polaroid-right z-0 opacity-90 pointer-events-none',
+    'behind-left': 'album-polaroid-left z-[1] opacity-90 pointer-events-none',
+    'behind-right': 'album-polaroid-right z-[1] opacity-90 pointer-events-none',
+    'behind-far-left': 'album-polaroid-far-left z-0 pointer-events-none',
+    'behind-far-right': 'album-polaroid-far-right z-0 pointer-events-none',
+    'behind-top-left': 'album-polaroid-top-left z-0 pointer-events-none',
+    'behind-top-right': 'album-polaroid-top-right z-0 pointer-events-none',
+    'behind-bottom-left': 'album-polaroid-bottom-left z-0 pointer-events-none',
+    'behind-bottom-right': 'album-polaroid-bottom-right z-0 pointer-events-none',
     'flying-out-next': 'album-polaroid-fly-next z-10',
     'flying-out-prev': 'album-polaroid-fly-prev z-10',
   }[variant];
@@ -258,8 +287,13 @@ function Polaroid({
 
       {/* Caption */}
       <div className="absolute left-0 right-0 bottom-0 h-[88px] px-5 flex flex-col justify-center">
-        <div className="text-[10px] uppercase tracking-[0.26em] font-semibold text-conecta-accent">
-          Filial {item.filialCodigo}
+        <div className="text-[10px] uppercase tracking-[0.26em] font-semibold text-conecta-accent flex items-center gap-2">
+          <span>Filial {item.filialCodigo}</span>
+          {item.fotoTotal && item.fotoTotal > 1 && item.fotoIndex && (
+            <span className="text-conecta-muted/70 normal-case tracking-normal text-[10px]">
+              · foto {item.fotoIndex}/{item.fotoTotal}
+            </span>
+          )}
         </div>
         <div className="font-display text-lg sm:text-xl font-bold text-conecta-primary leading-tight truncate mt-0.5">
           {filial}

@@ -9,7 +9,7 @@ import { ConectaSymbol } from '@/components/brand/ConectaSymbol';
 import { cn } from '@/lib/cn';
 import { logoutAction } from '@/actions/auth';
 import {
-  FILIAL_NAV, ADMIN_NAV, VISUALIZADOR_NAV,
+  FILIAL_NAV, ADMIN_NAV, VISUALIZADOR_NAV, ENTREVISTAS_VISUALIZADOR_NAV,
   AVALIACAO_NAV_BASE, AVALIACAO_NAV_ADMIN_EXTRAS,
   ESCUTA_NAV_BASE, ESCUTA_NAV_ADMIN_EXTRAS,
   INDICADORES_NAV_BASE,
@@ -36,6 +36,15 @@ export function Sidebar({
   const inIndicadores =
     pathname === '/indicadores' ||
     pathname.startsWith('/indicadores/');
+  // Visualizador dentro do módulo de entrevistas (histórico/entrevista/candidato)
+  // recebe um menu contextual sem "Indicadores", que apontaria para outro módulo.
+  const inEntrevistasVisualizador =
+    perfil === 'visualizador' && (
+      pathname === '/historico' ||
+      pathname.startsWith('/historico/') ||
+      pathname.startsWith('/entrevista/') ||
+      pathname.startsWith('/candidato/')
+    );
   const nav = inIndicadores
     ? INDICADORES_NAV_BASE
     : inEscuta
@@ -46,18 +55,22 @@ export function Sidebar({
         ? perfil === 'admin'
           ? [...AVALIACAO_NAV_BASE, ...AVALIACAO_NAV_ADMIN_EXTRAS]
           : AVALIACAO_NAV_BASE
-        : perfil === 'admin'
-          ? ADMIN_NAV
-          : perfil === 'visualizador'
-            ? VISUALIZADOR_NAV
-            : FILIAL_NAV;
+        : inEntrevistasVisualizador
+          ? ENTREVISTAS_VISUALIZADOR_NAV
+          : perfil === 'admin'
+            ? ADMIN_NAV
+            : perfil === 'visualizador'
+              ? VISUALIZADOR_NAV
+              : FILIAL_NAV;
   const moduleLabel = inIndicadores
     ? 'Indicadores'
     : inEscuta
       ? 'Escuta G&G'
       : inAvaliacao
         ? 'Avaliação de Desempenho'
-        : 'Conecta G&G';
+        : inEntrevistasVisualizador
+          ? 'Entrevistas'
+          : 'Conecta G&G';
   const [collapsed, setCollapsed] = useState(false);
   const confirmar = useConfirm();
   const [saindo, startSair] = useTransition();

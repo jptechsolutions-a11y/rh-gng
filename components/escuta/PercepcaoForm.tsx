@@ -3,22 +3,34 @@ import { useState, useTransition } from 'react';
 import { Save, AlertCircle, CheckCircle2 } from 'lucide-react';
 import type { EscutaPresencaItem } from '@/db/schema';
 import { Button } from '@/components/ui/button';
-import { salvarReuniao } from '@/actions/escuta';
+import { salvarReuniao, atualizarReuniao } from '@/actions/escuta';
 import { PilarPercepcaoCard } from './PilarPercepcaoCard';
 import { PresencaDigitada } from './PresencaDigitada';
 import { EvidenciaUploader, type FotoEnviada } from './EvidenciaUploader';
 
 type Pilar = { id: number; ordem: number; nome: string; icone: string; perguntas: string[] };
 
+export type EditarReuniao = {
+  id: string;
+  turma: string;
+  dataReuniao: string;
+  responsavel: string;
+  percepcaoFinal: string;
+  fotos: FotoEnviada[];
+  presenca: EscutaPresencaItem[];
+};
+
 const hoje = () => new Date().toISOString().slice(0, 10);
 
-export function PercepcaoForm({ pilares }: { pilares: Pilar[] }) {
-  const [turma, setTurma] = useState('');
-  const [data, setData] = useState(hoje());
-  const [responsavel, setResponsavel] = useState('');
-  const [percepcaoFinal, setPercepcaoFinal] = useState('');
-  const [fotos, setFotos] = useState<FotoEnviada[]>([]);
-  const [presenca, setPresenca] = useState<EscutaPresencaItem[]>([]);
+export function PercepcaoForm({
+  pilares, editar,
+}: { pilares: Pilar[]; editar?: EditarReuniao }) {
+  const [turma, setTurma] = useState(editar?.turma ?? '');
+  const [data, setData] = useState(editar?.dataReuniao ?? hoje());
+  const [responsavel, setResponsavel] = useState(editar?.responsavel ?? '');
+  const [percepcaoFinal, setPercepcaoFinal] = useState(editar?.percepcaoFinal ?? '');
+  const [fotos, setFotos] = useState<FotoEnviada[]>(editar?.fotos ?? []);
+  const [presenca, setPresenca] = useState<EscutaPresencaItem[]>(editar?.presenca ?? []);
   const [erro, setErro] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
@@ -33,13 +45,18 @@ export function PercepcaoForm({ pilares }: { pilares: Pilar[] }) {
 
     start(async () => {
       try {
-        await salvarReuniao({
+        const payload = {
           turma, dataReuniao: data, responsavel,
           percepcoes: {},
           percepcaoFinal,
           fotos: fotos.map((f) => ({ path: f.path, size: f.size })),
           presenca: presValida,
-        });
+        };
+        if (editar) {
+          await atualizarReuniao(editar.id, payload);
+        } else {
+          await salvarReuniao(payload);
+        }
       } catch (e: unknown) {
         // redirect() lança NEXT_REDIRECT — silenciamos só esse.
         const msg = e instanceof Error ? e.message : 'Erro ao salvar';
@@ -129,7 +146,7 @@ export function PercepcaoForm({ pilares }: { pilares: Pilar[] }) {
           className="disabled:opacity-70 disabled:cursor-wait"
         >
           {pending ? <CheckCircle2 className="h-4 w-4 animate-pulse" /> : <Save className="h-4 w-4" />}
-          {pending ? 'Salvando…' : 'Salvar Percepção'}
+          {pending ? 'Salvando…' : (editar ? 'Salvar Alterações' : 'Salvar Percepção')}
         </Button>
       </div>
     </section>

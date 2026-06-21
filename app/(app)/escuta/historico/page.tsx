@@ -32,7 +32,11 @@ export default async function HistoricoEscutaPage({
         </form>
       )}
 
-        <HistoricoEscutaTable linhas={linhas} mostrarFilial={s.perfil === 'admin'} />
+        <HistoricoEscutaTable
+          linhas={linhas}
+          mostrarFilial={s.perfil === 'admin'}
+          ehAdmin={s.perfil === 'admin'}
+        />
       </div>
     </>
   );

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Eye, Images } from 'lucide-react';
+import { AdminReuniaoActions } from '@/components/escuta/AdminReuniaoActions';
 
 type Linha = {
   id: string; filialCodigo: string; filialNome: string | null;
@@ -9,8 +10,8 @@ type Linha = {
 };
 
 export function HistoricoEscutaTable({
-  linhas, mostrarFilial,
-}: { linhas: Linha[]; mostrarFilial: boolean }) {
+  linhas, mostrarFilial, ehAdmin = false,
+}: { linhas: Linha[]; mostrarFilial: boolean; ehAdmin?: boolean }) {
   if (linhas.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-conecta-primary/20 p-10 text-center text-conecta-muted">
@@ -49,10 +50,13 @@ export function HistoricoEscutaTable({
                 </span>
               </td>
               <td className="px-3 py-2 text-right">
-                <Link href={`/escuta/${l.id}`}
-                      className="inline-flex items-center gap-1 text-conecta-accent hover:text-conecta-primary">
-                  <Eye className="h-4 w-4" /> Ver
-                </Link>
+                <div className="inline-flex items-center gap-2">
+                  <Link href={`/escuta/${l.id}`}
+                        className="inline-flex items-center gap-1 text-conecta-accent hover:text-conecta-primary">
+                    <Eye className="h-4 w-4" /> Ver
+                  </Link>
+                  {ehAdmin && <AdminReuniaoActions reuniaoId={l.id} compact />}
+                </div>
               </td>
             </tr>
           ))}

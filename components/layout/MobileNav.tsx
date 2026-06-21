@@ -7,12 +7,23 @@ import { Menu, X, LogOut } from 'lucide-react';
 import { ConectaLogo } from '@/components/brand/ConectaLogo';
 import { cn } from '@/lib/cn';
 import { logoutAction } from '@/actions/auth';
-import { FILIAL_NAV, ADMIN_NAV, VISUALIZADOR_NAV } from './nav-config';
+import { FILIAL_NAV, ADMIN_NAV, VISUALIZADOR_NAV, ENTREVISTAS_VISUALIZADOR_NAV } from './nav-config';
 
 export function MobileNav({ perfil, nome, subtitulo }: { perfil: 'filial' | 'admin' | 'visualizador'; nome: string; subtitulo: string }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
-  const nav = perfil === 'admin' ? ADMIN_NAV : perfil === 'visualizador' ? VISUALIZADOR_NAV : FILIAL_NAV;
+  const inEntrevistasVisualizador =
+    perfil === 'visualizador' && (
+      pathname === '/historico' ||
+      pathname.startsWith('/historico/') ||
+      pathname.startsWith('/entrevista/') ||
+      pathname.startsWith('/candidato/')
+    );
+  const nav = perfil === 'admin'
+    ? ADMIN_NAV
+    : perfil === 'visualizador'
+      ? (inEntrevistasVisualizador ? ENTREVISTAS_VISUALIZADOR_NAV : VISUALIZADOR_NAV)
+      : FILIAL_NAV;
 
   useEffect(() => setOpen(false), [pathname]);
   useEffect(() => {

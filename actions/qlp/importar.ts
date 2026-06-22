@@ -2,16 +2,7 @@
 
 import { db } from '@/db/client';
 import { eq, inArray } from 'drizzle-orm';
-import {
-  qlpColaboradores,
-  qlpFuncoesCargo,
-  qlpImports,
-  qlpPendencias,
-  qlpVinculos,
-  qlpLideres,
-  qlpHistorico,
-  filiais,
-} from '@/db/schema';
+import { qlpColaboradores, qlpFuncoesCargo, filiais } from '@/db/schema';
 import { parseQuadroPerlog, type LinhaQuadro } from '@/lib/qlp/xls-parser';
 import { computeDiff } from '@/lib/qlp/sync-diff';
 import { autoclassify } from '@/lib/qlp/autoclassify';

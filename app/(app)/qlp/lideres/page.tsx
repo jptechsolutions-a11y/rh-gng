@@ -2,8 +2,9 @@ import { requireSession } from '@/lib/auth/session';
 import { db } from '@/db/client';
 import { sql } from 'drizzle-orm';
 import { TopBar } from '@/components/layout/TopBar';
-import { NovoLiderForm } from '@/components/qlp/NovoLiderForm';
-import { RemoverLiderButton } from '@/components/qlp/RemoverLiderButton';
+import { NovoLiderForm, type CandidatoColab } from '@/components/qlp/NovoLiderForm';
+import { LiderActions } from '@/components/qlp/LiderActions';
+import { SeedLideresButton } from '@/components/qlp/SeedLideresButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,40 +30,57 @@ interface FilialRow {
 export default async function LideresPage() {
   await requireSession('admin');
 
-  const lideres = (await db.execute(sql`
-    SELECT
-      l.id, l.tier, l.nivel, l.escopo_nacional, l.filiais_escopo,
-      c.nome, c.funcao, c.chapa, c.codfilial,
-      (SELECT count(*) FROM qlp_vinculos v WHERE v.lider_id = l.id)::int AS diretos
-    FROM qlp_lideres l
-    JOIN qlp_colaboradores c ON c.id = l.colaborador_id
-    WHERE l.ativo
-    ORDER BY
-      CASE l.tier WHEN 'gerente' THEN 1 WHEN 'subgerente' THEN 2 WHEN 'coord' THEN 3 ELSE 4 END,
-      l.nivel,
-      c.nome
-  `)) as unknown as LiderRow[];
+  const [lideresRaw, filiaisRaw, candidatosRaw] = await Promise.all([
+    db.execute(sql`
+      SELECT
+        l.id, l.tier, l.nivel, l.escopo_nacional, l.filiais_escopo,
+        c.nome, c.funcao, c.chapa, c.codfilial,
+        (SELECT count(*) FROM qlp_vinculos v WHERE v.lider_id = l.id)::int AS diretos
+      FROM qlp_lideres l
+      JOIN qlp_colaboradores c ON c.id = l.colaborador_id
+      WHERE l.ativo
+      ORDER BY
+        CASE l.tier WHEN 'gerente' THEN 1 WHEN 'subgerente' THEN 2 WHEN 'coord' THEN 3 ELSE 4 END,
+        l.nivel NULLS LAST,
+        c.nome
+    `),
+    db.execute(sql`
+      SELECT id, codigo, nome FROM filiais WHERE ativa ORDER BY codigo
+    `),
+    db.execute(sql`
+      SELECT id, chapa, nome, funcao, codfilial, tier_resolvido, nivel_resolvido
+      FROM qlp_colaboradores
+      WHERE ativo
+      ORDER BY nome
+    `),
+  ]);
 
-  const filiais = (await db.execute(sql`
-    SELECT id, codigo, nome FROM filiais WHERE ativa ORDER BY codigo
-  `)) as unknown as FilialRow[];
+  const lideres = lideresRaw as unknown as LiderRow[];
+  const filiais = filiaisRaw as unknown as FilialRow[];
+  const candidatos = candidatosRaw as unknown as CandidatoColab[];
 
   return (
     <>
       <TopBar
         titulo="QLP — Líderes"
-        subtitulo="Espinha hierárquica: gerentes, subgerentes e coordenadores"
+        subtitulo={`${lideres.length} líderes cadastrados · ${candidatos.length} colaboradores ativos no quadro`}
         badge="ADMIN"
       />
       <div className="space-y-5 p-4 lg:p-6">
-        <div className="flex items-center justify-end">
-          <NovoLiderForm filiais={filiais} />
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <SeedLideresButton />
+          <NovoLiderForm filiais={filiais} candidatos={candidatos} />
         </div>
 
         {lideres.length === 0 ? (
-          <p className="rounded-2xl bg-white border border-conecta-primary/10 p-6 text-sm text-conecta-muted">
-            Nenhum líder cadastrado. Use o botão <strong>+ Novo líder</strong> acima para iniciar.
-          </p>
+          <div className="rounded-2xl bg-white border border-conecta-primary/10 p-6 text-sm text-conecta-muted space-y-2">
+            <p>Nenhum líder cadastrado ainda.</p>
+            <p>
+              <strong className="text-conecta-primary">Sugestão:</strong> clique em{' '}
+              <strong className="text-conecta-primary">⚡ Pré-preencher do quadro</strong> para criar
+              automaticamente os líderes a partir das funções classificadas (gerentes / subgerentes / coords).
+            </p>
+          </div>
         ) : (
           <div className="rounded-2xl bg-white border border-conecta-primary/10 overflow-x-auto">
             <table className="w-full text-sm">
@@ -100,8 +118,17 @@ export default async function LideresPage() {
                       )}
                     </td>
                     <td className="p-3 text-right tabular-nums font-semibold text-conecta-primary">{l.diretos}</td>
-                    <td className="p-3 text-right">
-                      <RemoverLiderButton liderId={l.id} nome={l.nome} />
+                    <td className="p-3">
+                      <LiderActions
+                        liderId={l.id}
+                        nome={l.nome}
+                        funcao={l.funcao}
+                        tier={l.tier}
+                        nivel={l.nivel}
+                        escopoNacional={l.escopo_nacional}
+                        filiaisEscopo={l.filiais_escopo ?? []}
+                        filiais={filiais}
+                      />
                     </td>
                   </tr>
                 ))}

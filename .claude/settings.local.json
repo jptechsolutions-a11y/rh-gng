@@ -139,7 +139,8 @@
       "Bash(mkdir -p actions/qlp)",
       "Bash(node \"node_modules/vitest/vitest.mjs\" run lib/qlp/hierarchy.test.ts)",
       "Bash(node \"node_modules/vitest/vitest.mjs\" run)",
-      "Bash(node \"node_modules/next/dist/bin/next\" build)"
+      "Bash(node \"node_modules/next/dist/bin/next\" build)",
+      "Bash(node \"node_modules/next/dist/bin/next\" lint --dir actions/qlp --dir components/qlp --dir \"app/\\(app\\)/qlp\")"
     ]
   }
 }

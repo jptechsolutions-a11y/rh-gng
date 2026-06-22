@@ -22,12 +22,14 @@ describe.skipIf(!hasFixture)('parseQuadroPerlog - contra XLS Perlog real', () =>
 
   it('chapa é string (preserva leading zeros se houver)', () => {
     const linhas = parseQuadroPerlog(buf);
-    expect(typeof linhas[0].chapa).toBe('string');
+    expect(linhas[0]).toBeDefined();
+    expect(typeof linhas[0]!.chapa).toBe('string');
   });
 
   it('codfilial é number', () => {
     const linhas = parseQuadroPerlog(buf);
-    expect(typeof linhas[0].codfilial).toBe('number');
+    expect(linhas[0]).toBeDefined();
+    expect(typeof linhas[0]!.codfilial).toBe('number');
   });
 
   it('dt_admissao no formato ISO YYYY-MM-DD', () => {

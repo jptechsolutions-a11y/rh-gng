@@ -203,14 +203,8 @@ describe('autoclassify - cobertura do quadro Perlog real', () => {
   });
 
   it('distribuição: ≥1 gerente, ≥1 subgerente, ≥3 coord, ≥3 supervisor, ≥40 base', () => {
-    const counts: Record<string, number> = {
-      gerente: 0,
-      subgerente: 0,
-      coord: 0,
-      supervisor: 0,
-      base: 0,
-    };
-    for (const f of FUNCOES_REAIS) counts[autoclassify(f).tier]++;
+    const counts = { gerente: 0, subgerente: 0, coord: 0, supervisor: 0, base: 0 };
+    for (const f of FUNCOES_REAIS) counts[autoclassify(f).tier] += 1;
     expect(counts.gerente).toBeGreaterThanOrEqual(1);
     expect(counts.subgerente).toBeGreaterThanOrEqual(1);
     expect(counts.coord).toBeGreaterThanOrEqual(3);

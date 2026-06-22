@@ -57,7 +57,10 @@ function asNumberOrNull(v: unknown): number | null {
 
 export function parseQuadroPerlog(buf: Buffer | ArrayBuffer): LinhaQuadro[] {
   const wb = XLSX.read(buf, { type: 'buffer', codepage: 1252, cellDates: true });
-  const ws = wb.Sheets[wb.SheetNames[0]];
+  const sheetName = wb.SheetNames[0];
+  if (!sheetName) throw new Error('XLS sem sheets');
+  const ws = wb.Sheets[sheetName];
+  if (!ws) throw new Error('XLS sheet vazio');
   const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: null });
 
   return rows

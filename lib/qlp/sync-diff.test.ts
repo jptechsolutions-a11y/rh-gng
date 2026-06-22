@@ -70,8 +70,8 @@ describe('computeDiff', () => {
       trilha: 'logistica',
     }));
     expect(d.mudancaTier).toHaveLength(1);
-    expect(d.mudancaTier[0].tierAntigo).toBe('supervisor');
-    expect(d.mudancaTier[0].tierNovo).toBe('coord');
+    expect(d.mudancaTier[0]!.tierAntigo).toBe('supervisor');
+    expect(d.mudancaTier[0]!.tierNovo).toBe('coord');
   });
 
   it('mudou de filial → mudancaFilial[]', () => {

@@ -13,6 +13,7 @@ import {
   AVALIACAO_NAV_BASE, AVALIACAO_NAV_ADMIN_EXTRAS,
   ESCUTA_NAV_BASE, ESCUTA_NAV_ADMIN_EXTRAS,
   INDICADORES_NAV_BASE,
+  QLP_NAV_BASE, QLP_NAV_ADMIN_EXTRAS,
 } from './nav-config';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 
@@ -36,6 +37,9 @@ export function Sidebar({
   const inIndicadores =
     pathname === '/indicadores' ||
     pathname.startsWith('/indicadores/');
+  const inQlp =
+    pathname === '/qlp' ||
+    pathname.startsWith('/qlp/');
   // Visualizador dentro do módulo de entrevistas (histórico/entrevista/candidato)
   // recebe um menu contextual sem "Indicadores", que apontaria para outro módulo.
   const inEntrevistasVisualizador =
@@ -45,32 +49,38 @@ export function Sidebar({
       pathname.startsWith('/entrevista/') ||
       pathname.startsWith('/candidato/')
     );
-  const nav = inIndicadores
-    ? INDICADORES_NAV_BASE
-    : inEscuta
-      ? perfil === 'admin'
-        ? [...ESCUTA_NAV_BASE, ...ESCUTA_NAV_ADMIN_EXTRAS]
-        : ESCUTA_NAV_BASE
-      : inAvaliacao
+  const nav = inQlp
+    ? perfil === 'admin'
+      ? [...QLP_NAV_BASE, ...QLP_NAV_ADMIN_EXTRAS]
+      : QLP_NAV_BASE
+    : inIndicadores
+      ? INDICADORES_NAV_BASE
+      : inEscuta
         ? perfil === 'admin'
-          ? [...AVALIACAO_NAV_BASE, ...AVALIACAO_NAV_ADMIN_EXTRAS]
-          : AVALIACAO_NAV_BASE
-        : inEntrevistasVisualizador
-          ? ENTREVISTAS_VISUALIZADOR_NAV
-          : perfil === 'admin'
-            ? ADMIN_NAV
-            : perfil === 'visualizador'
-              ? VISUALIZADOR_NAV
-              : FILIAL_NAV;
-  const moduleLabel = inIndicadores
-    ? 'Indicadores'
-    : inEscuta
-      ? 'Escuta G&G'
-      : inAvaliacao
-        ? 'Avaliação de Desempenho'
-        : inEntrevistasVisualizador
-          ? 'Entrevistas'
-          : 'Conecta G&G';
+          ? [...ESCUTA_NAV_BASE, ...ESCUTA_NAV_ADMIN_EXTRAS]
+          : ESCUTA_NAV_BASE
+        : inAvaliacao
+          ? perfil === 'admin'
+            ? [...AVALIACAO_NAV_BASE, ...AVALIACAO_NAV_ADMIN_EXTRAS]
+            : AVALIACAO_NAV_BASE
+          : inEntrevistasVisualizador
+            ? ENTREVISTAS_VISUALIZADOR_NAV
+            : perfil === 'admin'
+              ? ADMIN_NAV
+              : perfil === 'visualizador'
+                ? VISUALIZADOR_NAV
+                : FILIAL_NAV;
+  const moduleLabel = inQlp
+    ? 'QLP & Liderança'
+    : inIndicadores
+      ? 'Indicadores'
+      : inEscuta
+        ? 'Escuta G&G'
+        : inAvaliacao
+          ? 'Avaliação de Desempenho'
+          : inEntrevistasVisualizador
+            ? 'Entrevistas'
+            : 'Conecta G&G';
   const [collapsed, setCollapsed] = useState(false);
   const confirmar = useConfirm();
   const [saindo, startSair] = useTransition();

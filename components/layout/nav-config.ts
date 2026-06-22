@@ -3,6 +3,7 @@ import {
   LayoutDashboard, Users, FileText, Settings, ShieldCheck, ClipboardList, History,
   CalendarClock, Plus, BarChart3, UserCog, Target, BookOpen, Printer, ClipboardCheck,
   GalleryHorizontal, Cloud, Clock, AlertTriangle, Trophy, GraduationCap, CalendarOff,
+  Network, Upload, IdCard, ListTree,
 } from 'lucide-react';
 
 // Fonte ÚNICA de navegação — consumida pela Sidebar (desktop) e pela MobileNav.
@@ -17,14 +18,16 @@ export const FILIAL_NAV: NavItem[] = [
   { href: '/historico',       label: 'Histórico',         icon: History },
   { href: '/agenda',          label: 'Agenda',            icon: CalendarClock },
   { href: '/banco-talentos',  label: 'Banco de talentos', icon: Users },
+  { href: '/qlp',             label: 'QLP & Liderança',   icon: Network },
 ];
 
 export const ADMIN_NAV: NavItem[] = [
-  { href: '/admin',            label: 'Dashboard',    icon: LayoutDashboard },
-  { href: '/admin/busca',      label: 'Busca global', icon: Users },
-  { href: '/admin/relatorios', label: 'Relatórios',   icon: FileText },
-  { href: '/admin/config',     label: 'Configuração', icon: Settings },
-  { href: '/admin/seguranca',  label: 'Segurança',    icon: ShieldCheck },
+  { href: '/admin',            label: 'Dashboard',       icon: LayoutDashboard },
+  { href: '/admin/busca',      label: 'Busca global',    icon: Users },
+  { href: '/admin/relatorios', label: 'Relatórios',      icon: FileText },
+  { href: '/admin/config',     label: 'Configuração',    icon: Settings },
+  { href: '/admin/seguranca',  label: 'Segurança',       icon: ShieldCheck },
+  { href: '/qlp',              label: 'QLP & Liderança', icon: Network },
 ];
 
 // Nav para usuários "visualizadores" (regional/nacional): só leitura, acesso a
@@ -71,4 +74,17 @@ export const ESCUTA_NAV_BASE: NavItem[] = [
 ];
 export const ESCUTA_NAV_ADMIN_EXTRAS: NavItem[] = [
   { href: '/admin/config/escuta', label: 'Configuração', icon: Settings },
+];
+
+export const QLP_NAV_BASE: NavItem[] = [
+  { href: '/qlp',             label: 'Visão geral', icon: LayoutDashboard },
+  { href: '/qlp/quadro',      label: 'Quadro',      icon: Users },
+  { href: '/qlp/organograma', label: 'Organograma', icon: Network },
+  { href: '/qlp/historico',   label: 'Histórico',   icon: History },
+  { href: '/qlp/indicadores', label: 'Indicadores', icon: BarChart3 },
+];
+export const QLP_NAV_ADMIN_EXTRAS: NavItem[] = [
+  { href: '/qlp/lideres',  label: 'Líderes',      icon: ListTree },
+  { href: '/qlp/cargos',   label: 'Cargos',       icon: IdCard },
+  { href: '/qlp/importar', label: 'Importar XLS', icon: Upload },
 ];

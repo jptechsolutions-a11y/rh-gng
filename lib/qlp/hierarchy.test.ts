@@ -41,8 +41,33 @@ describe('assertCanLead', () => {
     expect(() => assertCanLead('gerente', 'supervisor')).not.toThrow();
     expect(() => assertCanLead('gerente', 'base')).not.toThrow();
   });
-  it('gerente NÃO pode liderar gerente', () => {
+  it('gerente sem qualificação NÃO pode liderar gerente', () => {
     expect(() => assertCanLead('gerente', 'gerente')).toThrow();
+  });
+  it('gerente NACIONAL pode liderar gerente REGIONAL (mesmo tier)', () => {
+    expect(() =>
+      assertCanLead('gerente', 'gerente', { liderNivel: 'nacional', lideradoNivel: 'regional' }),
+    ).not.toThrow();
+  });
+  it('gerente NACIONAL não lidera gerente NACIONAL', () => {
+    expect(() =>
+      assertCanLead('gerente', 'gerente', { liderNivel: 'nacional', lideradoNivel: 'nacional' }),
+    ).toThrow();
+  });
+  it('gerente REGIONAL não lidera gerente REGIONAL', () => {
+    expect(() =>
+      assertCanLead('gerente', 'gerente', { liderNivel: 'regional', lideradoNivel: 'regional' }),
+    ).toThrow();
+  });
+  it('coord NACIONAL pode liderar coord REGIONAL', () => {
+    expect(() =>
+      assertCanLead('coord', 'coord', { liderNivel: 'nacional', lideradoNivel: 'regional' }),
+    ).not.toThrow();
+  });
+  it('coord REGIONAL não lidera coord NACIONAL', () => {
+    expect(() =>
+      assertCanLead('coord', 'coord', { liderNivel: 'regional', lideradoNivel: 'nacional' }),
+    ).toThrow();
   });
   it('tier inválido lança erro', () => {
     expect(() => assertCanLead('foo', 'base')).toThrow();

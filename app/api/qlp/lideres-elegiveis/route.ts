@@ -3,6 +3,13 @@ import { db } from '@/db/client';
 import { sql } from 'drizzle-orm';
 import { requireSession } from '@/lib/auth/session';
 
+/**
+ * Regras de elegibilidade:
+ *  - Líder cobre a filial do colaborador (escopo nacional OU a filial está na lista)
+ *  - Tier do líder estritamente acima do tier do colaborador, OU
+ *    mesmo tier mas líder=nacional e colaborador != nacional
+ *  - Supervisor só lidera tier=base
+ */
 export async function GET(req: Request) {
   await requireSession();
   const url = new URL(req.url);
@@ -11,7 +18,7 @@ export async function GET(req: Request) {
 
   const rows = await db.execute(sql`
     WITH alvo AS (
-      SELECT id, tier_resolvido, filial_id
+      SELECT id, tier_resolvido, nivel_resolvido, filial_id
       FROM qlp_colaboradores
       WHERE id = ${colaboradorId}
     )
@@ -27,25 +34,47 @@ export async function GET(req: Request) {
     JOIN qlp_colaboradores c ON c.id = l.colaborador_id
     JOIN alvo a ON true
     WHERE l.ativo
+      -- escopo cobre filial do colaborador
       AND (
         l.escopo_nacional
-        OR (a.filial_id IS NOT NULL AND a.filial_id::text = ANY(
-          SELECT jsonb_array_elements_text(l.filiais_escopo)
-        ))
+        OR (
+          a.filial_id IS NOT NULL
+          AND a.filial_id::text = ANY(SELECT jsonb_array_elements_text(l.filiais_escopo))
+        )
       )
-      AND l.tier IN (
-        SELECT unnest(
-          CASE coalesce(a.tier_resolvido, 'base')
-            WHEN 'base'       THEN ARRAY['supervisor','coord','subgerente','gerente']
-            WHEN 'supervisor' THEN ARRAY['coord','subgerente','gerente']
-            WHEN 'coord'      THEN ARRAY['subgerente','gerente']
-            WHEN 'subgerente' THEN ARRAY['gerente']
-            ELSE ARRAY[]::text[]
-          END
+      -- regras de tier
+      AND (
+        -- supervisor só lidera base
+        (l.tier = 'supervisor' AND coalesce(a.tier_resolvido, 'base') = 'base')
+        -- tier estritamente acima
+        OR (
+          l.tier IN (
+            SELECT unnest(
+              CASE coalesce(a.tier_resolvido, 'base')
+                WHEN 'base'       THEN ARRAY['coord','subgerente','gerente']
+                WHEN 'supervisor' THEN ARRAY['coord','subgerente','gerente']
+                WHEN 'coord'      THEN ARRAY['subgerente','gerente']
+                WHEN 'subgerente' THEN ARRAY['gerente']
+                ELSE ARRAY[]::text[]
+              END
+            )
+          )
+        )
+        -- mesmo tier: nacional pode liderar regional do mesmo tier
+        OR (
+          l.tier = coalesce(a.tier_resolvido, 'base')
+          AND l.nivel = 'nacional'
+          AND coalesce(a.nivel_resolvido, '') <> 'nacional'
         )
       )
     ORDER BY
-      CASE l.tier WHEN 'supervisor' THEN 1 WHEN 'coord' THEN 2 WHEN 'subgerente' THEN 3 WHEN 'gerente' THEN 4 ELSE 5 END,
+      CASE l.tier
+        WHEN 'supervisor' THEN 1
+        WHEN 'coord' THEN 2
+        WHEN 'subgerente' THEN 3
+        WHEN 'gerente' THEN 4
+        ELSE 5
+      END,
       c.nome
   `);
   return NextResponse.json(rows);

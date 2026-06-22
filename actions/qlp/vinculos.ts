@@ -66,7 +66,10 @@ export async function atribuirVinculo(input: {
       }
     }
 
-    assertCanLead(lider.tier, colab.tierResolvido ?? 'base');
+    assertCanLead(lider.tier, colab.tierResolvido ?? 'base', {
+      liderNivel: lider.nivel,
+      lideradoNivel: colab.nivelResolvido,
+    });
 
     if (!colab.filialId) throw new Error('colaborador sem filial associada');
     const cobre = escopoCobreFilial(

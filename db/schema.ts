@@ -10,6 +10,7 @@ export const filiais = pgTable('filiais', {
   nome: text('nome').notNull(),
   senhaHash: text('senha_hash').notNull(),
   ativa: boolean('ativa').notNull().default(true),
+  regional: text('regional'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 

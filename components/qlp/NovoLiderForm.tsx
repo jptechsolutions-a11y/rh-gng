@@ -7,6 +7,7 @@ interface FilialOpt {
   id: string;
   codigo: string;
   nome: string;
+  regional: string | null;
 }
 
 export interface CandidatoColab {
@@ -21,7 +22,7 @@ export interface CandidatoColab {
 }
 
 type Tier = 'gerente' | 'subgerente' | 'coord';
-type Escopo = 'nacional' | 'regional' | 'filial';
+type Escopo = 'nacional' | 'regional' | 'multi' | 'filial';
 
 export function NovoLiderForm({
   filiais,
@@ -36,10 +37,18 @@ export function NovoLiderForm({
   const [colabSel, setColabSel] = useState<CandidatoColab | null>(null);
   const [tier, setTier] = useState<Tier>('coord');
   const [escopo, setEscopo] = useState<Escopo>('filial');
+  const [regionalSel, setRegionalSel] = useState<string>('');
   const [filiaisEscopo, setFiliaisEscopo] = useState<string[]>([]);
   const [erro, setErro] = useState<string | null>(null);
 
-  // Ordena candidatos: já é líder (no quadro) primeiro
+  // Regionais únicas extraídas das filiais
+  const regionais = useMemo(() => {
+    const set = new Set<string>();
+    for (const f of filiais) if (f.regional) set.add(f.regional);
+    return Array.from(set).sort();
+  }, [filiais]);
+
+  // Ordena candidatos: gerentes/subg/coords primeiro
   const ordenados = useMemo(() => {
     const ordemTier: Record<string, number> = {
       gerente: 1,
@@ -69,6 +78,7 @@ export function NovoLiderForm({
     setColabSel(null);
     setTier('coord');
     setEscopo('filial');
+    setRegionalSel('');
     setFiliaisEscopo([]);
     setErro(null);
     setOpen(true);
@@ -77,17 +87,11 @@ export function NovoLiderForm({
   function escolher(c: CandidatoColab) {
     setColabSel(c);
     setBusca('');
-    // Se o colaborador já tem tier detectado, pré-seleciona
     const t = c.tier_resolvido;
-    if (t === 'gerente' || t === 'subgerente' || t === 'coord') {
-      setTier(t);
-    }
-    // Sugere escopo baseado no nivel_resolvido
+    if (t === 'gerente' || t === 'subgerente' || t === 'coord') setTier(t);
     const n = c.nivel_resolvido;
     if (n === 'nacional') setEscopo('nacional');
-    else if (n === 'regional') setEscopo('regional');
     else setEscopo('filial');
-    // Pré-popular a filial do próprio colaborador
     if (c.filial_id) setFiliaisEscopo([c.filial_id]);
   }
 
@@ -97,7 +101,7 @@ export function NovoLiderForm({
       setErro('selecione um colaborador');
       return;
     }
-    // Mapeia escopo (UI) → nivel + escopoNacional + filiaisEscopo (server)
+
     const escopoNacional = escopo === 'nacional';
     let nivel: 'nacional' | 'regional' | null;
     if (tier === 'subgerente') {
@@ -107,17 +111,33 @@ export function NovoLiderForm({
     } else {
       nivel = 'regional';
     }
-    let filiais: string[];
+
+    let filiaisFinal: string[];
     if (escopo === 'nacional') {
-      filiais = [];
+      filiaisFinal = [];
     } else if (escopo === 'filial') {
       if (!colabSel.filial_id) {
         setErro('colaborador sem filial associada — não dá pra usar escopo "Filial"');
         return;
       }
-      filiais = [colabSel.filial_id];
+      filiaisFinal = [colabSel.filial_id];
+    } else if (escopo === 'regional') {
+      if (!regionalSel) {
+        setErro('selecione uma regional');
+        return;
+      }
+      filiaisFinal = filiais.filter((f) => f.regional === regionalSel).map((f) => f.id);
+      if (filiaisFinal.length === 0) {
+        setErro(`nenhuma filial cadastrada na regional "${regionalSel}"`);
+        return;
+      }
     } else {
-      filiais = filiaisEscopo;
+      // multi
+      if (filiaisEscopo.length === 0) {
+        setErro('selecione ao menos uma filial');
+        return;
+      }
+      filiaisFinal = filiaisEscopo;
     }
 
     start(async () => {
@@ -127,7 +147,7 @@ export function NovoLiderForm({
           tier,
           nivel,
           escopoNacional,
-          filiaisEscopo: filiais,
+          filiaisEscopo: filiaisFinal,
         });
         setOpen(false);
         location.reload();
@@ -152,7 +172,6 @@ export function NovoLiderForm({
       <div className="bg-white rounded-2xl p-6 w-full max-w-lg space-y-3 shadow-2xl border border-conecta-primary/10 max-h-[90vh] overflow-y-auto">
         <h2 className="font-display text-lg font-extrabold text-conecta-primary">Novo líder</h2>
 
-        {/* Seletor de colaborador */}
         {!colabSel ? (
           <div>
             <label className="block text-[10px] uppercase tracking-[0.18em] font-semibold text-conecta-primary mb-1">
@@ -194,7 +213,7 @@ export function NovoLiderForm({
               )}
               {busca.trim() === '' && ordenados.length > 200 && (
                 <p className="text-[11px] text-conecta-muted p-2 italic">
-                  Mostrando os 200 primeiros (gerentes/subgerentes/coords primeiro). Digite para filtrar entre os {ordenados.length}.
+                  Mostrando os 200 primeiros. Digite para filtrar entre os {ordenados.length}.
                 </p>
               )}
             </div>
@@ -217,7 +236,6 @@ export function NovoLiderForm({
           </div>
         )}
 
-        {/* Tier */}
         <Field label="Tier de liderança">
           <select
             className="w-full border border-conecta-primary/15 rounded-lg p-2 text-sm bg-white"
@@ -230,11 +248,9 @@ export function NovoLiderForm({
           </select>
         </Field>
 
-        {/* Escopo: Nacional / Regional / Filial */}
         <Field label="Escopo">
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <EscopoOption
-              valor="nacional"
               titulo="Nacional"
               sub="Todas as filiais"
               ativo={escopo === 'nacional'}
@@ -244,16 +260,20 @@ export function NovoLiderForm({
               }}
             />
             <EscopoOption
-              valor="regional"
               titulo="Regional"
-              sub="Várias filiais"
+              sub="Toda a regional"
               ativo={escopo === 'regional'}
               onClick={() => setEscopo('regional')}
             />
             <EscopoOption
-              valor="filial"
+              titulo="Multi-filial"
+              sub="Várias filiais"
+              ativo={escopo === 'multi'}
+              onClick={() => setEscopo('multi')}
+            />
+            <EscopoOption
               titulo="Filial"
-              sub="Só a unidade dele"
+              sub="Só a dele"
               ativo={escopo === 'filial'}
               onClick={() => {
                 setEscopo('filial');
@@ -262,15 +282,38 @@ export function NovoLiderForm({
             />
           </div>
           <p className="text-[11px] text-conecta-muted mt-2">
-            {escopo === 'nacional' && 'Líder cobre todas as filiais ativas (gerente/coord nacional).'}
-            {escopo === 'regional' && 'Líder cobre uma lista de filiais que você escolhe abaixo.'}
+            {escopo === 'nacional' && 'Líder cobre todas as filiais ativas.'}
+            {escopo === 'regional' && 'Líder cobre todas as filiais de uma regional (AGP, SP, MS…).'}
+            {escopo === 'multi' && 'Líder cobre uma seleção arbitrária de filiais (não-regional).'}
             {escopo === 'filial' &&
               `Líder atua só na própria filial do colaborador${colabSel ? ` (filial ${colabSel.codfilial})` : ''}.`}
           </p>
         </Field>
 
         {escopo === 'regional' && (
-          <Field label={`Filiais cobertas ${filiaisEscopo.length > 0 ? `(${filiaisEscopo.length} selecionadas)` : ''}`}>
+          <Field label="Regional">
+            <select
+              className="w-full border border-conecta-primary/15 rounded-lg p-2 text-sm bg-white"
+              value={regionalSel}
+              onChange={(e) => setRegionalSel(e.target.value)}
+            >
+              <option value="">— selecionar —</option>
+              {regionais.map((r) => {
+                const n = filiais.filter((f) => f.regional === r).length;
+                return (
+                  <option key={r} value={r}>
+                    {r} ({n} filia{n === 1 ? 'l' : 'is'})
+                  </option>
+                );
+              })}
+            </select>
+          </Field>
+        )}
+
+        {escopo === 'multi' && (
+          <Field
+            label={`Filiais cobertas ${filiaisEscopo.length > 0 ? `(${filiaisEscopo.length} selecionadas)` : ''}`}
+          >
             <select
               multiple
               className="w-full border border-conecta-primary/15 rounded-lg p-2 text-sm h-40"
@@ -281,7 +324,7 @@ export function NovoLiderForm({
             >
               {filiais.map((f) => (
                 <option key={f.id} value={f.id}>
-                  {f.codigo} — {f.nome}
+                  {f.codigo} — {f.nome} {f.regional ? `[${f.regional}]` : ''}
                 </option>
               ))}
             </select>
@@ -323,13 +366,11 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 function EscopoOption({
-  valor,
   titulo,
   sub,
   ativo,
   onClick,
 }: {
-  valor: string;
   titulo: string;
   sub: string;
   ativo: boolean;
@@ -339,7 +380,6 @@ function EscopoOption({
     <button
       type="button"
       onClick={onClick}
-      data-valor={valor}
       className={
         'rounded-lg border p-2 text-left transition ' +
         (ativo
@@ -347,7 +387,12 @@ function EscopoOption({
           : 'border-conecta-primary/15 hover:border-conecta-primary/30 bg-white')
       }
     >
-      <div className={'text-sm font-display font-semibold ' + (ativo ? 'text-conecta-accent' : 'text-conecta-primary')}>
+      <div
+        className={
+          'text-sm font-display font-semibold ' +
+          (ativo ? 'text-conecta-accent' : 'text-conecta-primary')
+        }
+      >
         {titulo}
       </div>
       <div className="text-[11px] text-conecta-muted leading-tight mt-0.5">{sub}</div>

@@ -7,9 +7,10 @@ interface FilialOpt {
   id: string;
   codigo: string;
   nome: string;
+  regional: string | null;
 }
 
-type Escopo = 'nacional' | 'regional' | 'filial';
+type Escopo = 'nacional' | 'regional' | 'multi' | 'filial';
 
 export function EditarLiderModal({
   liderId,
@@ -34,48 +35,88 @@ export function EditarLiderModal({
   filiais: FilialOpt[];
   onClose: () => void;
 }) {
+  const regionais = useMemo(() => {
+    const set = new Set<string>();
+    for (const f of filiais) if (f.regional) set.add(f.regional);
+    return Array.from(set).sort();
+  }, [filiais]);
+
+  // Mapa filial.id → regional
+  const filialRegional = useMemo(() => {
+    const m = new Map<string, string | null>();
+    for (const f of filiais) m.set(f.id, f.regional);
+    return m;
+  }, [filiais]);
+
   // Inferir escopo inicial
-  const escopoInicial: Escopo = useMemo(() => {
-    if (escopoNacionalInicial) return 'nacional';
+  const { escopoInicial, regionalInicial } = useMemo(() => {
+    if (escopoNacionalInicial) {
+      return { escopoInicial: 'nacional' as Escopo, regionalInicial: '' };
+    }
     if (
       filiaisEscopoInicial.length === 1 &&
       colaboradorFilialId &&
       filiaisEscopoInicial[0] === colaboradorFilialId
     ) {
-      return 'filial';
+      return { escopoInicial: 'filial' as Escopo, regionalInicial: '' };
     }
-    return 'regional';
-  }, [escopoNacionalInicial, filiaisEscopoInicial, colaboradorFilialId]);
+    // Cobre uma regional inteira?
+    if (filiaisEscopoInicial.length > 0) {
+      const regs = filiaisEscopoInicial.map((id) => filialRegional.get(id) ?? null);
+      const primeira = regs[0];
+      const todasIguais = primeira != null && regs.every((r) => r === primeira);
+      if (todasIguais) {
+        const filiaisDaRegional = filiais.filter((f) => f.regional === primeira).map((f) => f.id);
+        const cobreTodas = filiaisDaRegional.every((id) => filiaisEscopoInicial.includes(id));
+        if (cobreTodas && filiaisDaRegional.length === filiaisEscopoInicial.length) {
+          return { escopoInicial: 'regional' as Escopo, regionalInicial: primeira };
+        }
+      }
+    }
+    return { escopoInicial: 'multi' as Escopo, regionalInicial: '' };
+  }, [escopoNacionalInicial, filiaisEscopoInicial, colaboradorFilialId, filialRegional, filiais]);
 
   const [escopo, setEscopo] = useState<Escopo>(escopoInicial);
+  const [regionalSel, setRegionalSel] = useState<string>(regionalInicial);
   const [filiaisEscopo, setFiliaisEscopo] = useState<string[]>(filiaisEscopoInicial);
   const [erro, setErro] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
   function submit() {
     setErro(null);
-    let filiais: string[];
+    let filiaisFinal: string[];
     if (escopo === 'nacional') {
-      filiais = [];
+      filiaisFinal = [];
     } else if (escopo === 'filial') {
       if (!colaboradorFilialId) {
-        setErro('colaborador sem filial associada — escolha Regional ou Nacional');
+        setErro('colaborador sem filial associada — escolha Regional, Multi-filial ou Nacional');
         return;
       }
-      filiais = [colaboradorFilialId];
+      filiaisFinal = [colaboradorFilialId];
+    } else if (escopo === 'regional') {
+      if (!regionalSel) {
+        setErro('selecione uma regional');
+        return;
+      }
+      filiaisFinal = filiais.filter((f) => f.regional === regionalSel).map((f) => f.id);
+      if (filiaisFinal.length === 0) {
+        setErro(`nenhuma filial cadastrada na regional "${regionalSel}"`);
+        return;
+      }
     } else {
       if (filiaisEscopo.length === 0) {
         setErro('selecione ao menos uma filial');
         return;
       }
-      filiais = filiaisEscopo;
+      filiaisFinal = filiaisEscopo;
     }
+
     start(async () => {
       try {
         await editarEscopoLider({
           liderId,
           escopoNacional: escopo === 'nacional',
-          filiaisEscopo: filiais,
+          filiaisEscopo: filiaisFinal,
         });
         onClose();
         location.reload();
@@ -87,7 +128,7 @@ export function EditarLiderModal({
 
   return (
     <div className="fixed inset-0 bg-conecta-primary/30 backdrop-blur-sm grid place-items-center z-50 p-4">
-      <div className="bg-white rounded-2xl p-6 w-full max-w-md space-y-3 shadow-2xl border border-conecta-primary/10">
+      <div className="bg-white rounded-2xl p-6 w-full max-w-lg space-y-3 shadow-2xl border border-conecta-primary/10 max-h-[90vh] overflow-y-auto">
         <h2 className="font-display text-lg font-extrabold text-conecta-primary">Editar escopo do líder</h2>
         <div className="rounded-lg bg-conecta-primary/5 border border-conecta-primary/10 p-3">
           <div className="font-medium text-conecta-primary">{nome}</div>
@@ -108,7 +149,7 @@ export function EditarLiderModal({
           <label className="block text-[10px] uppercase tracking-[0.18em] font-semibold text-conecta-primary mb-1">
             Escopo
           </label>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <EscopoOption
               titulo="Nacional"
               sub="Todas as filiais"
@@ -117,13 +158,19 @@ export function EditarLiderModal({
             />
             <EscopoOption
               titulo="Regional"
-              sub="Várias filiais"
+              sub="Toda a regional"
               ativo={escopo === 'regional'}
               onClick={() => setEscopo('regional')}
             />
             <EscopoOption
+              titulo="Multi-filial"
+              sub="Várias filiais"
+              ativo={escopo === 'multi'}
+              onClick={() => setEscopo('multi')}
+            />
+            <EscopoOption
               titulo="Filial"
-              sub="Só a unidade dele"
+              sub="Só a dele"
               ativo={escopo === 'filial'}
               onClick={() => setEscopo('filial')}
             />
@@ -131,6 +178,29 @@ export function EditarLiderModal({
         </div>
 
         {escopo === 'regional' && (
+          <div>
+            <label className="block text-[10px] uppercase tracking-[0.18em] font-semibold text-conecta-primary mb-1">
+              Regional
+            </label>
+            <select
+              className="w-full border border-conecta-primary/15 rounded-lg p-2 text-sm bg-white"
+              value={regionalSel}
+              onChange={(e) => setRegionalSel(e.target.value)}
+            >
+              <option value="">— selecionar —</option>
+              {regionais.map((r) => {
+                const n = filiais.filter((f) => f.regional === r).length;
+                return (
+                  <option key={r} value={r}>
+                    {r} ({n} filia{n === 1 ? 'l' : 'is'})
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+        )}
+
+        {escopo === 'multi' && (
           <div>
             <label className="block text-[10px] uppercase tracking-[0.18em] font-semibold text-conecta-primary mb-1">
               Filiais cobertas ({filiaisEscopo.length})
@@ -145,7 +215,7 @@ export function EditarLiderModal({
             >
               {filiais.map((f) => (
                 <option key={f.id} value={f.id}>
-                  {f.codigo} — {f.nome}
+                  {f.codigo} — {f.nome} {f.regional ? `[${f.regional}]` : ''}
                 </option>
               ))}
             </select>
@@ -203,7 +273,12 @@ function EscopoOption({
           : 'border-conecta-primary/15 hover:border-conecta-primary/30 bg-white')
       }
     >
-      <div className={'text-sm font-display font-semibold ' + (ativo ? 'text-conecta-accent' : 'text-conecta-primary')}>
+      <div
+        className={
+          'text-sm font-display font-semibold ' +
+          (ativo ? 'text-conecta-accent' : 'text-conecta-primary')
+        }
+      >
         {titulo}
       </div>
       <div className="text-[11px] text-conecta-muted leading-tight mt-0.5">{sub}</div>

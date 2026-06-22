@@ -8,6 +8,7 @@ interface FilialOpt {
   id: string;
   codigo: string;
   nome: string;
+  regional: string | null;
 }
 
 export function LiderActions({

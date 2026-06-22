@@ -26,6 +26,7 @@ interface FilialRow {
   id: string;
   codigo: string;
   nome: string;
+  regional: string | null;
 }
 
 export default async function LideresPage() {
@@ -47,7 +48,7 @@ export default async function LideresPage() {
         c.nome
     `),
     db.execute(sql`
-      SELECT id, codigo, nome FROM filiais WHERE ativa ORDER BY codigo
+      SELECT id, codigo, nome, regional FROM filiais WHERE ativa ORDER BY codigo
     `),
     db.execute(sql`
       SELECT c.id, c.chapa, c.nome, c.funcao, c.codfilial, c.filial_id,

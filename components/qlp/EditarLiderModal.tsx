@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useMemo, useState, useTransition } from 'react';
 import { editarEscopoLider } from '@/actions/qlp/lideres';
 
 interface FilialOpt {
@@ -8,6 +8,8 @@ interface FilialOpt {
   codigo: string;
   nome: string;
 }
+
+type Escopo = 'nacional' | 'regional' | 'filial';
 
 export function EditarLiderModal({
   liderId,
@@ -17,6 +19,7 @@ export function EditarLiderModal({
   nivel,
   escopoNacionalInicial,
   filiaisEscopoInicial,
+  colaboradorFilialId,
   filiais,
   onClose,
 }: {
@@ -27,26 +30,52 @@ export function EditarLiderModal({
   nivel: string | null;
   escopoNacionalInicial: boolean;
   filiaisEscopoInicial: string[];
+  colaboradorFilialId: string | null;
   filiais: FilialOpt[];
   onClose: () => void;
 }) {
-  const [escopoNacional, setEscopoNacional] = useState(escopoNacionalInicial);
+  // Inferir escopo inicial
+  const escopoInicial: Escopo = useMemo(() => {
+    if (escopoNacionalInicial) return 'nacional';
+    if (
+      filiaisEscopoInicial.length === 1 &&
+      colaboradorFilialId &&
+      filiaisEscopoInicial[0] === colaboradorFilialId
+    ) {
+      return 'filial';
+    }
+    return 'regional';
+  }, [escopoNacionalInicial, filiaisEscopoInicial, colaboradorFilialId]);
+
+  const [escopo, setEscopo] = useState<Escopo>(escopoInicial);
   const [filiaisEscopo, setFiliaisEscopo] = useState<string[]>(filiaisEscopoInicial);
   const [erro, setErro] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
   function submit() {
     setErro(null);
-    if (!escopoNacional && filiaisEscopo.length === 0) {
-      setErro('selecione ao menos uma filial OU marque escopo nacional');
-      return;
+    let filiais: string[];
+    if (escopo === 'nacional') {
+      filiais = [];
+    } else if (escopo === 'filial') {
+      if (!colaboradorFilialId) {
+        setErro('colaborador sem filial associada — escolha Regional ou Nacional');
+        return;
+      }
+      filiais = [colaboradorFilialId];
+    } else {
+      if (filiaisEscopo.length === 0) {
+        setErro('selecione ao menos uma filial');
+        return;
+      }
+      filiais = filiaisEscopo;
     }
     start(async () => {
       try {
         await editarEscopoLider({
           liderId,
-          escopoNacional,
-          filiaisEscopo: escopoNacional ? [] : filiaisEscopo,
+          escopoNacional: escopo === 'nacional',
+          filiaisEscopo: filiais,
         });
         onClose();
         location.reload();
@@ -75,17 +104,33 @@ export function EditarLiderModal({
           </div>
         </div>
 
-        <label className="flex items-center gap-2 text-sm text-conecta-primary">
-          <input
-            type="checkbox"
-            checked={escopoNacional}
-            onChange={(e) => setEscopoNacional(e.target.checked)}
-            className="accent-conecta-accent"
-          />
-          Escopo nacional (cobre todas as filiais)
-        </label>
+        <div>
+          <label className="block text-[10px] uppercase tracking-[0.18em] font-semibold text-conecta-primary mb-1">
+            Escopo
+          </label>
+          <div className="grid grid-cols-3 gap-2">
+            <EscopoOption
+              titulo="Nacional"
+              sub="Todas as filiais"
+              ativo={escopo === 'nacional'}
+              onClick={() => setEscopo('nacional')}
+            />
+            <EscopoOption
+              titulo="Regional"
+              sub="Várias filiais"
+              ativo={escopo === 'regional'}
+              onClick={() => setEscopo('regional')}
+            />
+            <EscopoOption
+              titulo="Filial"
+              sub="Só a unidade dele"
+              ativo={escopo === 'filial'}
+              onClick={() => setEscopo('filial')}
+            />
+          </div>
+        </div>
 
-        {!escopoNacional && (
+        {escopo === 'regional' && (
           <div>
             <label className="block text-[10px] uppercase tracking-[0.18em] font-semibold text-conecta-primary mb-1">
               Filiais cobertas ({filiaisEscopo.length})
@@ -108,6 +153,15 @@ export function EditarLiderModal({
           </div>
         )}
 
+        {escopo === 'filial' && (
+          <p className="text-[11px] text-conecta-muted">
+            Vai cobrir apenas a filial atual do colaborador
+            {colaboradorFilialId
+              ? ' (definida no quadro Perlog).'
+              : ' — atenção: colaborador sem filial associada.'}
+          </p>
+        )}
+
         {erro && <div className="text-rose-600 text-sm">{erro}</div>}
 
         <div className="flex justify-end gap-2 pt-2">
@@ -124,5 +178,35 @@ export function EditarLiderModal({
         </div>
       </div>
     </div>
+  );
+}
+
+function EscopoOption({
+  titulo,
+  sub,
+  ativo,
+  onClick,
+}: {
+  titulo: string;
+  sub: string;
+  ativo: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={
+        'rounded-lg border p-2 text-left transition ' +
+        (ativo
+          ? 'border-conecta-accent bg-conecta-accent/5 ring-1 ring-conecta-accent/40'
+          : 'border-conecta-primary/15 hover:border-conecta-primary/30 bg-white')
+      }
+    >
+      <div className={'text-sm font-display font-semibold ' + (ativo ? 'text-conecta-accent' : 'text-conecta-primary')}>
+        {titulo}
+      </div>
+      <div className="text-[11px] text-conecta-muted leading-tight mt-0.5">{sub}</div>
+    </button>
   );
 }

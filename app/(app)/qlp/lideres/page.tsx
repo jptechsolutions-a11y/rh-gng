@@ -18,6 +18,7 @@ interface LiderRow {
   funcao: string;
   chapa: string;
   codfilial: number;
+  colaborador_filial_id: string | null;
   diretos: number;
 }
 
@@ -35,6 +36,7 @@ export default async function LideresPage() {
       SELECT
         l.id, l.tier, l.nivel, l.escopo_nacional, l.filiais_escopo,
         c.nome, c.funcao, c.chapa, c.codfilial,
+        c.filial_id AS colaborador_filial_id,
         (SELECT count(*) FROM qlp_vinculos v WHERE v.lider_id = l.id)::int AS diretos
       FROM qlp_lideres l
       JOIN qlp_colaboradores c ON c.id = l.colaborador_id
@@ -48,7 +50,7 @@ export default async function LideresPage() {
       SELECT id, codigo, nome FROM filiais WHERE ativa ORDER BY codigo
     `),
     db.execute(sql`
-      SELECT id, chapa, nome, funcao, codfilial, tier_resolvido, nivel_resolvido
+      SELECT id, chapa, nome, funcao, codfilial, filial_id, tier_resolvido, nivel_resolvido
       FROM qlp_colaboradores
       WHERE ativo
       ORDER BY nome
@@ -127,6 +129,7 @@ export default async function LideresPage() {
                         nivel={l.nivel}
                         escopoNacional={l.escopo_nacional}
                         filiaisEscopo={l.filiais_escopo ?? []}
+                        colaboradorFilialId={l.colaborador_filial_id}
                         filiais={filiais}
                       />
                     </td>

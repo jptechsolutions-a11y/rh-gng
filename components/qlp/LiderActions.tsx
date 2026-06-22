@@ -18,6 +18,7 @@ export function LiderActions({
   nivel,
   escopoNacional,
   filiaisEscopo,
+  colaboradorFilialId,
   filiais,
 }: {
   liderId: string;
@@ -27,6 +28,7 @@ export function LiderActions({
   nivel: string | null;
   escopoNacional: boolean;
   filiaisEscopo: string[];
+  colaboradorFilialId: string | null;
   filiais: FilialOpt[];
 }) {
   const [pending, start] = useTransition();
@@ -64,6 +66,7 @@ export function LiderActions({
           nivel={nivel}
           escopoNacionalInicial={escopoNacional}
           filiaisEscopoInicial={filiaisEscopo}
+          colaboradorFilialId={colaboradorFilialId}
           filiais={filiais}
           onClose={() => setEditar(false)}
         />

@@ -50,10 +50,15 @@ export default async function LideresPage() {
       SELECT id, codigo, nome FROM filiais WHERE ativa ORDER BY codigo
     `),
     db.execute(sql`
-      SELECT id, chapa, nome, funcao, codfilial, filial_id, tier_resolvido, nivel_resolvido
-      FROM qlp_colaboradores
-      WHERE ativo
-      ORDER BY nome
+      SELECT c.id, c.chapa, c.nome, c.funcao, c.codfilial, c.filial_id,
+             c.tier_resolvido, c.nivel_resolvido
+      FROM qlp_colaboradores c
+      WHERE c.ativo
+        AND NOT EXISTS (
+          SELECT 1 FROM qlp_lideres l
+          WHERE l.colaborador_id = c.id AND l.ativo
+        )
+      ORDER BY c.nome
     `),
   ]);
 

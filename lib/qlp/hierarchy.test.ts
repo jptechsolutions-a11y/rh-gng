@@ -45,8 +45,8 @@ describe('assertCanLead', () => {
     expect(() => assertCanLead('gerente', 'gerente')).toThrow();
   });
   it('tier inválido lança erro', () => {
-    expect(() => assertCanLead('foo' as any, 'base')).toThrow();
-    expect(() => assertCanLead('gerente', 'bar' as any)).toThrow();
+    expect(() => assertCanLead('foo', 'base')).toThrow();
+    expect(() => assertCanLead('gerente', 'bar')).toThrow();
   });
 });
 

@@ -430,3 +430,112 @@ export const feriadosMeta = pgTable('feriados_meta', {
 }, (t) => ({
   singleton: check('feriados_meta_singleton', sql`${t.id} = 'singleton'`),
 }));
+
+// ============================================================
+// QLP & Liderança
+// ============================================================
+
+export const qlpColaboradores = pgTable('qlp_colaboradores', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  chapa: text('chapa').notNull().unique(),
+  nome: text('nome').notNull(),
+  regional: text('regional'),
+  bandeira: text('bandeira'),
+  codfilial: integer('codfilial').notNull(),
+  filialId: uuid('filial_id').references(() => filiais.id),
+  funcao: text('funcao').notNull(),
+  secao: text('secao'),
+  horario: text('horario'),
+  nacionalidade: text('nacionalidade'),
+  dtAdmissao: date('dt_admissao'),
+  mesNasc: smallint('mes_nasc'),
+  idade: smallint('idade'),
+  situacao: text('situacao'),
+  ativo: boolean('ativo').notNull().default(true),
+  tierResolvido: text('tier_resolvido'),
+  nivelResolvido: text('nivel_resolvido'),
+  trilhaResolvida: text('trilha_resolvida'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  filialIdx: index('qlp_colab_filial_idx').on(t.filialId),
+  tierIdx: index('qlp_colab_tier_idx').on(t.tierResolvido),
+  funcaoIdx: index('qlp_colab_funcao_idx').on(t.funcao),
+}));
+
+export const qlpFuncoesCargo = pgTable('qlp_funcoes_cargo', {
+  funcao: text('funcao').primaryKey(),
+  tier: text('tier').notNull(),
+  nivel: text('nivel'),
+  trilha: text('trilha'),
+  classificadaEm: timestamp('classificada_em', { withTimezone: true }).notNull().defaultNow(),
+  confirmadaPorAdmin: boolean('confirmada_por_admin').notNull().default(false),
+});
+
+export const qlpLideres = pgTable('qlp_lideres', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  colaboradorId: uuid('colaborador_id').notNull().unique().references(() => qlpColaboradores.id, { onDelete: 'cascade' }),
+  tier: text('tier').notNull(),
+  nivel: text('nivel'),
+  escopoNacional: boolean('escopo_nacional').notNull().default(false),
+  filiaisEscopo: jsonb('filiais_escopo').notNull().default(sql`'[]'::jsonb`),
+  ativo: boolean('ativo').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const qlpVinculos = pgTable('qlp_vinculos', {
+  colaboradorId: uuid('colaborador_id').primaryKey().references(() => qlpColaboradores.id, { onDelete: 'cascade' }),
+  liderId: uuid('lider_id').notNull().references(() => qlpLideres.id, { onDelete: 'cascade' }),
+  origem: text('origem').notNull(),
+  criadoPor: text('criado_por'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  liderIdx: index('qlp_vinc_lider_idx').on(t.liderId),
+}));
+
+export const qlpImports = pgTable('qlp_imports', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  arquivo: text('arquivo'),
+  executadoPor: text('executado_por').notNull(),
+  executadoEm: timestamp('executado_em', { withTimezone: true }).notNull().defaultNow(),
+  totalLinhas: integer('total_linhas'),
+  novos: integer('novos'),
+  atualizados: integer('atualizados'),
+  desligados: integer('desligados'),
+  mudancaTier: jsonb('mudanca_tier'),
+  pendencias: jsonb('pendencias'),
+});
+
+export const qlpPendencias = pgTable('qlp_pendencias', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  tipo: text('tipo').notNull(),
+  colaboradorId: uuid('colaborador_id').references(() => qlpColaboradores.id, { onDelete: 'cascade' }),
+  descricao: text('descricao'),
+  criadaEm: timestamp('criada_em', { withTimezone: true }).notNull().defaultNow(),
+  resolvida: boolean('resolvida').notNull().default(false),
+  resolvidaEm: timestamp('resolvida_em', { withTimezone: true }),
+  resolvidaPor: text('resolvida_por'),
+});
+
+export const qlpHistorico = pgTable('qlp_historico', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  evento: text('evento').notNull(),
+  colaboradorId: uuid('colaborador_id'),
+  liderIdAntigo: uuid('lider_id_antigo'),
+  liderIdNovo: uuid('lider_id_novo'),
+  detalhes: jsonb('detalhes'),
+  atorTipo: text('ator_tipo').notNull(),
+  atorId: uuid('ator_id'),
+  atorNome: text('ator_nome'),
+  filialContextoId: uuid('filial_contexto_id'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  colabIdx: index('qlp_hist_colab_idx').on(t.colaboradorId, t.createdAt),
+  dataIdx: index('qlp_hist_data_idx').on(t.createdAt),
+  filialIdx: index('qlp_hist_filial_idx').on(t.filialContextoId),
+}));
+
+export type QlpColaborador = typeof qlpColaboradores.$inferSelect;
+export type QlpLider = typeof qlpLideres.$inferSelect;
+export type QlpVinculo = typeof qlpVinculos.$inferSelect;
+export type QlpHistoricoRow = typeof qlpHistorico.$inferSelect;

@@ -1,12 +1,13 @@
 import { requireSession } from '@/lib/auth/session';
 import { db } from '@/db/client';
 import { sql } from 'drizzle-orm';
+import { TopBar } from '@/components/layout/TopBar';
 import { OrgChartTree, type LiderCard } from '@/components/qlp/OrgChartTree';
 
 export const dynamic = 'force-dynamic';
 
 export default async function OrgPage() {
-  await requireSession();
+  const s = await requireSession();
 
   const lideres = (await db.execute(sql`
     SELECT
@@ -39,21 +40,27 @@ export default async function OrgPage() {
       c.nome
   `)) as unknown as LiderCard[];
 
+  const badge =
+    s.perfil === 'filial' ? `Filial ${s.filialCodigo}` :
+    s.perfil === 'admin'  ? 'ADMIN' :
+    (s.escopo === 'nacional' ? 'NACIONAL' : 'REGIONAL');
+
   return (
-    <div className="space-y-4">
-      <header>
-        <h1 className="text-2xl font-semibold text-slate-900">Organograma</h1>
-        <p className="text-sm text-slate-500 mt-1">
-          Só líderes; clique em um cartão para ver detalhes e cadeia. O total inclui herança recursiva.
-        </p>
-      </header>
-      {lideres.length === 0 ? (
-        <p className="text-sm text-slate-500">
-          Nenhum líder cadastrado ainda. Cadastre na tela <strong>Líderes</strong> (admin).
-        </p>
-      ) : (
-        <OrgChartTree lideres={lideres} />
-      )}
-    </div>
+    <>
+      <TopBar
+        titulo="QLP — Organograma"
+        subtitulo="Estrutura visual dos líderes · total inclui herança recursiva"
+        badge={badge}
+      />
+      <div className="space-y-5 p-4 lg:p-6">
+        {lideres.length === 0 ? (
+          <p className="rounded-2xl bg-white border border-conecta-primary/10 p-6 text-sm text-conecta-muted">
+            Nenhum líder cadastrado ainda. Cadastre na tela <strong>Líderes</strong> (admin).
+          </p>
+        ) : (
+          <OrgChartTree lideres={lideres} />
+        )}
+      </div>
+    </>
   );
 }

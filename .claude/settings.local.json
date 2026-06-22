@@ -128,7 +128,18 @@
       "Bash(node scripts/qry-trig.mjs)",
       "Bash(node scripts/patch-no_modify_logs.mjs)",
       "Bash(node scripts/inspect-inconsist.mjs)",
-      "Bash(node scripts/apply-0004.mjs)"
+      "Bash(node scripts/apply-0004.mjs)",
+      "Bash(python -c \"from docx import Document; d=Document\\('RELATÓRIO FINAL_CST EM ANÁLISE E DESENVOLVIMENTO DE SISTEMAS_PROJETO DE EXTENSÃO I - ANÁLISE E DESENVOLVIMENTO DE SISTEMAS.docx'\\); [print\\('---PARA---'\\); print\\(p.text\\) for p in d.paragraphs]\")",
+      "Bash(python -c 'import openpyxl; wb=openpyxl.load_workbook\\(r'\\\\''C:/Users/juliano.correa/Desktop/REF/TREINAMENTOS OBRIGATÓRIOS \\(1\\).xlsx'\\\\''\\); ws=wb.active; print\\('\\\\''sheet:'\\\\'',ws.title,'\\\\''rows:'\\\\'',ws.max_row,'\\\\''cols:'\\\\'',ws.max_column\\); *)",
+      "Bash(echo \"exit=$?\")",
+      "Bash(git pull *)",
+      "Bash(node scripts/import-feriados.mjs)",
+      "Bash(node -e \"import\\('@node-rs/argon2'\\).then\\(async \\({hash}\\) => { const h = await hash\\('Jusc_30p@@', { algorithm: 2, memoryCost: 65536, timeCost: 3, parallelism: 1 }\\); console.log\\(h\\); }\\)\")",
+      "Bash(node \"node_modules/vitest/vitest.mjs\" run lib/qlp/)",
+      "Bash(mkdir -p actions/qlp)",
+      "Bash(node \"node_modules/vitest/vitest.mjs\" run lib/qlp/hierarchy.test.ts)",
+      "Bash(node \"node_modules/vitest/vitest.mjs\" run)",
+      "Bash(node \"node_modules/next/dist/bin/next\" build)"
     ]
   }
 }

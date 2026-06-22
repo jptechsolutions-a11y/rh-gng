@@ -1,6 +1,7 @@
 import { requireSession } from '@/lib/auth/session';
 import { db } from '@/db/client';
 import { sql } from 'drizzle-orm';
+import { TopBar } from '@/components/layout/TopBar';
 import { QuadroTable, type QuadroRow } from '@/components/qlp/QuadroTable';
 
 export const dynamic = 'force-dynamic';
@@ -28,18 +29,21 @@ export default async function QuadroPage() {
   `)) as unknown as QuadroRow[];
 
   const podeEditar = s.perfil === 'admin' || s.perfil === 'filial';
+  const badge =
+    s.perfil === 'filial' ? `Filial ${s.filialCodigo}` :
+    s.perfil === 'admin'  ? 'ADMIN' :
+    (s.escopo === 'nacional' ? 'NACIONAL' : 'REGIONAL');
+  const subtitulo =
+    s.perfil === 'filial'
+      ? `${s.filialNome} · ${rows.length} colaboradores`
+      : `${rows.length} colaboradores ativos`;
 
   return (
-    <div className="space-y-4">
-      <header>
-        <h1 className="text-2xl font-semibold text-slate-900">Quadro de colaboradores</h1>
-        <p className="text-sm text-slate-500 mt-1">
-          {s.perfil === 'filial'
-            ? `Filial ${s.filialCodigo} · ${rows.length} colaboradores`
-            : `${rows.length} colaboradores ativos`}
-        </p>
-      </header>
-      <QuadroTable rows={rows} podeEditar={podeEditar} />
-    </div>
+    <>
+      <TopBar titulo="QLP — Quadro" subtitulo={subtitulo} badge={badge} />
+      <div className="space-y-5 p-4 lg:p-6">
+        <QuadroTable rows={rows} podeEditar={podeEditar} />
+      </div>
+    </>
   );
 }

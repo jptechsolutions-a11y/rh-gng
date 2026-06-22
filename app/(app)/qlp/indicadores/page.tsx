@@ -1,6 +1,7 @@
 import { requireSession } from '@/lib/auth/session';
 import { db } from '@/db/client';
 import { sql } from 'drizzle-orm';
+import { TopBar } from '@/components/layout/TopBar';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,62 +50,80 @@ export default async function IndicadoresPage() {
     `),
   ]);
 
+  const badge =
+    s.perfil === 'filial' ? `Filial ${s.filialCodigo}` :
+    s.perfil === 'admin'  ? 'ADMIN' :
+    (s.escopo === 'nacional' ? 'NACIONAL' : 'REGIONAL');
+
   return (
-    <div className="space-y-8">
-      <header>
-        <h1 className="text-2xl font-semibold text-slate-900">Indicadores</h1>
-      </header>
+    <>
+      <TopBar
+        titulo="QLP — Indicadores"
+        subtitulo="Distribuição e cobertura"
+        badge={badge}
+      />
+      <div className="space-y-6 p-4 lg:p-6">
+        <Section title="Distribuição por tier">
+          <Bars rows={distTier as unknown as { tier: string; qtd: number }[]} keyField="tier" />
+        </Section>
 
-      <Section title="Distribuição por tier">
-        <Bars rows={distTier as unknown as { tier: string; qtd: number }[]} keyField="tier" />
-      </Section>
+        <Section title="Distribuição por situação">
+          <Bars rows={distSituacao as unknown as { situacao: string; qtd: number }[]} keyField="situacao" />
+        </Section>
 
-      <Section title="Distribuição por situação">
-        <Bars rows={distSituacao as unknown as { situacao: string; qtd: number }[]} keyField="situacao" />
-      </Section>
+        <Section title="Cobertura por filial">
+          <table className="w-full text-sm">
+            <tbody>
+              {(cobertura as unknown as { codigo: string; nome: string; total: number; com_lider: number }[]).map(
+                (r) => {
+                  const pct = r.total > 0 ? Math.round((r.com_lider / r.total) * 100) : 0;
+                  return (
+                    <tr key={r.codigo} className="border-b border-conecta-primary/5">
+                      <td className="p-2 w-40 text-conecta-text">
+                        <span className="font-mono text-xs text-conecta-muted mr-1">{r.codigo}</span>
+                        {r.nome}
+                      </td>
+                      <td className="p-2">
+                        <div className="h-2 bg-conecta-primary/10 rounded-full overflow-hidden">
+                          <div
+                            className="h-full"
+                            style={{
+                              width: `${pct}%`,
+                              background: pct >= 80 ? '#16a34a' : pct >= 50 ? '#E8621A' : '#dc2626',
+                            }}
+                          />
+                        </div>
+                      </td>
+                      <td className="p-2 text-right text-xs tabular-nums w-32 text-conecta-primary font-semibold">
+                        {r.com_lider}/{r.total} ({pct}%)
+                      </td>
+                    </tr>
+                  );
+                },
+              )}
+            </tbody>
+          </table>
+        </Section>
 
-      <Section title="Cobertura por filial">
-        <table className="w-full text-sm">
-          <tbody>
-            {(cobertura as unknown as { codigo: string; nome: string; total: number; com_lider: number }[]).map((r) => {
-              const pct = r.total > 0 ? Math.round((r.com_lider / r.total) * 100) : 0;
-              return (
-                <tr key={r.codigo} className="border-b border-slate-100">
-                  <td className="p-2 w-32 text-slate-700">
-                    <span className="font-mono text-xs text-slate-500 mr-1">{r.codigo}</span>
-                    {r.nome}
-                  </td>
-                  <td className="p-2">
-                    <div className="h-2 bg-slate-100 rounded overflow-hidden">
-                      <div className="h-full bg-emerald-500" style={{ width: `${pct}%` }} />
-                    </div>
-                  </td>
-                  <td className="p-2 text-right text-sm tabular-nums w-32">
-                    {r.com_lider}/{r.total} ({pct}%)
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </Section>
-
-      <Section title="Pendências abertas por tipo">
-        {(pendencias as unknown as { tipo: string; qtd: number }[]).length === 0 ? (
-          <p className="text-sm text-slate-500">Nenhuma pendência aberta. 🎉</p>
-        ) : (
-          <Bars rows={pendencias as unknown as { tipo: string; qtd: number }[]} keyField="tipo" />
-        )}
-      </Section>
-    </div>
+        <Section title="Pendências abertas por tipo">
+          {(pendencias as unknown as { tipo: string; qtd: number }[]).length === 0 ? (
+            <p className="text-sm text-conecta-muted">Nenhuma pendência aberta.</p>
+          ) : (
+            <Bars rows={pendencias as unknown as { tipo: string; qtd: number }[]} keyField="tipo" />
+          )}
+        </Section>
+      </div>
+    </>
   );
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h2 className="text-lg font-semibold text-slate-900 mb-2">{title}</h2>
-      <div className="rounded-2xl border border-slate-200 bg-white p-4">{children}</div>
+      <h2 className="font-display text-[11px] uppercase tracking-[0.22em] font-semibold text-conecta-muted mb-2">
+        {title}
+      </h2>
+      <div className="rounded-2xl bg-white border border-conecta-primary/10 p-4">{children}</div>
     </section>
   );
 }
@@ -124,14 +143,17 @@ function Bars<T extends Record<string, unknown>>({
           const k = String(r[keyField] ?? '—');
           const v = Number((r as Record<string, unknown>)['qtd']);
           return (
-            <tr key={k} className="border-b border-slate-100">
-              <td className="p-2 w-40 text-slate-700">{k}</td>
+            <tr key={k} className="border-b border-conecta-primary/5">
+              <td className="p-2 w-44 text-conecta-text font-medium">{k}</td>
               <td className="p-2">
-                <div className="h-2 bg-slate-100 rounded overflow-hidden">
-                  <div className="h-full bg-slate-700" style={{ width: `${(v / max) * 100}%` }} />
+                <div className="h-2 bg-conecta-primary/10 rounded-full overflow-hidden">
+                  <div
+                    className="h-full"
+                    style={{ width: `${(v / max) * 100}%`, background: '#0D2B6B' }}
+                  />
                 </div>
               </td>
-              <td className="p-2 text-right tabular-nums w-16 text-slate-700">{v}</td>
+              <td className="p-2 text-right tabular-nums w-16 text-conecta-primary font-semibold">{v}</td>
             </tr>
           );
         })}

@@ -1,6 +1,7 @@
 import { requireSession } from '@/lib/auth/session';
 import { db } from '@/db/client';
 import { sql } from 'drizzle-orm';
+import { TopBar } from '@/components/layout/TopBar';
 
 export const dynamic = 'force-dynamic';
 
@@ -49,57 +50,70 @@ export default async function HistoricoPage() {
     LIMIT 500
   `)) as unknown as HistoricoRow[];
 
-  return (
-    <div className="space-y-4">
-      <header>
-        <h1 className="text-2xl font-semibold text-slate-900">Histórico</h1>
-        <p className="text-sm text-slate-500 mt-1">Últimas 500 movimentações registradas.</p>
-      </header>
+  const badge =
+    s.perfil === 'filial' ? `Filial ${s.filialCodigo}` :
+    s.perfil === 'admin'  ? 'ADMIN' :
+    (s.escopo === 'nacional' ? 'NACIONAL' : 'REGIONAL');
 
-      {rows.length === 0 ? (
-        <p className="text-sm text-slate-500">Nenhum evento registrado ainda.</p>
-      ) : (
-        <div className="rounded-2xl border border-slate-200 bg-white overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50">
-              <tr className="border-b border-slate-200 text-slate-600">
-                <th className="text-left p-3 font-medium whitespace-nowrap">Quando</th>
-                <th className="text-left p-3 font-medium">Ator</th>
-                <th className="text-left p-3 font-medium">Evento</th>
-                <th className="text-left p-3 font-medium">Colaborador</th>
-                <th className="text-left p-3 font-medium">Detalhes</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50 align-top">
-                  <td className="p-3 whitespace-nowrap text-slate-600 tabular-nums">
-                    {new Date(r.created_at).toLocaleString('pt-BR')}
-                  </td>
-                  <td className="p-3 text-slate-700">
-                    {r.ator_nome}{' '}
-                    <span className="text-xs text-slate-500">({r.ator_tipo})</span>
-                  </td>
-                  <td className="p-3">
-                    <span className="rounded bg-slate-100 text-slate-700 text-xs px-2 py-0.5">
-                      {EVENTO_LABEL[r.evento] ?? r.evento}
-                    </span>
-                  </td>
-                  <td className="p-3 text-slate-700">{r.colaborador_nome ?? '—'}</td>
-                  <td className="p-3">
-                    <details>
-                      <summary className="cursor-pointer text-xs text-slate-500">JSON</summary>
-                      <pre className="text-xs bg-slate-50 p-2 mt-1 rounded max-w-md whitespace-pre-wrap break-all">
-                        {JSON.stringify(r.detalhes, null, 2)}
-                      </pre>
-                    </details>
-                  </td>
+  return (
+    <>
+      <TopBar
+        titulo="QLP — Histórico"
+        subtitulo={`${rows.length} eventos mais recentes`}
+        badge={badge}
+      />
+      <div className="space-y-5 p-4 lg:p-6">
+        {rows.length === 0 ? (
+          <p className="rounded-2xl bg-white border border-conecta-primary/10 p-6 text-sm text-conecta-muted">
+            Nenhum evento registrado ainda.
+          </p>
+        ) : (
+          <div className="rounded-2xl bg-white border border-conecta-primary/10 overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-conecta-primary/10 text-[11px] uppercase tracking-[0.12em] font-semibold text-conecta-muted">
+                  <th className="text-left p-3 whitespace-nowrap">Quando</th>
+                  <th className="text-left p-3">Ator</th>
+                  <th className="text-left p-3">Evento</th>
+                  <th className="text-left p-3">Colaborador</th>
+                  <th className="text-left p-3">Detalhes</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr key={r.id} className="border-b border-conecta-primary/5 hover:bg-conecta-primary/[0.02] align-top">
+                    <td className="p-3 whitespace-nowrap text-conecta-muted tabular-nums text-xs">
+                      {new Date(r.created_at).toLocaleString('pt-BR')}
+                    </td>
+                    <td className="p-3">
+                      <span className="font-medium text-conecta-primary">{r.ator_nome}</span>{' '}
+                      <span className="text-[10px] uppercase tracking-wide text-conecta-muted">
+                        ({r.ator_tipo})
+                      </span>
+                    </td>
+                    <td className="p-3">
+                      <span className="rounded-full bg-conecta-primary/5 text-conecta-primary text-[11px] px-2 py-0.5 font-semibold">
+                        {EVENTO_LABEL[r.evento] ?? r.evento}
+                      </span>
+                    </td>
+                    <td className="p-3 text-conecta-text">{r.colaborador_nome ?? '—'}</td>
+                    <td className="p-3">
+                      <details>
+                        <summary className="cursor-pointer text-xs text-conecta-muted hover:text-conecta-accent">
+                          JSON
+                        </summary>
+                        <pre className="text-xs bg-conecta-primary/[0.03] p-2 mt-1 rounded-lg max-w-md whitespace-pre-wrap break-all">
+                          {JSON.stringify(r.detalhes, null, 2)}
+                        </pre>
+                      </details>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </>
   );
 }

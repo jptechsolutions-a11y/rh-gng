@@ -16,7 +16,7 @@ export function RemoverLiderButton({ liderId, nome }: { liderId: string; nome: s
     <button
       onClick={onClick}
       disabled={pending}
-      className="rounded bg-rose-50 text-rose-700 hover:bg-rose-100 px-2 py-1 text-xs disabled:opacity-50"
+      className="rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 px-3 py-1.5 text-xs font-semibold disabled:opacity-50 transition"
     >
       {pending ? '…' : 'Remover'}
     </button>

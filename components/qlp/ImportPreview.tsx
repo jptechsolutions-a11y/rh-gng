@@ -48,8 +48,10 @@ export function ImportPreview() {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-slate-200 bg-white p-4">
-        <label className="block text-sm font-medium text-slate-700 mb-2">Arquivo XLS do Quadro Perlog</label>
+      <div className="rounded-2xl bg-white border border-conecta-primary/10 p-4">
+        <label className="block text-[11px] uppercase tracking-[0.18em] font-semibold text-conecta-primary mb-2">
+          Arquivo XLS do Quadro Perlog
+        </label>
         <input
           type="file"
           accept=".xls,.xlsx"
@@ -58,13 +60,13 @@ export function ImportPreview() {
             setPreview(null);
             setSucesso(null);
           }}
-          className="block w-full text-sm text-slate-700 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-slate-900 file:text-white hover:file:bg-slate-800"
+          className="block w-full text-sm text-conecta-text file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-conecta-primary file:text-white hover:file:brightness-110 file:font-display file:font-semibold file:cursor-pointer"
         />
         <div className="flex gap-2 mt-3">
           <button
             disabled={!file || pending}
             onClick={onPreview}
-            className="rounded-lg bg-slate-900 text-white px-3 py-2 text-sm disabled:opacity-50"
+            className="rounded-lg bg-conecta-primary text-white px-4 py-2 text-sm font-display font-semibold hover:brightness-110 disabled:opacity-50 transition"
           >
             {pending && !preview ? 'Processando…' : 'Pré-visualizar'}
           </button>
@@ -72,7 +74,7 @@ export function ImportPreview() {
             <button
               disabled={pending}
               onClick={onApply}
-              className="rounded-lg bg-emerald-600 text-white px-3 py-2 text-sm disabled:opacity-50"
+              className="rounded-lg bg-conecta-accent text-white px-4 py-2 text-sm font-display font-semibold hover:brightness-110 disabled:opacity-50 transition"
             >
               {pending ? 'Aplicando…' : 'Aplicar sync'}
             </button>
@@ -80,9 +82,13 @@ export function ImportPreview() {
         </div>
       </div>
 
-      {erro && <div className="rounded-lg bg-rose-50 border border-rose-200 text-rose-900 p-3 text-sm">{erro}</div>}
+      {erro && (
+        <div className="rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 p-3 text-sm">{erro}</div>
+      )}
       {sucesso && (
-        <div className="rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900 p-3 text-sm">{sucesso}</div>
+        <div className="rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 p-3 text-sm">
+          {sucesso}
+        </div>
       )}
 
       {preview && (
@@ -177,24 +183,26 @@ function Stat({
   tone?: 'slate' | 'emerald' | 'amber' | 'rose';
 }) {
   const toneClass: Record<typeof tone, string> = {
-    slate: 'bg-slate-50 text-slate-900 border-slate-200',
+    slate: 'bg-white text-conecta-primary border-conecta-primary/10',
     emerald: 'bg-emerald-50 text-emerald-900 border-emerald-200',
     amber: 'bg-amber-50 text-amber-900 border-amber-200',
     rose: 'bg-rose-50 text-rose-900 border-rose-200',
   };
   return (
-    <div className={`rounded-xl border p-3 ${toneClass[tone]}`}>
-      <div className="text-xs uppercase tracking-wide">{label}</div>
-      <div className="text-2xl font-semibold mt-1">{value}</div>
+    <div className={`rounded-2xl border p-3 ${toneClass[tone]}`}>
+      <div className="text-[10px] uppercase tracking-[0.18em] font-semibold">{label}</div>
+      <div className="font-display text-2xl font-extrabold mt-1 tabular-nums">{value}</div>
     </div>
   );
 }
 
 function Detalhes({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
-    <details className="rounded-xl border border-slate-200 bg-white p-3">
-      <summary className="cursor-pointer text-sm font-semibold text-slate-800">{titulo}</summary>
-      <div className="mt-3">{children}</div>
+    <details className="rounded-2xl bg-white border border-conecta-primary/10 p-3">
+      <summary className="cursor-pointer text-sm font-display font-semibold text-conecta-primary">
+        {titulo}
+      </summary>
+      <div className="mt-3 text-conecta-text">{children}</div>
     </details>
   );
 }

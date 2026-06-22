@@ -18,16 +18,14 @@ export const FILIAL_NAV: NavItem[] = [
   { href: '/historico',       label: 'Histórico',         icon: History },
   { href: '/agenda',          label: 'Agenda',            icon: CalendarClock },
   { href: '/banco-talentos',  label: 'Banco de talentos', icon: Users },
-  { href: '/qlp',             label: 'QLP & Liderança',   icon: Network },
 ];
 
 export const ADMIN_NAV: NavItem[] = [
-  { href: '/admin',            label: 'Dashboard',       icon: LayoutDashboard },
-  { href: '/admin/busca',      label: 'Busca global',    icon: Users },
-  { href: '/admin/relatorios', label: 'Relatórios',      icon: FileText },
-  { href: '/admin/config',     label: 'Configuração',    icon: Settings },
-  { href: '/admin/seguranca',  label: 'Segurança',       icon: ShieldCheck },
-  { href: '/qlp',              label: 'QLP & Liderança', icon: Network },
+  { href: '/admin',            label: 'Dashboard',    icon: LayoutDashboard },
+  { href: '/admin/busca',      label: 'Busca global', icon: Users },
+  { href: '/admin/relatorios', label: 'Relatórios',   icon: FileText },
+  { href: '/admin/config',     label: 'Configuração', icon: Settings },
+  { href: '/admin/seguranca',  label: 'Segurança',    icon: ShieldCheck },
 ];
 
 // Nav para usuários "visualizadores" (regional/nacional): só leitura, acesso a

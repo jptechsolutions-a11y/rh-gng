@@ -1,6 +1,7 @@
 import { requireSession } from '@/lib/auth/session';
 import { db } from '@/db/client';
 import { sql } from 'drizzle-orm';
+import { TopBar } from '@/components/layout/TopBar';
 import { NovoLiderForm } from '@/components/qlp/NovoLiderForm';
 import { RemoverLiderButton } from '@/components/qlp/RemoverLiderButton';
 
@@ -47,73 +48,68 @@ export default async function LideresPage() {
   `)) as unknown as FilialRow[];
 
   return (
-    <div className="space-y-4">
-      <header className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Líderes</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Espinha hierárquica: gerentes, subgerentes e coordenadores. Apenas admin pode editar.
+    <>
+      <TopBar
+        titulo="QLP — Líderes"
+        subtitulo="Espinha hierárquica: gerentes, subgerentes e coordenadores"
+        badge="ADMIN"
+      />
+      <div className="space-y-5 p-4 lg:p-6">
+        <div className="flex items-center justify-end">
+          <NovoLiderForm filiais={filiais} />
+        </div>
+
+        {lideres.length === 0 ? (
+          <p className="rounded-2xl bg-white border border-conecta-primary/10 p-6 text-sm text-conecta-muted">
+            Nenhum líder cadastrado. Use o botão <strong>+ Novo líder</strong> acima para iniciar.
           </p>
-        </div>
-        <NovoLiderForm filiais={filiais} />
-      </header>
-
-      {lideres.length === 0 ? (
-        <p className="text-slate-500 text-sm">
-          Nenhum líder cadastrado. Use o botão &quot;+ Novo líder&quot; acima para iniciar.
-        </p>
-      ) : (
-        <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50">
-              <tr className="border-b border-slate-200 text-slate-600">
-                <th className="text-left p-3 font-medium">Nome</th>
-                <th className="text-left p-3 font-medium">Função</th>
-                <th className="text-left p-3 font-medium">Chapa</th>
-                <th className="text-left p-3 font-medium">Tier</th>
-                <th className="text-left p-3 font-medium">Nível</th>
-                <th className="text-left p-3 font-medium">Escopo</th>
-                <th className="text-right p-3 font-medium">Diretos</th>
-                <th className="text-right p-3 font-medium">Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              {lideres.map((l) => (
-                <tr key={l.id} className="border-b border-slate-100 hover:bg-slate-50">
-                  <td className="p-3 font-medium text-slate-900">{l.nome}</td>
-                  <td className="p-3 text-slate-700">{l.funcao}</td>
-                  <td className="p-3 font-mono text-xs text-slate-600">{l.chapa}</td>
-                  <td className="p-3"><Badge>{l.tier}</Badge></td>
-                  <td className="p-3 text-slate-700">{l.nivel ?? '—'}</td>
-                  <td className="p-3 text-slate-700">
-                    {l.escopo_nacional ? (
-                      <span className="rounded-full bg-violet-100 text-violet-900 text-xs px-2 py-0.5">
-                        Nacional
-                      </span>
-                    ) : (
-                      <span>
-                        {(l.filiais_escopo ?? []).length} filial(is)
-                      </span>
-                    )}
-                  </td>
-                  <td className="p-3 text-right tabular-nums">{l.diretos}</td>
-                  <td className="p-3 text-right">
-                    <RemoverLiderButton liderId={l.id} nome={l.nome} />
-                  </td>
+        ) : (
+          <div className="rounded-2xl bg-white border border-conecta-primary/10 overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-conecta-primary/10 text-[11px] uppercase tracking-[0.12em] font-semibold text-conecta-muted">
+                  <th className="text-left p-3">Nome</th>
+                  <th className="text-left p-3">Função</th>
+                  <th className="text-left p-3">Chapa</th>
+                  <th className="text-left p-3">Tier</th>
+                  <th className="text-left p-3">Nível</th>
+                  <th className="text-left p-3">Escopo</th>
+                  <th className="text-right p-3">Diretos</th>
+                  <th className="text-right p-3">Ações</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function Badge({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="inline-block rounded-full bg-slate-100 text-slate-700 text-xs px-2 py-0.5">
-      {children}
-    </span>
+              </thead>
+              <tbody>
+                {lideres.map((l) => (
+                  <tr key={l.id} className="border-b border-conecta-primary/5 hover:bg-conecta-primary/[0.02]">
+                    <td className="p-3 font-medium text-conecta-primary">{l.nome}</td>
+                    <td className="p-3 text-conecta-text">{l.funcao}</td>
+                    <td className="p-3 font-mono text-xs text-conecta-muted">{l.chapa}</td>
+                    <td className="p-3">
+                      <span className="rounded-full bg-conecta-primary/5 text-conecta-primary text-[11px] px-2 py-0.5 font-semibold">
+                        {l.tier}
+                      </span>
+                    </td>
+                    <td className="p-3 text-conecta-text">{l.nivel ?? '—'}</td>
+                    <td className="p-3">
+                      {l.escopo_nacional ? (
+                        <span className="rounded-full bg-violet-100 text-violet-900 text-[10px] uppercase tracking-wide px-2 py-0.5">
+                          Nacional
+                        </span>
+                      ) : (
+                        <span className="text-conecta-text">{(l.filiais_escopo ?? []).length} filial(is)</span>
+                      )}
+                    </td>
+                    <td className="p-3 text-right tabular-nums font-semibold text-conecta-primary">{l.diretos}</td>
+                    <td className="p-3 text-right">
+                      <RemoverLiderButton liderId={l.id} nome={l.nome} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </>
   );
 }

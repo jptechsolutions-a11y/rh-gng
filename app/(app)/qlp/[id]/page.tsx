@@ -1,12 +1,12 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, Users, Network, History, IdCard } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Users, Network, History, IdCard, AlertTriangle, Clock, GraduationCap, CalendarDays } from 'lucide-react';
 import { requireSession } from '@/lib/auth/session';
 import { db } from '@/db/client';
 import { sql } from 'drizzle-orm';
 import { TopBar } from '@/components/layout/TopBar';
 import { ConectaCard, SectionHeader } from '@/components/ui/conecta-card';
-import { getTimeEfetivo } from '@/db/queries/qlp';
+import { getOcorrenciasResumo, getOcorrenciasPorColaborador } from '@/db/queries/qlp-ocorrencias';
 
 export const dynamic = 'force-dynamic';
 
@@ -100,7 +100,12 @@ export default async function DetalhePage({ params }: { params: Promise<{ id: st
     SELECT id FROM qlp_lideres WHERE colaborador_id = ${id} AND ativo
   `);
   const meuLiderId = (ehLider as unknown as { id: string }[])[0]?.id;
-  const time = meuLiderId ? await getTimeEfetivo(meuLiderId) : [];
+  const [ocorrenciasResumo, time] = meuLiderId
+    ? await Promise.all([
+        getOcorrenciasResumo(meuLiderId),
+        getOcorrenciasPorColaborador(meuLiderId),
+      ])
+    : [null, []];
 
   const badge =
     s.perfil === 'filial' ? `Filial ${s.filialCodigo}` :
@@ -180,6 +185,53 @@ export default async function DetalhePage({ params }: { params: Promise<{ id: st
           </div>
         </ConectaCard>
 
+        {/* ===== Ocorrências do time (totais) ===== */}
+        {ehLiderAtivo && ocorrenciasResumo && (
+          <ConectaCard>
+            <SectionHeader label="Ocorrências do time efetivo" icon={AlertTriangle} className="mb-4" />
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              <KpiOcorrencia
+                icon={AlertTriangle}
+                label="Inconsistências"
+                valor={ocorrenciasResumo.inconsistencias.toLocaleString('pt-BR')}
+                hint={`${ocorrenciasResumo.inconsistencias > 0 ? 'ocorrências registradas' : 'sem ocorrências'}`}
+                tone="amber"
+              />
+              <KpiOcorrencia
+                icon={Clock}
+                label="Banco de Horas"
+                valor={`${ocorrenciasResumo.bhHoras.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 2 })}h`}
+                hint={`R$ ${ocorrenciasResumo.bhValor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} · ${ocorrenciasResumo.bhColaboradores} colab.`}
+                tone="primary"
+              />
+              <KpiOcorrencia
+                icon={GraduationCap}
+                label="Cursos pendentes"
+                valor={ocorrenciasResumo.cursosPendentes.toLocaleString('pt-BR')}
+                hint={`${ocorrenciasResumo.cursosPendentes > 0 ? 'treinamentos em aberto' : 'sem pendências'}`}
+                tone="rose"
+              />
+              <KpiOcorrencia
+                icon={CalendarDays}
+                label="Feriados pendentes"
+                valor={ocorrenciasResumo.feriadosPendentes.toLocaleString('pt-BR')}
+                hint={`R$ ${ocorrenciasResumo.feriadosValor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                tone="violet"
+              />
+            </div>
+            <p className="text-[11px] text-conecta-muted mt-3">
+              <span className="font-display font-bold text-conecta-accent tabular-nums">
+                {ocorrenciasResumo.comOcorrencia}
+              </span>{' '}
+              de{' '}
+              <span className="font-display font-bold text-conecta-primary tabular-nums">
+                {ocorrenciasResumo.totalTime}
+              </span>{' '}
+              colaboradores do time efetivo têm ao menos uma ocorrência.
+            </p>
+          </ConectaCard>
+        )}
+
         {/* ===== Cadeia de liderança ===== */}
         <ConectaCard>
           <SectionHeader label="Cadeia de liderança" icon={Network} className="mb-4" />
@@ -209,7 +261,7 @@ export default async function DetalhePage({ params }: { params: Promise<{ id: st
           )}
         </ConectaCard>
 
-        {/* ===== Meu time ===== */}
+        {/* ===== Meu time + ocorrências por pessoa ===== */}
         {ehLiderAtivo && (
           <ConectaCard noPadding>
             <div className="p-5 pb-3">
@@ -231,35 +283,65 @@ export default async function DetalhePage({ params }: { params: Promise<{ id: st
                 <table className="conecta-table">
                   <thead>
                     <tr>
-                      <th>Chapa</th>
-                      <th>Nome</th>
+                      <th>Colaborador</th>
                       <th>Função</th>
                       <th>Tier</th>
-                      <th className="text-right">Nível</th>
+                      <th>Filial</th>
+                      <th className="text-right">
+                        <span className="inline-flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> Inconsist.</span>
+                      </th>
+                      <th className="text-right">
+                        <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> BH</span>
+                      </th>
+                      <th className="text-right">
+                        <span className="inline-flex items-center gap-1"><GraduationCap className="h-3 w-3" /> Cursos</span>
+                      </th>
+                      <th className="text-right">
+                        <span className="inline-flex items-center gap-1"><CalendarDays className="h-3 w-3" /> Feriados</span>
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {time.map((m) => (
-                      <tr key={m.colaboradorId}>
-                        <td>
-                          <span className="font-mono text-[12px] text-conecta-primary/80">{m.chapa}</span>
-                        </td>
+                    {time.map((c) => (
+                      <tr key={c.colaboradorId}>
                         <td>
                           <Link
-                            href={`/qlp/${m.colaboradorId}`}
+                            href={`/qlp/${c.colaboradorId}`}
                             className="font-display font-semibold text-conecta-primary hover:text-conecta-accent transition-colors"
                           >
-                            {m.nome}
+                            {c.nome}
                           </Link>
+                          <div className="font-mono text-[11px] text-conecta-primary/60 mt-0.5">{c.chapa}</div>
                         </td>
-                        <td className="text-conecta-muted">{m.funcao}</td>
+                        <td className="text-conecta-muted">{c.funcao}</td>
                         <td>
                           <span className="text-[10px] uppercase tracking-[0.14em] font-display font-bold px-1.5 py-0.5 rounded bg-conecta-primary/8 text-conecta-primary">
-                            {m.tier}
+                            {c.tier ?? '—'}
                           </span>
                         </td>
+                        <td className="text-conecta-muted tabular-nums">{c.filialCodigo ?? '—'}</td>
                         <td className="text-right">
-                          <span className="font-display font-bold text-conecta-accent tabular-nums">{m.nivel}</span>
+                          <CelN value={c.inconsistencias} tone="amber" />
+                        </td>
+                        <td className="text-right">
+                          {c.bhHoras !== 0 ? (
+                            <div className="inline-flex flex-col items-end font-display tabular-nums">
+                              <span className="font-bold text-conecta-primary text-sm">
+                                {c.bhHoras.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 2 })}h
+                              </span>
+                              <span className="text-[10px] text-conecta-muted">
+                                R$ {c.bhValor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-conecta-muted/40 tabular-nums">—</span>
+                          )}
+                        </td>
+                        <td className="text-right">
+                          <CelN value={c.cursosPendentes} tone="rose" />
+                        </td>
+                        <td className="text-right">
+                          <CelN value={c.feriadosPendentes} tone="violet" />
                         </td>
                       </tr>
                     ))}
@@ -329,5 +411,62 @@ function InfoChip({
         </div>
       )}
     </div>
+  );
+}
+
+function KpiOcorrencia({
+  icon: Icon,
+  label,
+  valor,
+  hint,
+  tone,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  valor: string;
+  hint?: string;
+  tone: 'amber' | 'rose' | 'violet' | 'primary';
+}) {
+  const palette: Record<typeof tone, { bg: string; text: string; ring: string }> = {
+    amber:   { bg: 'bg-amber-50',          text: 'text-amber-700',       ring: 'border-amber-200' },
+    rose:    { bg: 'bg-rose-50',           text: 'text-rose-700',        ring: 'border-rose-200' },
+    violet:  { bg: 'bg-violet-50',         text: 'text-violet-700',      ring: 'border-violet-200' },
+    primary: { bg: 'bg-conecta-primary/5', text: 'text-conecta-primary', ring: 'border-conecta-primary/15' },
+  };
+  const p = palette[tone];
+  return (
+    <div className={`relative rounded-xl border ${p.ring} ${p.bg} p-3 overflow-hidden`}>
+      <div className="flex items-start gap-3">
+        <div className={`grid place-items-center h-10 w-10 rounded-lg ${p.text} bg-white/60 shrink-0`}>
+          <Icon className="h-5 w-5" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-[10px] uppercase tracking-[0.18em] font-display font-semibold text-conecta-muted truncate">
+            {label}
+          </div>
+          <div className={`font-display text-2xl font-extrabold tabular-nums leading-tight truncate ${p.text}`} title={valor}>
+            {valor}
+          </div>
+          {hint && (
+            <div className="text-[11px] text-conecta-muted mt-0.5 truncate" title={hint}>
+              {hint}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CelN({ value, tone }: { value: number; tone: 'amber' | 'rose' | 'violet' }) {
+  if (value === 0) return <span className="text-conecta-muted/40 tabular-nums">—</span>;
+  const cls =
+    tone === 'amber' ? 'text-amber-700 bg-amber-50'
+    : tone === 'rose' ? 'text-rose-700 bg-rose-50'
+    : 'text-violet-700 bg-violet-50';
+  return (
+    <span className={`inline-block font-display font-bold tabular-nums px-2 py-0.5 rounded ${cls}`}>
+      {value}
+    </span>
   );
 }

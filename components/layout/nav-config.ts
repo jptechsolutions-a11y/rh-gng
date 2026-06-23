@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Users, FileText, Settings, ShieldCheck, ClipboardList, History,
   CalendarClock, Plus, BarChart3, UserCog, Target, BookOpen, Printer, ClipboardCheck,
   GalleryHorizontal, Cloud, Clock, AlertTriangle, Trophy, GraduationCap, CalendarOff,
-  Network, Upload, IdCard, ListTree,
+  Network, Upload, IdCard, ListTree, UsersRound,
 } from 'lucide-react';
 
 // Fonte ÚNICA de navegação — consumida pela Sidebar (desktop) e pela MobileNav.
@@ -77,6 +77,7 @@ export const ESCUTA_NAV_ADMIN_EXTRAS: NavItem[] = [
 export const QLP_NAV_BASE: NavItem[] = [
   { href: '/qlp',             label: 'Visão geral', icon: LayoutDashboard },
   { href: '/qlp/quadro',      label: 'Quadro',      icon: Users },
+  { href: '/qlp/gestores',    label: 'Gestores',    icon: UsersRound },
   { href: '/qlp/organograma', label: 'Organograma', icon: Network },
   { href: '/qlp/indicadores', label: 'Indicadores', icon: BarChart3 },
 ];

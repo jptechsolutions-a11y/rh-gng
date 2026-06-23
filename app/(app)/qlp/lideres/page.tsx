@@ -5,6 +5,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { ConectaCard } from '@/components/ui/conecta-card';
 import { NovoLiderForm, type CandidatoColab } from '@/components/qlp/NovoLiderForm';
 import { LideresTable, type LiderRow } from '@/components/qlp/LideresTable';
+import { getOcorrenciasPorLideres } from '@/db/queries/qlp-ocorrencias';
 
 export const dynamic = 'force-dynamic';
 
@@ -22,6 +23,7 @@ export default async function LideresPage() {
     db.execute(sql`
       SELECT
         l.id, l.tier, l.nivel, l.escopo_nacional, l.filiais_escopo,
+        c.id AS colaborador_id,
         c.nome, c.funcao, c.chapa, c.codfilial,
         c.filial_id AS colaborador_filial_id,
         (SELECT count(*) FROM qlp_vinculos v WHERE v.lider_id = l.id)::int AS diretos
@@ -63,6 +65,25 @@ export default async function LideresPage() {
     codfilial: l.codfilial,
   }));
 
+  const ocorrenciasMap = await getOcorrenciasPorLideres(lideres.map((l) => l.id));
+  const lideresComOcorrencias = lideres.map((l) => {
+    const o = ocorrenciasMap.get(l.id);
+    const bhHoras = o?.bhHoras ?? 0;
+    return {
+      ...l,
+      inconsistencias: o?.inconsistencias ?? 0,
+      bh_horas: bhHoras,
+      bh_valor: o?.bhValor ?? 0,
+      cursos_pendentes: o?.cursosPendentes ?? 0,
+      feriados_pendentes: o?.feriadosPendentes ?? 0,
+      total_ocorrencias:
+        (o?.inconsistencias ?? 0) +
+        (bhHoras !== 0 ? 1 : 0) +
+        (o?.cursosPendentes ?? 0) +
+        (o?.feriadosPendentes ?? 0),
+    };
+  });
+
   return (
     <>
       <TopBar
@@ -89,7 +110,7 @@ export default async function LideresPage() {
           </ConectaCard>
         ) : (
           <LideresTable
-            lideres={lideres}
+            lideres={lideresComOcorrencias}
             filiais={filiais}
             lideresDestino={lideresDestino}
           />

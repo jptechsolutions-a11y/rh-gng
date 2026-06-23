@@ -1,7 +1,8 @@
 'use client';
 
+import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import { Filter, Search, ListTree } from 'lucide-react';
+import { Filter, Search, ListTree, AlertTriangle, Clock, GraduationCap, CalendarDays } from 'lucide-react';
 import { ConectaCard, SectionHeader } from '@/components/ui/conecta-card';
 import { Input } from '@/components/ui/input';
 import { LiderActions } from './LiderActions';
@@ -19,6 +20,57 @@ export interface LiderRow {
   codfilial: number;
   colaborador_filial_id: string | null;
   diretos: number;
+  /** Colaborador do líder (para link na tela de detalhe) */
+  colaborador_id?: string;
+  // ocorrências do time efetivo (recursivo)
+  inconsistencias?: number;
+  bh_horas?: number;
+  bh_valor?: number;
+  cursos_pendentes?: number;
+  feriados_pendentes?: number;
+  total_ocorrencias?: number;
+}
+
+type Ordenar = 'nome' | 'diretos' | 'inconsistencias' | 'bh' | 'cursos' | 'feriados' | 'total';
+
+function ThSort({
+  campo, atual, onClick, align = 'left', children,
+}: {
+  campo: Ordenar;
+  atual: Ordenar;
+  onClick: (c: Ordenar) => void;
+  align?: 'left' | 'right';
+  children: React.ReactNode;
+}) {
+  const active = atual === campo;
+  return (
+    <th className={align === 'right' ? 'text-right' : ''}>
+      <button
+        type="button"
+        onClick={() => onClick(campo)}
+        className={`inline-flex items-center gap-1 select-none hover:text-conecta-accent transition-colors ${
+          active ? 'text-conecta-accent' : 'text-inherit'
+        }`}
+      >
+        {children}
+        <span className={`text-[10px] ${active ? 'opacity-100' : 'opacity-30'}`}>▼</span>
+      </button>
+    </th>
+  );
+}
+
+function CelOcorrencia({ value, tone }: { value: number; tone: 'amber' | 'primary' | 'rose' | 'violet' }) {
+  if (value === 0) return <span className="text-conecta-muted/40 tabular-nums">—</span>;
+  const cls =
+    tone === 'amber' ? 'text-amber-700 bg-amber-50'
+    : tone === 'rose' ? 'text-rose-700 bg-rose-50'
+    : tone === 'violet' ? 'text-violet-700 bg-violet-50'
+    : 'text-conecta-primary bg-conecta-primary/8';
+  return (
+    <span className={`inline-block font-display font-bold tabular-nums px-2 py-0.5 rounded ${cls}`}>
+      {value}
+    </span>
+  );
 }
 
 interface FilialOpt {
@@ -77,9 +129,11 @@ export function LideresTable({
     return 'multi';
   }
 
+  const [ordenarPor, setOrdenarPor] = useState<Ordenar>('total');
+
   const filtradas = useMemo(() => {
     const q = busca.trim().toLowerCase();
-    return lideres.filter((l) => {
+    const arr = lideres.filter((l) => {
       if (tierFiltro && l.tier !== tierFiltro) return false;
       if (nivelFiltro && (l.nivel ?? '') !== nivelFiltro) return false;
       if (escopoFiltro && inferirEscopo(l) !== escopoFiltro) return false;
@@ -94,8 +148,22 @@ export function LideresTable({
       }
       return true;
     });
+    arr.sort((a, b) => {
+      switch (ordenarPor) {
+        case 'nome': return a.nome.localeCompare(b.nome);
+        case 'diretos': return (b.diretos ?? 0) - (a.diretos ?? 0);
+        case 'inconsistencias': return (b.inconsistencias ?? 0) - (a.inconsistencias ?? 0);
+        case 'bh': return (b.bh_horas ?? 0) - (a.bh_horas ?? 0);
+        case 'cursos': return (b.cursos_pendentes ?? 0) - (a.cursos_pendentes ?? 0);
+        case 'feriados': return (b.feriados_pendentes ?? 0) - (a.feriados_pendentes ?? 0);
+        case 'total':
+        default:
+          return (b.total_ocorrencias ?? 0) - (a.total_ocorrencias ?? 0);
+      }
+    });
+    return arr;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lideres, busca, tierFiltro, nivelFiltro, escopoFiltro, filialFiltro, semTime, filiaisIndex]);
+  }, [lideres, busca, tierFiltro, nivelFiltro, escopoFiltro, filialFiltro, semTime, filiaisIndex, ordenarPor]);
 
   const niveisUnicos = useMemo(() => {
     const set = new Set<string>();
@@ -190,56 +258,111 @@ export function LideresTable({
         <table className="conecta-table">
           <thead>
             <tr>
-              <th>Nome</th>
-              <th>Função</th>
-              <th>Chapa</th>
-              <th>Tier</th>
-              <th>Nível</th>
-              <th>Escopo</th>
-              <th className="text-right">Diretos</th>
+              <ThSort campo="nome" atual={ordenarPor} onClick={setOrdenarPor}>Nome</ThSort>
+              <th>Função / Chapa</th>
+              <th>Tier / Escopo</th>
+              <ThSort campo="diretos" atual={ordenarPor} onClick={setOrdenarPor} align="right">Diretos</ThSort>
+              <ThSort campo="inconsistencias" atual={ordenarPor} onClick={setOrdenarPor} align="right">
+                <span className="inline-flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> Inconsist.</span>
+              </ThSort>
+              <ThSort campo="bh" atual={ordenarPor} onClick={setOrdenarPor} align="right">
+                <span className="inline-flex items-center gap-1"><Clock className="h-3 w-3" /> BH</span>
+              </ThSort>
+              <ThSort campo="cursos" atual={ordenarPor} onClick={setOrdenarPor} align="right">
+                <span className="inline-flex items-center gap-1"><GraduationCap className="h-3 w-3" /> Cursos</span>
+              </ThSort>
+              <ThSort campo="feriados" atual={ordenarPor} onClick={setOrdenarPor} align="right">
+                <span className="inline-flex items-center gap-1"><CalendarDays className="h-3 w-3" /> Feriados</span>
+              </ThSort>
+              <ThSort campo="total" atual={ordenarPor} onClick={setOrdenarPor} align="right">Total</ThSort>
               <th className="text-right">Ações</th>
             </tr>
           </thead>
           <tbody>
             {filtradas.map((l) => {
               const escopo = inferirEscopo(l);
+              const total = l.total_ocorrencias ?? 0;
               return (
                 <tr key={l.id}>
                   <td>
-                    <span className="font-display font-semibold text-conecta-primary">{l.nome}</span>
+                    {l.colaborador_id ? (
+                      <Link
+                        href={`/qlp/${l.colaborador_id}`}
+                        className="font-display font-semibold text-conecta-primary hover:text-conecta-accent transition-colors"
+                      >
+                        {l.nome}
+                      </Link>
+                    ) : (
+                      <span className="font-display font-semibold text-conecta-primary">{l.nome}</span>
+                    )}
                   </td>
-                  <td className="text-conecta-muted">{l.funcao}</td>
                   <td>
-                    <span className="font-mono text-[12px] text-conecta-primary/80">{l.chapa}</span>
+                    <div className="text-conecta-muted">{l.funcao}</div>
+                    <div className="font-mono text-[11px] text-conecta-primary/60 mt-0.5">{l.chapa}</div>
                   </td>
                   <td>
-                    <span className="text-[10px] uppercase tracking-[0.14em] font-display font-bold px-1.5 py-0.5 rounded bg-conecta-primary/8 text-conecta-primary">
-                      {l.tier}
-                    </span>
-                  </td>
-                  <td className="text-conecta-muted">{l.nivel ?? '—'}</td>
-                  <td>
-                    <span
-                      className={`text-[10px] uppercase tracking-[0.14em] font-display font-bold px-1.5 py-0.5 rounded ${
-                        escopo === 'nacional'
-                          ? 'bg-conecta-accent/15 text-conecta-accent'
-                          : escopo === 'regional'
-                            ? 'bg-violet-100 text-violet-900'
-                            : escopo === 'multi'
-                              ? 'bg-amber-50 text-amber-900'
-                              : 'bg-conecta-primary/8 text-conecta-primary'
-                      }`}
-                    >
-                      {escopo === 'filial'
-                        ? `Filial · ${(l.filiais_escopo ?? []).length}`
-                        : escopo === 'multi'
-                          ? `Multi · ${(l.filiais_escopo ?? []).length}`
-                          : escopo}
-                    </span>
+                    <div className="flex flex-col gap-1 items-start">
+                      <span className="text-[10px] uppercase tracking-[0.14em] font-display font-bold px-1.5 py-0.5 rounded bg-conecta-primary/8 text-conecta-primary">
+                        {l.tier}{l.nivel ? ` · ${l.nivel}` : ''}
+                      </span>
+                      <span
+                        className={`text-[10px] uppercase tracking-[0.14em] font-display font-bold px-1.5 py-0.5 rounded ${
+                          escopo === 'nacional'
+                            ? 'bg-conecta-accent/15 text-conecta-accent'
+                            : escopo === 'regional'
+                              ? 'bg-violet-100 text-violet-900'
+                              : escopo === 'multi'
+                                ? 'bg-amber-50 text-amber-900'
+                                : 'bg-conecta-primary/8 text-conecta-primary'
+                        }`}
+                      >
+                        {escopo === 'filial'
+                          ? `Filial · ${(l.filiais_escopo ?? []).length}`
+                          : escopo === 'multi'
+                            ? `Multi · ${(l.filiais_escopo ?? []).length}`
+                            : escopo}
+                      </span>
+                    </div>
                   </td>
                   <td className="text-right">
-                    <span className="font-display font-bold text-conecta-accent tabular-nums">
-                      {l.diretos}
+                    <span className="font-display font-bold text-conecta-primary tabular-nums">{l.diretos}</span>
+                  </td>
+                  <td className="text-right">
+                    <CelOcorrencia value={l.inconsistencias ?? 0} tone="amber" />
+                  </td>
+                  <td className="text-right">
+                    {l.bh_horas && l.bh_horas !== 0 ? (
+                      <div className="inline-flex flex-col items-end font-display tabular-nums">
+                        <span className="font-bold text-conecta-primary text-sm">
+                          {l.bh_horas.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 2 })}h
+                        </span>
+                        <span className="text-[10px] text-conecta-muted">
+                          R$ {(l.bh_valor ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-conecta-muted/40 tabular-nums">—</span>
+                    )}
+                  </td>
+                  <td className="text-right">
+                    <CelOcorrencia value={l.cursos_pendentes ?? 0} tone="rose" />
+                  </td>
+                  <td className="text-right">
+                    <CelOcorrencia value={l.feriados_pendentes ?? 0} tone="violet" />
+                  </td>
+                  <td className="text-right">
+                    <span
+                      className={`font-display font-extrabold tabular-nums px-2 py-0.5 rounded ${
+                        total === 0
+                          ? 'text-conecta-muted/60'
+                          : total >= 20
+                            ? 'text-white bg-rose-600'
+                            : total >= 5
+                              ? 'text-rose-700 bg-rose-100'
+                              : 'text-conecta-accent bg-conecta-accent/10'
+                      }`}
+                    >
+                      {total}
                     </span>
                   </td>
                   <td className="text-right">

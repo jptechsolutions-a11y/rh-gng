@@ -53,9 +53,9 @@ describe('autoclassify - tier e nivel', () => {
       nivel: 'i',
     });
   });
-  it('ENC. DE DEPOSITO → supervisor/i', () => {
+  it('ENC. DE DEPOSITO → encarregado/i', () => {
     expect(autoclassify('ENC. DE DEPOSITO')).toMatchObject({
-      tier: 'supervisor',
+      tier: 'encarregado',
       nivel: 'i',
     });
   });
@@ -195,20 +195,21 @@ describe('autoclassify - cobertura do quadro Perlog real', () => {
   it('classifica todas as 85 funções sem null/undefined', () => {
     for (const f of FUNCOES_REAIS) {
       const c = autoclassify(f);
-      expect(c.tier, `função: ${f}`).toMatch(/^(gerente|subgerente|coord|supervisor|base)$/);
+      expect(c.tier, `função: ${f}`).toMatch(/^(gerente|subgerente|coord|supervisor|encarregado|base)$/);
       expect(c.trilha, `função: ${f}`).toMatch(
         /^(logistica|transporte|abastecimento|prevencao|gg|manutencao|ti|financ|outros)$/,
       );
     }
   });
 
-  it('distribuição: ≥1 gerente, ≥1 subgerente, ≥3 coord, ≥3 supervisor, ≥40 base', () => {
-    const counts = { gerente: 0, subgerente: 0, coord: 0, supervisor: 0, base: 0 };
+  it('distribuição: ≥1 gerente, ≥1 subgerente, ≥3 coord, ≥3 supervisor, ≥1 encarregado, ≥40 base', () => {
+    const counts = { gerente: 0, subgerente: 0, coord: 0, supervisor: 0, encarregado: 0, base: 0 };
     for (const f of FUNCOES_REAIS) counts[autoclassify(f).tier] += 1;
     expect(counts.gerente).toBeGreaterThanOrEqual(1);
     expect(counts.subgerente).toBeGreaterThanOrEqual(1);
     expect(counts.coord).toBeGreaterThanOrEqual(3);
     expect(counts.supervisor).toBeGreaterThanOrEqual(3);
+    expect(counts.encarregado).toBeGreaterThanOrEqual(1);
     expect(counts.base).toBeGreaterThanOrEqual(40);
   });
 });

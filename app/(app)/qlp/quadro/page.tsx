@@ -3,6 +3,7 @@ import { db } from '@/db/client';
 import { sql } from 'drizzle-orm';
 import { TopBar } from '@/components/layout/TopBar';
 import { QuadroTable, type QuadroRow } from '@/components/qlp/QuadroTable';
+import type { LiderOpt } from '@/components/qlp/AtribuirTimeLoteModal';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,7 +14,7 @@ export default async function QuadroPage() {
   const rows = (await db.execute(sql`
     SELECT
       c.id, c.chapa, c.nome, c.funcao, c.secao, c.situacao,
-      c.tier_resolvido,
+      c.tier_resolvido, c.filial_id,
       f.codigo AS filial_codigo,
       cl.nome AS lider_nome,
       l.tier  AS lider_tier,
@@ -27,6 +28,24 @@ export default async function QuadroPage() {
       AND (${filialFilter}::uuid IS NULL OR c.filial_id = ${filialFilter}::uuid)
     ORDER BY c.nome
   `)) as unknown as QuadroRow[];
+
+  const lideres = (await db.execute(sql`
+    SELECT
+      l.id,
+      l.tier,
+      l.nivel,
+      l.escopo_nacional,
+      l.filiais_escopo,
+      c.nome,
+      c.funcao,
+      c.codfilial,
+      c.filial_id
+    FROM qlp_lideres l
+    JOIN qlp_colaboradores c ON c.id = l.colaborador_id
+    WHERE l.ativo
+      AND (${filialFilter}::uuid IS NULL OR c.filial_id = ${filialFilter}::uuid)
+    ORDER BY c.nome
+  `)) as unknown as LiderOpt[];
 
   const podeEditar = s.perfil === 'admin' || s.perfil === 'filial';
   const badge =
@@ -42,7 +61,7 @@ export default async function QuadroPage() {
     <>
       <TopBar titulo="QLP — Quadro" subtitulo={subtitulo} badge={badge} />
       <div className="space-y-5 p-4 lg:p-6">
-        <QuadroTable rows={rows} podeEditar={podeEditar} />
+        <QuadroTable rows={rows} podeEditar={podeEditar} lideres={lideres} />
       </div>
     </>
   );

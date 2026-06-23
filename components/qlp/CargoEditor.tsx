@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import { reclassificarFuncao } from '@/actions/qlp/cargos';
 
-const TIERS = ['gerente', 'subgerente', 'coord', 'supervisor', 'base'] as const;
+const TIERS = ['gerente', 'subgerente', 'coord', 'supervisor', 'encarregado', 'base'] as const;
 const NIVEIS = ['', 'nacional', 'regional', 'i', 'ii'] as const;
 const TRILHAS = [
   'logistica',

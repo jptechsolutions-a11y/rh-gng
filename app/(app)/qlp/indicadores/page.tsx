@@ -2,6 +2,8 @@ import { requireSession } from '@/lib/auth/session';
 import { db } from '@/db/client';
 import { sql } from 'drizzle-orm';
 import { TopBar } from '@/components/layout/TopBar';
+import { ConectaCard, SectionHeader } from '@/components/ui/conecta-card';
+import { BarChart3, AlertTriangle, Map, Activity } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -62,31 +64,36 @@ export default async function IndicadoresPage() {
         subtitulo="Distribuição e cobertura"
         badge={badge}
       />
-      <div className="space-y-6 p-4 lg:p-6">
-        <Section title="Distribuição por tier">
-          <Bars rows={distTier as unknown as { tier: string; qtd: number }[]} keyField="tier" />
-        </Section>
+      <div className="space-y-5 p-4 lg:p-6">
+        <div className="grid gap-5 lg:grid-cols-2">
+          <ConectaCard>
+            <SectionHeader label="Distribuição por tier" icon={BarChart3} className="mb-4" />
+            <Bars rows={distTier as unknown as { tier: string; qtd: number }[]} keyField="tier" />
+          </ConectaCard>
 
-        <Section title="Distribuição por situação">
-          <Bars rows={distSituacao as unknown as { situacao: string; qtd: number }[]} keyField="situacao" />
-        </Section>
+          <ConectaCard>
+            <SectionHeader label="Distribuição por situação" icon={Activity} className="mb-4" />
+            <Bars rows={distSituacao as unknown as { situacao: string; qtd: number }[]} keyField="situacao" />
+          </ConectaCard>
+        </div>
 
-        <Section title="Cobertura por filial">
+        <ConectaCard>
+          <SectionHeader label="Cobertura por filial" icon={Map} className="mb-4" />
           <table className="w-full text-sm">
             <tbody>
               {(cobertura as unknown as { codigo: string; nome: string; total: number; com_lider: number }[]).map(
                 (r) => {
                   const pct = r.total > 0 ? Math.round((r.com_lider / r.total) * 100) : 0;
                   return (
-                    <tr key={r.codigo} className="border-b border-conecta-primary/5">
-                      <td className="p-2 w-40 text-conecta-text">
-                        <span className="font-mono text-xs text-conecta-muted mr-1">{r.codigo}</span>
-                        {r.nome}
+                    <tr key={r.codigo} className="border-b border-conecta-primary/5 last:border-b-0">
+                      <td className="py-2 pr-3 w-48">
+                        <span className="font-mono text-[12px] text-conecta-primary/80 mr-2">{r.codigo}</span>
+                        <span className="font-display text-conecta-primary text-[13px]">{r.nome}</span>
                       </td>
-                      <td className="p-2">
-                        <div className="h-2 bg-conecta-primary/10 rounded-full overflow-hidden">
+                      <td className="py-2">
+                        <div className="h-2 bg-conecta-primary/8 rounded-full overflow-hidden">
                           <div
-                            className="h-full"
+                            className="h-full rounded-full"
                             style={{
                               width: `${pct}%`,
                               background: pct >= 80 ? '#16a34a' : pct >= 50 ? '#E8621A' : '#dc2626',
@@ -94,8 +101,9 @@ export default async function IndicadoresPage() {
                           />
                         </div>
                       </td>
-                      <td className="p-2 text-right text-xs tabular-nums w-32 text-conecta-primary font-semibold">
-                        {r.com_lider}/{r.total} ({pct}%)
+                      <td className="py-2 pl-3 text-right text-[12px] tabular-nums w-32">
+                        <span className="font-display font-bold text-conecta-accent">{r.com_lider}/{r.total}</span>
+                        <span className="text-conecta-muted ml-1">({pct}%)</span>
                       </td>
                     </tr>
                   );
@@ -103,28 +111,18 @@ export default async function IndicadoresPage() {
               )}
             </tbody>
           </table>
-        </Section>
+        </ConectaCard>
 
-        <Section title="Pendências abertas por tipo">
+        <ConectaCard>
+          <SectionHeader label="Pendências abertas por tipo" icon={AlertTriangle} className="mb-4" />
           {(pendencias as unknown as { tipo: string; qtd: number }[]).length === 0 ? (
             <p className="text-sm text-conecta-muted">Nenhuma pendência aberta.</p>
           ) : (
             <Bars rows={pendencias as unknown as { tipo: string; qtd: number }[]} keyField="tipo" />
           )}
-        </Section>
+        </ConectaCard>
       </div>
     </>
-  );
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section>
-      <h2 className="font-display text-[11px] uppercase tracking-[0.22em] font-semibold text-conecta-muted mb-2">
-        {title}
-      </h2>
-      <div className="rounded-2xl bg-white border border-conecta-primary/10 p-4">{children}</div>
-    </section>
   );
 }
 
@@ -143,17 +141,22 @@ function Bars<T extends Record<string, unknown>>({
           const k = String(r[keyField] ?? '—');
           const v = Number((r as Record<string, unknown>)['qtd']);
           return (
-            <tr key={k} className="border-b border-conecta-primary/5">
-              <td className="p-2 w-44 text-conecta-text font-medium">{k}</td>
-              <td className="p-2">
-                <div className="h-2 bg-conecta-primary/10 rounded-full overflow-hidden">
+            <tr key={k} className="border-b border-conecta-primary/5 last:border-b-0">
+              <td className="py-2 pr-3 w-44 font-display font-semibold text-conecta-primary text-[13px]">{k}</td>
+              <td className="py-2">
+                <div className="h-2 bg-conecta-primary/8 rounded-full overflow-hidden">
                   <div
-                    className="h-full"
-                    style={{ width: `${(v / max) * 100}%`, background: '#0D2B6B' }}
+                    className="h-full rounded-full"
+                    style={{
+                      width: `${(v / max) * 100}%`,
+                      background: 'linear-gradient(90deg, #0D2B6B 0%, #1A3F8F 100%)',
+                    }}
                   />
                 </div>
               </td>
-              <td className="p-2 text-right tabular-nums w-16 text-conecta-primary font-semibold">{v}</td>
+              <td className="py-2 pl-3 text-right tabular-nums w-16 font-display font-bold text-conecta-accent">
+                {v}
+              </td>
             </tr>
           );
         })}

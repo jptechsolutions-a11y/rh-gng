@@ -1,14 +1,14 @@
 'use server';
 
 import { db } from '@/db/client';
-import { and, eq, inArray } from 'drizzle-orm';
-import { qlpLideres, qlpColaboradores, qlpVinculos, qlpHistorico } from '@/db/schema';
+import { and, eq } from 'drizzle-orm';
+import { qlpLideres, qlpColaboradores, qlpVinculos, filiais } from '@/db/schema';
 import { gravarHistorico, assertCanLead } from './_shared';
 import { requireSession } from '@/lib/auth/session';
 import { revalidatePath } from 'next/cache';
 
-type TierLider = 'gerente' | 'subgerente' | 'coord';
-type NivelLider = 'nacional' | 'regional' | 'i' | 'ii' | null;
+type TierLider = 'gerente' | 'subgerente' | 'coord' | 'supervisor' | 'encarregado';
+type NivelLider = 'nacional' | 'regional' | 'multi' | 'filial' | 'i' | 'ii' | null;
 
 export async function criarLider(input: {
   colaboradorId: string;
@@ -23,16 +23,16 @@ export async function criarLider(input: {
   if (input.tier === 'subgerente' && input.nivel) {
     throw new Error('subgerente não tem nível (deixe em branco)');
   }
-  if (input.tier !== 'subgerente' && !input.nivel) {
-    throw new Error('gerente/coord precisa de nível (nacional ou regional)');
+  if ((input.tier === 'gerente' || input.tier === 'coord') && !input.nivel) {
+    throw new Error('gerente/coord precisa de nível (nacional, regional, multi ou filial)');
   }
-  if (input.nivel && !['nacional', 'regional'].includes(input.nivel)) {
+  if (input.nivel && !['nacional', 'regional', 'multi', 'filial', 'i', 'ii'].includes(input.nivel)) {
     throw new Error(
-      `nível "${input.nivel}" é válido só para supervisor (i/ii); use nacional ou regional para gerente/coord`,
+      `nível "${input.nivel}" é inválido; use nacional, regional, multi, filial, i ou ii`,
     );
   }
   if (!input.escopoNacional && input.filiaisEscopo.length === 0) {
-    throw new Error('líder regional precisa de ao menos 1 filial no escopo');
+    throw new Error('líder regional/multi/filial precisa de ao menos 1 filial no escopo');
   }
 
   const lider = await db.transaction(async (tx) => {
@@ -118,6 +118,7 @@ export async function editarEscopoLider(input: {
   liderId: string;
   escopoNacional?: boolean;
   filiaisEscopo?: string[];
+  nivel?: NivelLider;
 }) {
   const s = await requireSession('admin');
 
@@ -127,6 +128,7 @@ export async function editarEscopoLider(input: {
     });
     if (!antes) throw new Error('líder não encontrado');
 
+    const colabId = antes.colaboradorId;
     const escopoNacional = input.escopoNacional ?? antes.escopoNacional;
     const filiaisEscopo = input.filiaisEscopo ?? (antes.filiaisEscopo as string[]);
 
@@ -134,10 +136,64 @@ export async function editarEscopoLider(input: {
       throw new Error('líder regional precisa de ao menos 1 filial no escopo');
     }
 
+    let nivel = input.nivel;
+    if (nivel === undefined) {
+      nivel = null;
+      if (antes.tier !== 'subgerente') {
+        if (escopoNacional) {
+          nivel = 'nacional';
+        } else {
+          const colab = await tx.query.qlpColaboradores.findFirst({
+            where: eq(qlpColaboradores.id, colabId),
+          });
+          const colaboradorFilialId = colab?.filialId ?? null;
+
+          if (
+            filiaisEscopo.length === 1 &&
+            colaboradorFilialId &&
+            filiaisEscopo[0] === colaboradorFilialId
+          ) {
+            nivel = 'filial';
+          } else {
+            // Busca filiais ativas do banco para bater a regional
+            const listaFiliaisDb = await tx.query.filiais.findMany({
+              where: eq(filiais.ativa, true),
+            });
+            const filialRegional = new Map<string, string | null>();
+            for (const f of listaFiliaisDb) filialRegional.set(f.id, f.regional);
+
+            const regsUnicas = Array.from(new Set(
+              filiaisEscopo.map((id) => filialRegional.get(id)).filter((r): r is string => r != null)
+            ));
+
+            let eRegional = false;
+            if (regsUnicas.length > 0) {
+              const filiaisDasRegionais = listaFiliaisDb.filter((f) => f.regional && regsUnicas.includes(f.regional)).map((f) => f.id);
+              eRegional = filiaisDasRegionais.every((id) => filiaisEscopo.includes(id)) &&
+                          filiaisDasRegionais.length === filiaisEscopo.length;
+            }
+
+            if (eRegional) {
+              nivel = 'regional';
+            } else {
+              nivel = 'multi';
+            }
+          }
+        }
+      }
+    }
+
     await tx
       .update(qlpLideres)
-      .set({ escopoNacional, filiaisEscopo })
+      .set({ escopoNacional, filiaisEscopo, nivel })
       .where(eq(qlpLideres.id, input.liderId));
+
+    if (nivel) {
+      await tx
+        .update(qlpColaboradores)
+        .set({ nivelResolvido: nivel, updatedAt: new Date() })
+        .where(eq(qlpColaboradores.id, colabId));
+    }
 
     await gravarHistorico(tx as unknown as typeof db, {
       evento: 'lider_escopo_alterado',
@@ -182,87 +238,3 @@ export async function removerLider(liderId: string) {
   revalidatePath('/qlp/organograma');
 }
 
-/**
- * Cria automaticamente registros em qlp_lideres para todo colaborador
- * cuja função foi classificada como gerente/subgerente/coord e que ainda
- * não tem registro de líder. Idempotente — pode rodar várias vezes.
- *
- * Defaults aplicados:
- *  - tier            = tier_resolvido
- *  - nivel           = nivel_resolvido
- *  - escopo_nacional = (nivel === 'nacional')
- *  - filiais_escopo  = escopo regional/subgerente → [filial_id do colaborador]; nacional → []
- *
- * Admin pode editar escopo depois via editarEscopoLider.
- */
-export async function seedLideresInicial(): Promise<{ criados: number; jaExistiam: number }> {
-  const s = await requireSession('admin');
-
-  const candidatos = await db
-    .select({
-      id: qlpColaboradores.id,
-      nome: qlpColaboradores.nome,
-      tier: qlpColaboradores.tierResolvido,
-      nivel: qlpColaboradores.nivelResolvido,
-      filialId: qlpColaboradores.filialId,
-    })
-    .from(qlpColaboradores)
-    .where(
-      and(
-        eq(qlpColaboradores.ativo, true),
-        inArray(qlpColaboradores.tierResolvido, ['gerente', 'subgerente', 'coord']),
-      ),
-    );
-
-  const jaLideres = await db
-    .select({ colaboradorId: qlpLideres.colaboradorId })
-    .from(qlpLideres);
-  const jaSet = new Set(jaLideres.map((l) => l.colaboradorId));
-
-  const novos = candidatos.filter((c) => !jaSet.has(c.id));
-
-  if (novos.length === 0) {
-    return { criados: 0, jaExistiam: jaSet.size };
-  }
-
-  type NovoLider = typeof qlpLideres.$inferInsert;
-  const inserts: NovoLider[] = novos.map((c) => {
-    const escopoNacional = c.nivel === 'nacional';
-    const filiaisEscopo =
-      !escopoNacional && c.filialId ? [c.filialId] : [];
-    return {
-      colaboradorId: c.id,
-      tier: c.tier ?? 'coord',
-      nivel: c.nivel,
-      escopoNacional,
-      filiaisEscopo,
-      ativo: true,
-    };
-  });
-
-  const CHUNK = 200;
-  let criados = 0;
-  for (let i = 0; i < inserts.length; i += CHUNK) {
-    const batch = inserts.slice(i, i + CHUNK);
-    const inseridos = await db.insert(qlpLideres).values(batch).returning({ id: qlpLideres.id });
-    criados += inseridos.length;
-  }
-
-  await db.insert(qlpHistorico).values({
-    evento: 'lideres_pre_preenchidos',
-    detalhes: {
-      criados,
-      candidatos: candidatos.length,
-      jaExistiam: jaSet.size,
-    },
-    atorTipo: 'admin',
-    atorId: s.adminId,
-    atorNome: s.nome ?? s.usuario,
-    filialContextoId: null,
-  });
-
-  revalidatePath('/qlp/lideres');
-  revalidatePath('/qlp/organograma');
-  revalidatePath('/qlp');
-  return { criados, jaExistiam: jaSet.size };
-}

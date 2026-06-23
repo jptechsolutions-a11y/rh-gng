@@ -1,4 +1,4 @@
-export type Tier = 'gerente' | 'subgerente' | 'coord' | 'supervisor' | 'base';
+export type Tier = 'gerente' | 'subgerente' | 'coord' | 'supervisor' | 'encarregado' | 'base';
 export type Nivel = 'nacional' | 'regional' | 'i' | 'ii' | null;
 export type Trilha =
   | 'logistica'
@@ -27,7 +27,7 @@ const TIER_RULES: Array<[RegExp, Tier, Nivel]> = [
   [/^COORD(\.|ENADOR)/i, 'coord', 'regional'],
   [/^SUPERVISOR.*\bII\b/i, 'supervisor', 'ii'],
   [/^SUPERVISOR/i, 'supervisor', 'i'],
-  [/^ENC(\.|ARREGADO)/i, 'supervisor', 'i'],
+  [/^ENC(\.|ARREGADO)/i, 'encarregado', 'i'],
 ];
 
 const TRILHA_RULES: Array<[RegExp, Trilha]> = [

@@ -49,35 +49,50 @@ export function EditarLiderModal({
   }, [filiais]);
 
   // Inferir escopo inicial
-  const { escopoInicial, regionalInicial } = useMemo(() => {
-    if (escopoNacionalInicial) {
-      return { escopoInicial: 'nacional' as Escopo, regionalInicial: '' };
+  const { escopoInicial, regionaisIniciais } = useMemo(() => {
+    if (escopoNacionalInicial || nivel === 'nacional') {
+      return { escopoInicial: 'nacional' as Escopo, regionaisIniciais: [] as string[] };
     }
+    if (nivel === 'filial') {
+      return { escopoInicial: 'filial' as Escopo, regionaisIniciais: [] as string[] };
+    }
+    if (nivel === 'regional') {
+      const regsUnicas = Array.from(new Set(
+        filiaisEscopoInicial.map((id) => filialRegional.get(id)).filter((r): r is string => r != null)
+      ));
+      return { escopoInicial: 'regional' as Escopo, regionaisIniciais: regsUnicas };
+    }
+    if (nivel === 'multi') {
+      return { escopoInicial: 'multi' as Escopo, regionaisIniciais: [] as string[] };
+    }
+
+    // Fallback de retrocompatibilidade
     if (
       filiaisEscopoInicial.length === 1 &&
       colaboradorFilialId &&
       filiaisEscopoInicial[0] === colaboradorFilialId
     ) {
-      return { escopoInicial: 'filial' as Escopo, regionalInicial: '' };
+      return { escopoInicial: 'filial' as Escopo, regionaisIniciais: [] as string[] };
     }
-    // Cobre uma regional inteira?
+    // Cobre uma ou mais regionais inteiras?
     if (filiaisEscopoInicial.length > 0) {
-      const regs = filiaisEscopoInicial.map((id) => filialRegional.get(id) ?? null);
-      const primeira = regs[0];
-      const todasIguais = primeira != null && regs.every((r) => r === primeira);
-      if (todasIguais) {
-        const filiaisDaRegional = filiais.filter((f) => f.regional === primeira).map((f) => f.id);
-        const cobreTodas = filiaisDaRegional.every((id) => filiaisEscopoInicial.includes(id));
-        if (cobreTodas && filiaisDaRegional.length === filiaisEscopoInicial.length) {
-          return { escopoInicial: 'regional' as Escopo, regionalInicial: primeira };
+      const regsUnicas = Array.from(new Set(
+        filiaisEscopoInicial.map((id) => filialRegional.get(id)).filter((r): r is string => r != null)
+      ));
+      if (regsUnicas.length > 0) {
+        const filiaisDasRegionais = filiais.filter((f) => f.regional && regsUnicas.includes(f.regional)).map((f) => f.id);
+        const cobreTodas = filiaisDasRegionais.every((id) => filiaisEscopoInicial.includes(id)) &&
+                           filiaisDasRegionais.length === filiaisEscopoInicial.length;
+        if (cobreTodas) {
+          return { escopoInicial: 'regional' as Escopo, regionaisIniciais: regsUnicas };
         }
       }
     }
-    return { escopoInicial: 'multi' as Escopo, regionalInicial: '' };
-  }, [escopoNacionalInicial, filiaisEscopoInicial, colaboradorFilialId, filialRegional, filiais]);
+    return { escopoInicial: 'multi' as Escopo, regionaisIniciais: [] as string[] };
+  }, [escopoNacionalInicial, nivel, filiaisEscopoInicial, colaboradorFilialId, filialRegional, filiais]);
 
   const [escopo, setEscopo] = useState<Escopo>(escopoInicial);
-  const [regionalSel, setRegionalSel] = useState<string>(regionalInicial);
+  const [regionaisSel, setRegionaisSel] = useState<string[]>(regionaisIniciais);
   const [filiaisEscopo, setFiliaisEscopo] = useState<string[]>(filiaisEscopoInicial);
   const [erro, setErro] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -94,13 +109,13 @@ export function EditarLiderModal({
       }
       filiaisFinal = [colaboradorFilialId];
     } else if (escopo === 'regional') {
-      if (!regionalSel) {
-        setErro('selecione uma regional');
+      if (regionaisSel.length === 0) {
+        setErro('selecione ao menos uma regional');
         return;
       }
-      filiaisFinal = filiais.filter((f) => f.regional === regionalSel).map((f) => f.id);
+      filiaisFinal = filiais.filter((f) => f.regional && regionaisSel.includes(f.regional)).map((f) => f.id);
       if (filiaisFinal.length === 0) {
-        setErro(`nenhuma filial cadastrada na regional "${regionalSel}"`);
+        setErro('nenhuma filial cadastrada nas regionais selecionadas');
         return;
       }
     } else {
@@ -111,12 +126,21 @@ export function EditarLiderModal({
       filiaisFinal = filiaisEscopo;
     }
 
+    let nivelFinal: 'nacional' | 'regional' | 'multi' | 'filial' | null = null;
+    if (tier !== 'subgerente') {
+      if (escopo === 'nacional') nivelFinal = 'nacional';
+      else if (escopo === 'regional') nivelFinal = 'regional';
+      else if (escopo === 'multi') nivelFinal = 'multi';
+      else nivelFinal = 'filial';
+    }
+
     start(async () => {
       try {
         await editarEscopoLider({
           liderId,
           escopoNacional: escopo === 'nacional',
           filiaisEscopo: filiaisFinal,
+          nivel: nivelFinal,
         });
         onClose();
         location.reload();
@@ -180,14 +204,16 @@ export function EditarLiderModal({
         {escopo === 'regional' && (
           <div>
             <label className="block text-[10px] uppercase tracking-[0.18em] font-semibold text-conecta-primary mb-1">
-              Regional
+              Regionais cobertas {regionaisSel.length > 0 ? `(${regionaisSel.length} selecionadas)` : ''}
             </label>
             <select
-              className="w-full border border-conecta-primary/15 rounded-lg p-2 text-sm bg-white"
-              value={regionalSel}
-              onChange={(e) => setRegionalSel(e.target.value)}
+              multiple
+              className="w-full border border-conecta-primary/15 rounded-lg p-2 text-sm h-32 bg-white"
+              value={regionaisSel}
+              onChange={(e) =>
+                setRegionaisSel(Array.from(e.target.selectedOptions).map((o) => o.value))
+              }
             >
-              <option value="">— selecionar —</option>
               {regionais.map((r) => {
                 const n = filiais.filter((f) => f.regional === r).length;
                 return (
@@ -197,6 +223,7 @@ export function EditarLiderModal({
                 );
               })}
             </select>
+            <p className="text-xs text-conecta-muted mt-1">Segure Ctrl/Cmd para selecionar múltiplas.</p>
           </div>
         )}
 

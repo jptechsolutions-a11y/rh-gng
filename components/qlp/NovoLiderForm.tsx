@@ -21,7 +21,7 @@ export interface CandidatoColab {
   nivel_resolvido: string | null;
 }
 
-type Tier = 'gerente' | 'subgerente' | 'coord';
+type Tier = 'gerente' | 'subgerente' | 'coord' | 'supervisor' | 'encarregado';
 type Escopo = 'nacional' | 'regional' | 'multi' | 'filial';
 
 export function NovoLiderForm({
@@ -37,7 +37,7 @@ export function NovoLiderForm({
   const [colabSel, setColabSel] = useState<CandidatoColab | null>(null);
   const [tier, setTier] = useState<Tier>('coord');
   const [escopo, setEscopo] = useState<Escopo>('filial');
-  const [regionalSel, setRegionalSel] = useState<string>('');
+  const [regionaisSel, setRegionaisSel] = useState<string[]>([]);
   const [filiaisEscopo, setFiliaisEscopo] = useState<string[]>([]);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -78,7 +78,7 @@ export function NovoLiderForm({
     setColabSel(null);
     setTier('coord');
     setEscopo('filial');
-    setRegionalSel('');
+    setRegionaisSel([]);
     setFiliaisEscopo([]);
     setErro(null);
     setOpen(true);
@@ -103,13 +103,17 @@ export function NovoLiderForm({
     }
 
     const escopoNacional = escopo === 'nacional';
-    let nivel: 'nacional' | 'regional' | null;
+    let nivel: 'nacional' | 'regional' | 'multi' | 'filial' | null;
     if (tier === 'subgerente') {
       nivel = null;
     } else if (escopo === 'nacional') {
       nivel = 'nacional';
-    } else {
+    } else if (escopo === 'regional') {
       nivel = 'regional';
+    } else if (escopo === 'multi') {
+      nivel = 'multi';
+    } else {
+      nivel = 'filial';
     }
 
     let filiaisFinal: string[];
@@ -122,13 +126,13 @@ export function NovoLiderForm({
       }
       filiaisFinal = [colabSel.filial_id];
     } else if (escopo === 'regional') {
-      if (!regionalSel) {
-        setErro('selecione uma regional');
+      if (regionaisSel.length === 0) {
+        setErro('selecione ao menos uma regional');
         return;
       }
-      filiaisFinal = filiais.filter((f) => f.regional === regionalSel).map((f) => f.id);
+      filiaisFinal = filiais.filter((f) => f.regional && regionaisSel.includes(f.regional)).map((f) => f.id);
       if (filiaisFinal.length === 0) {
-        setErro(`nenhuma filial cadastrada na regional "${regionalSel}"`);
+        setErro('nenhuma filial cadastrada nas regionais selecionadas');
         return;
       }
     } else {
@@ -245,6 +249,8 @@ export function NovoLiderForm({
             <option value="gerente">Gerente</option>
             <option value="subgerente">Subgerente</option>
             <option value="coord">Coordenador</option>
+            <option value="supervisor">Supervisor</option>
+            <option value="encarregado">Encarregado</option>
           </select>
         </Field>
 
@@ -291,13 +297,15 @@ export function NovoLiderForm({
         </Field>
 
         {escopo === 'regional' && (
-          <Field label="Regional">
+          <Field label={`Regionais cobertas ${regionaisSel.length > 0 ? `(${regionaisSel.length} selecionadas)` : ''}`}>
             <select
-              className="w-full border border-conecta-primary/15 rounded-lg p-2 text-sm bg-white"
-              value={regionalSel}
-              onChange={(e) => setRegionalSel(e.target.value)}
+              multiple
+              className="w-full border border-conecta-primary/15 rounded-lg p-2 text-sm h-32 bg-white"
+              value={regionaisSel}
+              onChange={(e) =>
+                setRegionaisSel(Array.from(e.target.selectedOptions).map((o) => o.value))
+              }
             >
-              <option value="">— selecionar —</option>
               {regionais.map((r) => {
                 const n = filiais.filter((f) => f.regional === r).length;
                 return (
@@ -307,6 +315,7 @@ export function NovoLiderForm({
                 );
               })}
             </select>
+            <p className="text-xs text-conecta-muted mt-1">Segure Ctrl/Cmd para selecionar múltiplas.</p>
           </Field>
         )}
 

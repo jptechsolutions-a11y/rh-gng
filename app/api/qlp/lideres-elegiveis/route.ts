@@ -11,10 +11,12 @@ import { requireSession } from '@/lib/auth/session';
  *  - Supervisor só lidera tier=base
  */
 export async function GET(req: Request) {
-  await requireSession();
+  const s = await requireSession();
   const url = new URL(req.url);
   const colaboradorId = url.searchParams.get('colaboradorId');
   if (!colaboradorId) return NextResponse.json([]);
+
+  const filialAtor = s.perfil === 'filial' ? s.filialId : null;
 
   const rows = await db.execute(sql`
     WITH alvo AS (
@@ -34,6 +36,8 @@ export async function GET(req: Request) {
     JOIN qlp_colaboradores c ON c.id = l.colaborador_id
     JOIN alvo a ON true
     WHERE l.ativo
+      -- usuário filial só vê líderes da própria filial
+      AND (${filialAtor}::uuid IS NULL OR c.filial_id = ${filialAtor}::uuid)
       -- escopo cobre filial do colaborador
       AND (
         l.escopo_nacional
@@ -60,11 +64,14 @@ export async function GET(req: Request) {
             )
           )
         )
-        -- mesmo tier: nacional pode liderar regional do mesmo tier
+        -- mesmo tier: nacional pode liderar regional/multi/filial, regional pode liderar multi/filial
         OR (
           l.tier = coalesce(a.tier_resolvido, 'base')
-          AND l.nivel = 'nacional'
-          AND coalesce(a.nivel_resolvido, '') <> 'nacional'
+          AND (
+            (l.nivel = 'nacional' AND coalesce(a.nivel_resolvido, '') <> 'nacional')
+            OR
+            (l.nivel = 'regional' AND coalesce(a.nivel_resolvido, '') IN ('multi', 'filial', ''))
+          )
         )
       )
     ORDER BY

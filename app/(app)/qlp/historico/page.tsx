@@ -2,6 +2,8 @@ import { requireSession } from '@/lib/auth/session';
 import { db } from '@/db/client';
 import { sql } from 'drizzle-orm';
 import { TopBar } from '@/components/layout/TopBar';
+import { ConectaCard, SectionHeader } from '@/components/ui/conecta-card';
+import { History } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -35,8 +37,8 @@ const EVENTO_LABEL: Record<string, string> = {
 };
 
 export default async function HistoricoPage() {
-  const s = await requireSession();
-  const filialFilter = s.perfil === 'filial' ? s.filialId : null;
+  await requireSession('admin');
+  const filialFilter = null;
 
   const rows = (await db.execute(sql`
     SELECT
@@ -50,10 +52,7 @@ export default async function HistoricoPage() {
     LIMIT 500
   `)) as unknown as HistoricoRow[];
 
-  const badge =
-    s.perfil === 'filial' ? `Filial ${s.filialCodigo}` :
-    s.perfil === 'admin'  ? 'ADMIN' :
-    (s.escopo === 'nacional' ? 'NACIONAL' : 'REGIONAL');
+  const badge = 'ADMIN';
 
   return (
     <>
@@ -64,54 +63,62 @@ export default async function HistoricoPage() {
       />
       <div className="space-y-5 p-4 lg:p-6">
         {rows.length === 0 ? (
-          <p className="rounded-2xl bg-white border border-conecta-primary/10 p-6 text-sm text-conecta-muted">
-            Nenhum evento registrado ainda.
-          </p>
+          <ConectaCard>
+            <p className="text-sm text-conecta-muted">Nenhum evento registrado ainda.</p>
+          </ConectaCard>
         ) : (
-          <div className="rounded-2xl bg-white border border-conecta-primary/10 overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-conecta-primary/10 text-[11px] uppercase tracking-[0.12em] font-semibold text-conecta-muted">
-                  <th className="text-left p-3 whitespace-nowrap">Quando</th>
-                  <th className="text-left p-3">Ator</th>
-                  <th className="text-left p-3">Evento</th>
-                  <th className="text-left p-3">Colaborador</th>
-                  <th className="text-left p-3">Detalhes</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r) => (
-                  <tr key={r.id} className="border-b border-conecta-primary/5 hover:bg-conecta-primary/[0.02] align-top">
-                    <td className="p-3 whitespace-nowrap text-conecta-muted tabular-nums text-xs">
-                      {new Date(r.created_at).toLocaleString('pt-BR')}
-                    </td>
-                    <td className="p-3">
-                      <span className="font-medium text-conecta-primary">{r.ator_nome}</span>{' '}
-                      <span className="text-[10px] uppercase tracking-wide text-conecta-muted">
-                        ({r.ator_tipo})
-                      </span>
-                    </td>
-                    <td className="p-3">
-                      <span className="rounded-full bg-conecta-primary/5 text-conecta-primary text-[11px] px-2 py-0.5 font-semibold">
-                        {EVENTO_LABEL[r.evento] ?? r.evento}
-                      </span>
-                    </td>
-                    <td className="p-3 text-conecta-text">{r.colaborador_nome ?? '—'}</td>
-                    <td className="p-3">
-                      <details>
-                        <summary className="cursor-pointer text-xs text-conecta-muted hover:text-conecta-accent">
-                          JSON
-                        </summary>
-                        <pre className="text-xs bg-conecta-primary/[0.03] p-2 mt-1 rounded-lg max-w-md whitespace-pre-wrap break-all">
-                          {JSON.stringify(r.detalhes, null, 2)}
-                        </pre>
-                      </details>
-                    </td>
+          <ConectaCard noPadding>
+            <div className="p-5 pb-3">
+              <SectionHeader
+                label={`Eventos recentes (${rows.length})`}
+                icon={History}
+              />
+            </div>
+            <div className="overflow-x-auto">
+              <table className="conecta-table">
+                <thead>
+                  <tr>
+                    <th>Quando</th>
+                    <th>Ator</th>
+                    <th>Evento</th>
+                    <th>Colaborador</th>
+                    <th>Detalhes</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {rows.map((r) => (
+                    <tr key={r.id} className="align-top">
+                      <td className="whitespace-nowrap tabular-nums text-conecta-muted text-[12px]">
+                        {new Date(r.created_at).toLocaleString('pt-BR')}
+                      </td>
+                      <td>
+                        <span className="font-display font-semibold text-conecta-primary">{r.ator_nome}</span>{' '}
+                        <span className="text-[10px] uppercase tracking-[0.14em] text-conecta-muted">
+                          ({r.ator_tipo})
+                        </span>
+                      </td>
+                      <td>
+                        <span className="text-[10px] uppercase tracking-[0.14em] font-display font-bold px-1.5 py-0.5 rounded bg-conecta-primary/8 text-conecta-primary">
+                          {EVENTO_LABEL[r.evento] ?? r.evento}
+                        </span>
+                      </td>
+                      <td className="text-conecta-muted">{r.colaborador_nome ?? '—'}</td>
+                      <td>
+                        <details>
+                          <summary className="cursor-pointer text-xs font-display font-semibold uppercase tracking-[0.14em] text-conecta-muted hover:text-conecta-accent transition-colors">
+                            JSON
+                          </summary>
+                          <pre className="text-xs bg-conecta-primary/[0.03] p-2 mt-1 rounded-lg max-w-md whitespace-pre-wrap break-all">
+                            {JSON.stringify(r.detalhes, null, 2)}
+                          </pre>
+                        </details>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </ConectaCard>
         )}
       </div>
     </>

@@ -2,6 +2,7 @@ import { requireSession } from '@/lib/auth/session';
 import { db } from '@/db/client';
 import { sql } from 'drizzle-orm';
 import { TopBar } from '@/components/layout/TopBar';
+import { ConectaCard } from '@/components/ui/conecta-card';
 import { OrgChartTree, type LiderCard } from '@/components/qlp/OrgChartTree';
 
 export const dynamic = 'force-dynamic';
@@ -16,6 +17,8 @@ export default async function OrgPage() {
       l.tier,
       l.nivel,
       l.escopo_nacional,
+      l.filiais_escopo,
+      c.filial_id,
       jsonb_array_length(l.filiais_escopo) AS filiais_escopo_count,
       c.nome,
       c.funcao,
@@ -31,7 +34,12 @@ export default async function OrgPage() {
           JOIN qlp_vinculos v2 ON v2.lider_id = l2.id
         )
         SELECT count(*)::int FROM descend
-      ) AS qtd_total
+      ) AS qtd_total,
+      (
+        SELECT pv.lider_id 
+        FROM qlp_vinculos pv 
+        WHERE pv.colaborador_id = l.colaborador_id
+      ) AS lider_pai_id
     FROM qlp_lideres l
     JOIN qlp_colaboradores c ON c.id = l.colaborador_id
     WHERE l.ativo
@@ -39,6 +47,13 @@ export default async function OrgPage() {
       CASE l.tier WHEN 'gerente' THEN 1 WHEN 'subgerente' THEN 2 WHEN 'coord' THEN 3 ELSE 4 END,
       c.nome
   `)) as unknown as LiderCard[];
+
+  const filiaisList = (await db.execute(sql`
+    SELECT id, codigo, nome
+    FROM filiais
+    WHERE ativa
+    ORDER BY codigo
+  `)) as unknown as { id: string; codigo: string; nome: string }[];
 
   const badge =
     s.perfil === 'filial' ? `Filial ${s.filialCodigo}` :
@@ -54,11 +69,19 @@ export default async function OrgPage() {
       />
       <div className="space-y-5 p-4 lg:p-6">
         {lideres.length === 0 ? (
-          <p className="rounded-2xl bg-white border border-conecta-primary/10 p-6 text-sm text-conecta-muted">
-            Nenhum líder cadastrado ainda. Cadastre na tela <strong>Líderes</strong> (admin).
-          </p>
+          <ConectaCard>
+            <p className="text-sm text-conecta-muted">
+              Nenhum líder cadastrado ainda. Cadastre na tela <strong>Líderes</strong> (admin).
+            </p>
+          </ConectaCard>
         ) : (
-          <OrgChartTree lideres={lideres} />
+          <ConectaCard>
+            <OrgChartTree
+              lideres={lideres}
+              filiais={filiaisList}
+              forceFilialId={s.perfil === 'filial' ? s.filialId : null}
+            />
+          </ConectaCard>
         )}
       </div>
     </>

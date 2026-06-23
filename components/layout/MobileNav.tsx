@@ -7,11 +7,34 @@ import { Menu, X, LogOut } from 'lucide-react';
 import { ConectaLogo } from '@/components/brand/ConectaLogo';
 import { cn } from '@/lib/cn';
 import { logoutAction } from '@/actions/auth';
-import { FILIAL_NAV, ADMIN_NAV, VISUALIZADOR_NAV, ENTREVISTAS_VISUALIZADOR_NAV } from './nav-config';
+import {
+  FILIAL_NAV, ADMIN_NAV, VISUALIZADOR_NAV, ENTREVISTAS_VISUALIZADOR_NAV,
+  AVALIACAO_NAV_BASE, AVALIACAO_NAV_ADMIN_EXTRAS,
+  ESCUTA_NAV_BASE, ESCUTA_NAV_ADMIN_EXTRAS,
+  INDICADORES_NAV_BASE,
+  QLP_NAV_BASE, QLP_NAV_ADMIN_EXTRAS,
+} from './nav-config';
 
 export function MobileNav({ perfil, nome, subtitulo }: { perfil: 'filial' | 'admin' | 'visualizador'; nome: string; subtitulo: string }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+
+  const inAvaliacao =
+    pathname === '/avaliacao' ||
+    pathname.startsWith('/avaliacao/') ||
+    pathname.startsWith('/admin/config/pessoas') ||
+    pathname.startsWith('/admin/config/competencias');
+  const inEscuta =
+    pathname === '/escuta' ||
+    pathname.startsWith('/escuta/') ||
+    pathname.startsWith('/admin/config/escuta');
+  const inIndicadores =
+    pathname === '/indicadores' ||
+    pathname.startsWith('/indicadores/');
+  const inQlp =
+    pathname === '/qlp' ||
+    pathname.startsWith('/qlp/');
+
   const inEntrevistasVisualizador =
     perfil === 'visualizador' && (
       pathname === '/historico' ||
@@ -19,11 +42,28 @@ export function MobileNav({ perfil, nome, subtitulo }: { perfil: 'filial' | 'adm
       pathname.startsWith('/entrevista/') ||
       pathname.startsWith('/candidato/')
     );
-  const nav = perfil === 'admin'
-    ? ADMIN_NAV
-    : perfil === 'visualizador'
-      ? (inEntrevistasVisualizador ? ENTREVISTAS_VISUALIZADOR_NAV : VISUALIZADOR_NAV)
-      : FILIAL_NAV;
+
+  const nav = inQlp
+    ? perfil === 'admin'
+      ? [...QLP_NAV_BASE, ...QLP_NAV_ADMIN_EXTRAS]
+      : QLP_NAV_BASE
+    : inIndicadores
+      ? INDICADORES_NAV_BASE
+      : inEscuta
+        ? perfil === 'admin'
+          ? [...ESCUTA_NAV_BASE, ...ESCUTA_NAV_ADMIN_EXTRAS]
+          : ESCUTA_NAV_BASE
+        : inAvaliacao
+          ? perfil === 'admin'
+            ? [...AVALIACAO_NAV_BASE, ...AVALIACAO_NAV_ADMIN_EXTRAS]
+            : AVALIACAO_NAV_BASE
+          : inEntrevistasVisualizador
+            ? ENTREVISTAS_VISUALIZADOR_NAV
+            : perfil === 'admin'
+              ? ADMIN_NAV
+              : perfil === 'visualizador'
+                ? VISUALIZADOR_NAV
+                : FILIAL_NAV;
 
   useEffect(() => setOpen(false), [pathname]);
   useEffect(() => {
@@ -101,7 +141,11 @@ export function MobileNav({ perfil, nome, subtitulo }: { perfil: 'filial' | 'adm
 
             <nav className="relative z-10 flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
               {nav.map(({ href, label, icon: Icon }) => {
-                const isRoot = href === '/admin' || href === '/painel';
+                const isRoot =
+                  href === '/admin' ||
+                  href === '/painel' ||
+                  href === '/avaliacao' ||
+                  href === '/qlp';
                 const active = isRoot ? pathname === href : (pathname === href || pathname.startsWith(href + '/'));
                 return (
                   <Link

@@ -59,6 +59,21 @@ describe('assertCanLead', () => {
       assertCanLead('gerente', 'gerente', { liderNivel: 'regional', lideradoNivel: 'regional' }),
     ).toThrow();
   });
+  it('gerente REGIONAL pode liderar gerente MULTI (mesmo tier)', () => {
+    expect(() =>
+      assertCanLead('gerente', 'gerente', { liderNivel: 'regional', lideradoNivel: 'multi' }),
+    ).not.toThrow();
+  });
+  it('gerente REGIONAL pode liderar gerente FILIAL (mesmo tier)', () => {
+    expect(() =>
+      assertCanLead('gerente', 'gerente', { liderNivel: 'regional', lideradoNivel: 'filial' }),
+    ).not.toThrow();
+  });
+  it('gerente REGIONAL não lidera gerente NACIONAL (mesmo tier)', () => {
+    expect(() =>
+      assertCanLead('gerente', 'gerente', { liderNivel: 'regional', lideradoNivel: 'nacional' }),
+    ).toThrow();
+  });
   it('coord NACIONAL pode liderar coord REGIONAL', () => {
     expect(() =>
       assertCanLead('coord', 'coord', { liderNivel: 'nacional', lideradoNivel: 'regional' }),
@@ -68,6 +83,27 @@ describe('assertCanLead', () => {
     expect(() =>
       assertCanLead('coord', 'coord', { liderNivel: 'regional', lideradoNivel: 'nacional' }),
     ).toThrow();
+  });
+  it('encarregado pode liderar base', () => {
+    expect(() => assertCanLead('encarregado', 'base')).not.toThrow();
+  });
+  it('encarregado NÃO pode liderar encarregado', () => {
+    expect(() => assertCanLead('encarregado', 'encarregado')).toThrow();
+  });
+  it('encarregado NÃO pode liderar supervisor', () => {
+    expect(() => assertCanLead('encarregado', 'supervisor')).toThrow();
+  });
+  it('encarregado NÃO pode liderar coord', () => {
+    expect(() => assertCanLead('encarregado', 'coord')).toThrow();
+  });
+  it('coord pode liderar encarregado', () => {
+    expect(() => assertCanLead('coord', 'encarregado')).not.toThrow();
+  });
+  it('subgerente pode liderar encarregado', () => {
+    expect(() => assertCanLead('subgerente', 'encarregado')).not.toThrow();
+  });
+  it('gerente pode liderar encarregado', () => {
+    expect(() => assertCanLead('gerente', 'encarregado')).not.toThrow();
   });
   it('tier inválido lança erro', () => {
     expect(() => assertCanLead('foo', 'base')).toThrow();

@@ -15,6 +15,7 @@ import {
 import { requireSession } from '@/lib/auth/session';
 import { getKPIs } from '@/db/queries/qlp';
 import { TopBar } from '@/components/layout/TopBar';
+import { SectionHeader } from '@/components/ui/conecta-card';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,16 +66,14 @@ export default async function QlpHome() {
 
         {/* Atalhos */}
         <section>
-          <h2 className="font-display text-[11px] uppercase tracking-[0.22em] text-conecta-muted mb-3">
-            Para onde quer ir
-          </h2>
+          <SectionHeader label="Para onde quer ir" icon={ArrowRight} className="mb-3" />
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             <Atalho href="/qlp/quadro" icon={Users} titulo="Quadro" sub="Lista de colaboradores e atribuição de líderes" />
             <Atalho href="/qlp/organograma" icon={Network} titulo="Organograma" sub="Estrutura visual dos líderes" />
             <Atalho href="/qlp/indicadores" icon={BarChart3} titulo="Indicadores" sub="Cobertura, distribuição e pendências" />
-            <Atalho href="/qlp/historico" icon={History} titulo="Histórico" sub="Auditoria das movimentações" />
             {s.perfil === 'admin' && (
               <>
+                <Atalho href="/qlp/historico" icon={History} titulo="Histórico" sub="Auditoria das movimentações" admin />
                 <Atalho href="/qlp/lideres" icon={ListTree} titulo="Líderes" sub="Espinha: gerentes, subgerentes e coords" admin />
                 <Atalho href="/qlp/cargos" icon={IdCard} titulo="Cargos" sub="Revisar classificação das funções" admin />
                 <Atalho href="/qlp/importar" icon={Upload} titulo="Importar XLS" sub="Sync do Quadro Perlog" admin />

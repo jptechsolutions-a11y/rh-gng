@@ -78,11 +78,11 @@ export const QLP_NAV_BASE: NavItem[] = [
   { href: '/qlp',             label: 'Visão geral', icon: LayoutDashboard },
   { href: '/qlp/quadro',      label: 'Quadro',      icon: Users },
   { href: '/qlp/organograma', label: 'Organograma', icon: Network },
-  { href: '/qlp/historico',   label: 'Histórico',   icon: History },
   { href: '/qlp/indicadores', label: 'Indicadores', icon: BarChart3 },
 ];
 export const QLP_NAV_ADMIN_EXTRAS: NavItem[] = [
-  { href: '/qlp/lideres',  label: 'Líderes',      icon: ListTree },
-  { href: '/qlp/cargos',   label: 'Cargos',       icon: IdCard },
-  { href: '/qlp/importar', label: 'Importar XLS', icon: Upload },
+  { href: '/qlp/historico', label: 'Histórico',    icon: History },
+  { href: '/qlp/lideres',   label: 'Líderes',      icon: ListTree },
+  { href: '/qlp/cargos',    label: 'Cargos',       icon: IdCard },
+  { href: '/qlp/importar',  label: 'Importar XLS', icon: Upload },
 ];

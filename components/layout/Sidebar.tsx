@@ -181,7 +181,11 @@ export function Sidebar({
       {/* ===== Navegação ===== */}
       <nav className={cn('relative z-10 flex-1 py-4 space-y-0.5 overflow-y-auto', collapsed ? 'px-2' : 'px-3')}>
         {nav.map(({ href, label, icon: Icon }) => {
-          const isRoot = href === '/admin' || href === '/painel' || href === '/avaliacao';
+          const isRoot =
+            href === '/admin' ||
+            href === '/painel' ||
+            href === '/avaliacao' ||
+            href === '/qlp';
           const [hrefPath, hrefQuery] = href.split('?');
           const defaultTab = hrefPath === '/indicadores' ? 'inicio' : 'roteiro';
           let active: boolean;

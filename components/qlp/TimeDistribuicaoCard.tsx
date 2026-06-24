@@ -40,16 +40,16 @@ export function TimeDistribuicaoCard({ time }: { time: ColabResumo[] }) {
             <thead>
               <tr>
                 <th>Função</th>
-                <th className="text-right">Qtd</th>
-                <th className="text-right">%</th>
+                <th className="text-center">Qtd</th>
+                <th className="text-center">%</th>
               </tr>
             </thead>
             <tbody>
               {dados.map(({ funcao, qtd }) => (
                 <tr key={funcao}>
                   <td className="font-display font-semibold text-conecta-primary">{funcao}</td>
-                  <td className="text-right tabular-nums font-display font-bold text-conecta-primary">{qtd}</td>
-                  <td className="text-right tabular-nums text-conecta-muted">
+                  <td className="text-center tabular-nums font-display font-bold text-conecta-primary">{qtd}</td>
+                  <td className="text-center tabular-nums text-conecta-muted">
                     {((qtd / time.length) * 100).toFixed(0)}%
                   </td>
                 </tr>
@@ -58,8 +58,8 @@ export function TimeDistribuicaoCard({ time }: { time: ColabResumo[] }) {
             <tfoot>
               <tr className="border-t-2 border-conecta-primary/15">
                 <td className="font-display font-bold text-conecta-primary">Total</td>
-                <td className="text-right tabular-nums font-display font-extrabold text-conecta-accent">{time.length}</td>
-                <td className="text-right tabular-nums text-conecta-muted">100%</td>
+                <td className="text-center tabular-nums font-display font-extrabold text-conecta-accent">{time.length}</td>
+                <td className="text-center tabular-nums text-conecta-muted">100%</td>
               </tr>
             </tfoot>
           </table>

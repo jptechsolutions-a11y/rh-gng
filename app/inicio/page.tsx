@@ -83,7 +83,7 @@ export default async function InicioPage() {
         </div>
 
         {/* ===== Cards de módulos ===== */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 w-full max-w-7xl">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5 w-full max-w-[1560px] px-2 lg:px-6">
           {/* Entrevistas */}
           <Link
             href={hrefEntrevistas}
@@ -106,10 +106,10 @@ export default async function InicioPage() {
                 <ClipboardList className="h-6 w-6" />
               </div>
               <div className="min-w-0 flex-1">
-                <h2 className="font-display text-[20px] font-extrabold text-conecta-primary tracking-tight leading-tight">
+                <h2 className="font-display text-[18px] font-extrabold text-conecta-primary tracking-tight leading-tight">
                   Entrevistas
                 </h2>
-                <p className="text-[13px] text-conecta-muted mt-1 leading-snug">
+                <p className="text-[12px] text-conecta-muted mt-1 leading-snug">
                   Entrevistas guiadas, banco de talentos e geração de documentos.
                 </p>
                 <div className="inline-flex items-center gap-2 text-[13px] font-display font-semibold text-conecta-accent group-hover:gap-3 transition-all mt-3">
@@ -142,10 +142,10 @@ export default async function InicioPage() {
                 <BarChart3 className="h-6 w-6" />
               </div>
               <div className="min-w-0 flex-1">
-                <h2 className="font-display text-[20px] font-extrabold text-conecta-primary tracking-tight leading-tight">
+                <h2 className="font-display text-[18px] font-extrabold text-conecta-primary tracking-tight leading-tight">
                   Avaliação de Desempenho
                 </h2>
-                <p className="text-[13px] text-conecta-muted mt-1 leading-snug">
+                <p className="text-[12px] text-conecta-muted mt-1 leading-snug">
                   Avalie por competências, registre feedback e PDI.
                 </p>
                 <div className="inline-flex items-center gap-2 text-[13px] font-display font-semibold text-conecta-primary group-hover:gap-3 transition-all mt-3">
@@ -178,10 +178,10 @@ export default async function InicioPage() {
                 <MessagesSquare className="h-6 w-6" />
               </div>
               <div className="min-w-0 flex-1">
-                <h2 className="font-display text-[20px] font-extrabold text-conecta-primary tracking-tight leading-tight">
+                <h2 className="font-display text-[18px] font-extrabold text-conecta-primary tracking-tight leading-tight">
                   Escuta G&amp;G
                 </h2>
-                <p className="text-[13px] text-conecta-muted mt-1 leading-snug">
+                <p className="text-[12px] text-conecta-muted mt-1 leading-snug">
                   Reunião periódica de escuta com recém admitidos, formulário e percepção.
                 </p>
                 <div className="inline-flex items-center gap-2 text-[13px] font-display font-semibold text-conecta-accent group-hover:gap-3 transition-all mt-3">
@@ -214,10 +214,10 @@ export default async function InicioPage() {
                 <LineChart className="h-6 w-6" />
               </div>
               <div className="min-w-0 flex-1">
-                <h2 className="font-display text-[20px] font-extrabold text-conecta-primary tracking-tight leading-tight">
+                <h2 className="font-display text-[18px] font-extrabold text-conecta-primary tracking-tight leading-tight">
                   Indicadores
                 </h2>
-                <p className="text-[13px] text-conecta-muted mt-1 leading-snug">
+                <p className="text-[12px] text-conecta-muted mt-1 leading-snug">
                   Banco de horas, comparativos por filial e detalhamento por colaborador.
                 </p>
                 <div className="inline-flex items-center gap-2 text-[13px] font-display font-semibold text-conecta-primary group-hover:gap-3 transition-all mt-3">
@@ -250,10 +250,10 @@ export default async function InicioPage() {
                 <Network className="h-6 w-6" />
               </div>
               <div className="min-w-0 flex-1">
-                <h2 className="font-display text-[20px] font-extrabold text-conecta-primary tracking-tight leading-tight">
+                <h2 className="font-display text-[18px] font-extrabold text-conecta-primary tracking-tight leading-tight">
                   QLP &amp; Liderança
                 </h2>
-                <p className="text-[13px] text-conecta-muted mt-1 leading-snug">
+                <p className="text-[12px] text-conecta-muted mt-1 leading-snug">
                   Quadro Perlog, hierarquia de líderes e atribuição de equipes por filial.
                 </p>
                 <div className="inline-flex items-center gap-2 text-[13px] font-display font-semibold text-conecta-accent group-hover:gap-3 transition-all mt-3">

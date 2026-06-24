@@ -55,13 +55,6 @@ export function TimeDistribuicaoCard({ time }: { time: ColabResumo[] }) {
                 </tr>
               ))}
             </tbody>
-            <tfoot>
-              <tr className="border-t-2 border-conecta-primary/15">
-                <td className="font-display font-bold text-conecta-primary">Total</td>
-                <td className="text-center tabular-nums font-display font-extrabold text-conecta-accent">{time.length}</td>
-                <td className="text-center tabular-nums text-conecta-muted">100%</td>
-              </tr>
-            </tfoot>
           </table>
         </div>
       )}

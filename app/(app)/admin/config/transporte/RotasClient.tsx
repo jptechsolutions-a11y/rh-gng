@@ -143,7 +143,6 @@ export function RotasClient({ filiais }: { filiais: Filial[] }) {
         await alocarMultiplos(Array.from(selectedNaoAlocados), rotaId);
         toast.success(`${selectedNaoAlocados.size} passageiro(s) alocados`);
         setSelectedNaoAlocados(new Set());
-        setAlocandoParaRota(null);
         carregarRotas();
         carregarNaoAlocados();
       } catch (e) { toast.error(e instanceof Error ? e.message : 'Erro'); }

@@ -98,10 +98,10 @@ export function ChamadaClient({
 
     const rows = registros.map((r, i) => `
       <tr>
-        <td style="text-align:center;padding:6px 8px;border:1px solid #ccc;">${i + 1}</td>
-        <td style="padding:6px 8px;border:1px solid #ccc;">${r.nome}</td>
-        <td style="text-align:center;padding:6px 8px;border:1px solid #ccc;">${r.chapa ?? '—'}</td>
-        <td style="padding:6px 8px;border:1px solid #ccc;min-width:150px;">&nbsp;</td>
+        <td style="text-align:center;">${i + 1}</td>
+        <td>${r.nome}</td>
+        <td style="text-align:center;font-family:monospace;">${r.chapa ?? '—'}</td>
+        <td class="assinatura"></td>
       </tr>
     `).join('');
 
@@ -110,48 +110,122 @@ export function ChamadaClient({
 <head>
   <title>Chamada — ${rotaSelecionada?.nome ?? ''}</title>
   <style>
-    @page { margin: 15mm; }
-    body { font-family: Arial, sans-serif; color: #1a1a1a; margin: 0; padding: 0; }
-    .header { text-align: center; margin-bottom: 20px; }
-    .header h1 { font-size: 18px; margin: 0 0 4px; color: #0D2B6B; }
-    .header h2 { font-size: 14px; margin: 0 0 4px; font-weight: normal; }
-    .header .meta { font-size: 12px; color: #666; }
-    .info-grid { display: flex; justify-content: space-between; margin-bottom: 16px; font-size: 12px; }
-    .info-grid div { padding: 6px 12px; background: #f5f5f5; border-radius: 4px; }
-    table { width: 100%; border-collapse: collapse; font-size: 12px; }
-    th { background: #0D2B6B; color: white; padding: 8px; text-align: left; }
-    tr:nth-child(even) { background: #f9f9f9; }
-    .footer { margin-top: 30px; font-size: 11px; color: #999; text-align: center; }
+    @page { size: landscape; margin: 12mm; }
+    * { box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; color: #1a1a1a; margin: 0; padding: 0; }
+
+    .page-border {
+      border: 2px solid #0D2B6B;
+      border-radius: 8px;
+      padding: 20px 24px;
+      min-height: calc(100vh - 24mm);
+    }
+
+    .header {
+      text-align: center;
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+      border-bottom: 2px solid #0D2B6B;
+    }
+    .header h1 {
+      font-size: 20px;
+      margin: 0 0 2px;
+      color: #0D2B6B;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .header h2 {
+      font-size: 15px;
+      margin: 0 0 4px;
+      font-weight: 600;
+      color: #E8621A;
+    }
+    .header .meta {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .info-bar {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      gap: 8px;
+    }
+    .info-bar .info-item {
+      flex: 1;
+      text-align: center;
+      padding: 8px 10px;
+      border: 1px solid #0D2B6B;
+      border-radius: 6px;
+      font-size: 11px;
+    }
+    .info-bar .info-item strong {
+      display: block;
+      font-size: 13px;
+      color: #0D2B6B;
+      margin-bottom: 2px;
+    }
+
+    table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    th {
+      background: #0D2B6B;
+      color: white;
+      padding: 8px 10px;
+      text-align: left;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    td {
+      padding: 7px 10px;
+      border: 1px solid #d1d5db;
+    }
+    tr:nth-child(even) td { background: #f8fafc; }
+    td.assinatura { min-width: 200px; border-bottom: 1px solid #999; }
+
+    .footer {
+      margin-top: 20px;
+      padding-top: 10px;
+      border-top: 1px solid #d1d5db;
+      display: flex;
+      justify-content: space-between;
+      font-size: 10px;
+      color: #999;
+    }
   </style>
 </head>
 <body>
-  <div class="header">
-    <h1>Chamada Diária — Transporte</h1>
-    <h2>${rotaSelecionada?.nome ?? ''} (${rotaSelecionada?.turno ?? ''})</h2>
-    <div class="meta">${dataFormatada}${filialLabel ? ` · ${filialLabel}` : ''}</div>
-  </div>
+  <div class="page-border">
+    <div class="header">
+      <h1>Chamada Diária — Transporte</h1>
+      <h2>${rotaSelecionada?.nome ?? ''} — ${rotaSelecionada?.turno ?? ''}</h2>
+      <div class="meta">${dataFormatada}${filialLabel ? ` · ${filialLabel}` : ''}</div>
+    </div>
 
-  <div class="info-grid">
-    <div><strong>Rota:</strong> ${rotaSelecionada?.nome ?? ''}</div>
-    <div><strong>Turno:</strong> ${rotaSelecionada?.turno ?? ''}</div>
-    <div><strong>Lugares:</strong> ${rotaSelecionada?.lugares ?? 0}</div>
-    <div><strong>Passageiros:</strong> ${registros.length}</div>
-  </div>
+    <div class="info-bar">
+      <div class="info-item"><strong>${rotaSelecionada?.nome ?? ''}</strong>Rota</div>
+      <div class="info-item"><strong>${rotaSelecionada?.turno ?? ''}</strong>Turno</div>
+      <div class="info-item"><strong>${rotaSelecionada?.lugares ?? 0}</strong>Lugares</div>
+      <div class="info-item"><strong>${registros.length}</strong>Passageiros</div>
+      <div class="info-item"><strong>${data.split('-').reverse().join('/')}</strong>Data</div>
+    </div>
 
-  <table>
-    <thead>
-      <tr>
-        <th style="width:40px;text-align:center;">#</th>
-        <th>Nome</th>
-        <th style="width:100px;text-align:center;">Matrícula</th>
-        <th style="width:180px;">Assinatura</th>
-      </tr>
-    </thead>
-    <tbody>${rows}</tbody>
-  </table>
+    <table>
+      <thead>
+        <tr>
+          <th style="width:36px;text-align:center;">#</th>
+          <th>Nome do Colaborador</th>
+          <th style="width:100px;text-align:center;">Matrícula</th>
+          <th style="width:220px;text-align:center;">Assinatura</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
 
-  <div class="footer">
-    Conecta G&G · Impresso em ${new Date().toLocaleString('pt-BR')}
+    <div class="footer">
+      <span>Conecta G&G — Controle de Transporte</span>
+      <span>Impresso em ${new Date().toLocaleString('pt-BR')}</span>
+    </div>
   </div>
 
   <script>window.onload = function() { window.print(); }</script>

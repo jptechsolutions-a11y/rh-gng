@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useTransition } from 'react';
 import { toast } from 'sonner';
 import {
-  listarRotas, listarNaoAlocados, listarPassageiros,
+  listarRotas, listarTodosPassageiros,
   alocarPassageiro, alocarMultiplos, desalocarPassageiro, removerPassageiro,
 } from '@/actions/transporte';
 import {
@@ -29,18 +29,15 @@ export function PassageirosClient({
   const isAdmin = perfil === 'admin';
   const [filialId, setFilialId] = useState(initialFilialId ?? filiais[0]?.id ?? '');
   const [rotas, setRotas] = useState<Rota[]>([]);
-  const [naoAlocados, setNaoAlocados] = useState<Passageiro[]>([]);
-  const [alocados, setAlocados] = useState<Map<string, Passageiro[]>>(new Map());
+  const [passageiros, setPassageiros] = useState<Passageiro[]>([]);
   const [loading, setLoading] = useState(true);
   const [pending, start] = useTransition();
 
-  // Filtros
   const [busca, setBusca] = useState('');
   const [filtroStatus, setFiltroStatus] = useState<'todos' | 'sem_rota' | 'alocado'>('todos');
   const [filtroCidade, setFiltroCidade] = useState('');
   const [filtroRota, setFiltroRota] = useState('');
 
-  // Seleção para alocação em lote
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
   const [showAlocar, setShowAlocar] = useState(false);
 
@@ -49,19 +46,12 @@ export function PassageirosClient({
     setLoading(true);
     try {
       const fid = isAdmin ? filialId : undefined;
-      const [r, na] = await Promise.all([
+      const [r, p] = await Promise.all([
         listarRotas(fid),
-        listarNaoAlocados(fid),
+        listarTodosPassageiros(fid),
       ]);
       setRotas(r as Rota[]);
-      setNaoAlocados(na as Passageiro[]);
-
-      const alocMap = new Map<string, Passageiro[]>();
-      for (const rota of r as Rota[]) {
-        const pass = await listarPassageiros(rota.id);
-        alocMap.set(rota.id, (pass as Passageiro[]).map(p => ({ ...p, rotaId: rota.id })));
-      }
-      setAlocados(alocMap);
+      setPassageiros(p as Passageiro[]);
     } catch { /* */ }
     setLoading(false);
   };
@@ -69,18 +59,11 @@ export function PassageirosClient({
   useEffect(() => { carregar(); }, [filialId]);
 
   const todosPassageiros = useMemo(() => {
-    const todos: (Passageiro & { rotaNome?: string; rotaTurno?: string })[] = [];
-    for (const p of naoAlocados) {
-      todos.push({ ...p, rotaId: null });
-    }
-    for (const [rotaId, pass] of alocados) {
-      const rota = rotas.find(r => r.id === rotaId);
-      for (const p of pass) {
-        todos.push({ ...p, rotaId, rotaNome: rota?.nome, rotaTurno: rota?.turno });
-      }
-    }
-    return todos;
-  }, [naoAlocados, alocados, rotas]);
+    return passageiros.map(p => {
+      const rota = p.rotaId ? rotas.find(r => r.id === p.rotaId) : undefined;
+      return { ...p, rotaNome: rota?.nome, rotaTurno: rota?.turno };
+    });
+  }, [passageiros, rotas]);
 
   const cidades = useMemo(() =>
     [...new Set(todosPassageiros.map(p => p.cidade).filter(Boolean))].sort() as string[],
@@ -162,7 +145,7 @@ export function PassageirosClient({
     });
   };
 
-  const semRota = naoAlocados.length;
+  const semRota = todosPassageiros.filter(p => !p.rotaId).length;
   const comRota = todosPassageiros.length - semRota;
 
   if (loading) {

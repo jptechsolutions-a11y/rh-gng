@@ -174,7 +174,7 @@ function RotaCard({ rota }: { rota: { id: string; nome: string; turno: string; l
         </span>
       </div>
       <div className="flex items-center justify-between text-xs text-conecta-muted mb-2">
-        <span>{rota.passageiros}/{rota.lugares} lugares</span>
+        <span>{rota.passageiros}/{rota.lugares} lugares · {rota.lugares - rota.passageiros} disponíveis</span>
         <span className="font-semibold text-conecta-primary">{pct}%</span>
       </div>
       <div className="h-2 bg-slate-100 rounded-full overflow-hidden">

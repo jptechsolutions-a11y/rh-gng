@@ -167,6 +167,19 @@ export async function removerPassageiro(id: string) {
   return { ok: true };
 }
 
+export async function listarTodosPassageiros(filialIdParam?: string) {
+  const s = await requireTransporte();
+  const filialId = getFilialId(s, filialIdParam);
+  return db
+    .select()
+    .from(schema.transportePassageiros)
+    .where(and(
+      eq(schema.transportePassageiros.filialId, filialId),
+      eq(schema.transportePassageiros.ativo, true),
+    ))
+    .orderBy(asc(schema.transportePassageiros.nome));
+}
+
 // ─── Chamada diária ──────────────────────────────────────────
 
 export async function obterChamada(rotaId: string, data: string) {

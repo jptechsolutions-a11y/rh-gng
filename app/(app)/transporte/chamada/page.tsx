@@ -1,30 +1,45 @@
 import { TopBar } from '@/components/layout/TopBar';
 import { requireSession } from '@/lib/auth/session';
-import { listarRotas } from '@/actions/transporte';
+import { db, schema } from '@/db/client';
+import { eq, and, asc } from 'drizzle-orm';
 import { ChamadaClient } from '@/components/transporte/ChamadaClient';
 
 export const dynamic = 'force-dynamic';
 
 export default async function ChamadaPage() {
   const s = await requireSession();
+  const isAdmin = s.perfil === 'admin';
   const badge = s.perfil === 'filial' ? `FILIAL ${s.filialCodigo}` : 'ADMIN';
 
-  const rotas = s.perfil === 'filial'
-    ? (await listarRotas()).filter(r => r.ativo)
-    : [];
+  let filiais: { id: string; codigo: string; nome: string }[] = [];
+
+  if (isAdmin) {
+    try {
+      filiais = await db
+        .select({ id: schema.filiais.id, codigo: schema.filiais.codigo, nome: schema.filiais.nome })
+        .from(schema.filiais)
+        .innerJoin(
+          schema.filiaisModulos,
+          and(
+            eq(schema.filiaisModulos.filialId, schema.filiais.id),
+            eq(schema.filiaisModulos.moduloSlug, 'transporte'),
+            eq(schema.filiaisModulos.ativo, true),
+          ),
+        )
+        .orderBy(asc(schema.filiais.codigo));
+    } catch {
+      filiais = [];
+    }
+  }
 
   return (
     <>
       <TopBar titulo="Chamada Diária" subtitulo="Controle de presença nas rotas de transporte" badge={badge} />
-      <div className="p-6">
-        {rotas.length > 0 ? (
-          <ChamadaClient rotas={rotas.map(r => ({ id: r.id, nome: r.nome, turno: r.turno, lugares: r.lugares }))} />
-        ) : (
-          <div className="bg-white rounded-xl border border-conecta-primary/8 p-8 text-center text-conecta-muted">
-            <p className="text-sm">Nenhuma rota ativa encontrada.</p>
-          </div>
-        )}
-      </div>
+      <ChamadaClient
+        perfil={s.perfil}
+        filialId={s.perfil === 'filial' ? s.filialId : undefined}
+        filiais={filiais}
+      />
     </>
   );
 }

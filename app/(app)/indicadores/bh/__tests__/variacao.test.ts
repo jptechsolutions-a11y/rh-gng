@@ -21,8 +21,8 @@ describe('calcVariacao', () => {
 
 describe('formatHoras', () => {
   it('formata com 2 casas e h', () => {
-    expect(formatHoras(12.5)).toBe('12,50 h');
-    expect(formatHoras(0)).toBe('0,00 h');
+    expect(formatHoras(12.5)).toBe('12:30');
+    expect(formatHoras(0)).toBe('00:00');
   });
 });
 

@@ -35,11 +35,11 @@ describe('top5Por', () => {
     ];
     const top = top5Por(rows, 'funcao');
     expect(top.map(t => t.label)).toEqual(['A','B','C','D','E']);
-    expect(top[0]).toEqual({ label: 'A', valor: 15 });
+    expect(top[0]).toEqual({ label: 'A', valor: 15, valorPgto: 200 });
   });
   it('ignora null/empty', () => {
     const rows = [row({ funcao: null, horasDecimal: 5 }), row({ funcao: 'A', horasDecimal: 3 })];
-    expect(top5Por(rows, 'funcao')).toEqual([{ label: 'A', valor: 3 }]);
+    expect(top5Por(rows, 'funcao')).toEqual([{ label: 'A', valor: 3, valorPgto: 100 }]);
   });
 });
 

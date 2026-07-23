@@ -540,3 +540,64 @@ export type QlpColaborador = typeof qlpColaboradores.$inferSelect;
 export type QlpLider = typeof qlpLideres.$inferSelect;
 export type QlpVinculo = typeof qlpVinculos.$inferSelect;
 export type QlpHistoricoRow = typeof qlpHistorico.$inferSelect;
+
+// ============================================================
+// Permissões de módulos por filial
+// ============================================================
+
+export const filiaisModulos = pgTable('filiais_modulos', {
+  filialId: uuid('filial_id').notNull().references(() => filiais.id, { onDelete: 'cascade' }),
+  moduloSlug: text('modulo_slug').notNull(),
+  ativo: boolean('ativo').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.filialId, t.moduloSlug] }),
+  slugIdx: index('filiais_modulos_slug_idx').on(t.moduloSlug),
+}));
+
+// ============================================================
+// Transporte — Rotas de van, passageiros e chamada diária
+// ============================================================
+
+export const transporteRotas = pgTable('transporte_rotas', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  filialId: uuid('filial_id').notNull().references(() => filiais.id, { onDelete: 'restrict' }),
+  nome: text('nome').notNull(),
+  turno: text('turno').notNull(),
+  lugares: integer('lugares').notNull(),
+  ordem: integer('ordem').notNull().default(0),
+  ativo: boolean('ativo').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  filialIdx: index('transporte_rotas_filial_idx').on(t.filialId),
+  filialOrdemIdx: index('transporte_rotas_filial_ordem_idx').on(t.filialId, t.ordem),
+}));
+
+export const transportePassageiros = pgTable('transporte_passageiros', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  filialId: uuid('filial_id').notNull().references(() => filiais.id, { onDelete: 'cascade' }),
+  rotaId: uuid('rota_id').references(() => transporteRotas.id, { onDelete: 'set null' }),
+  nome: text('nome').notNull(),
+  chapa: text('chapa'),
+  cidade: text('cidade'),
+  ativo: boolean('ativo').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  filialIdx: index('transporte_passageiros_filial_idx').on(t.filialId),
+  rotaIdx: index('transporte_passageiros_rota_idx').on(t.rotaId),
+  chapaIdx: index('transporte_passageiros_chapa_idx').on(t.chapa),
+}));
+
+export const transporteChamada = pgTable('transporte_chamada', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  passageiroId: uuid('passageiro_id').notNull().references(() => transportePassageiros.id, { onDelete: 'cascade' }),
+  rotaId: uuid('rota_id').notNull().references(() => transporteRotas.id, { onDelete: 'cascade' }),
+  data: date('data').notNull(),
+  presente: boolean('presente').notNull().default(true),
+  observacao: text('observacao'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  rotaDataIdx: index('transporte_chamada_rota_data_idx').on(t.rotaId, t.data),
+  passageiroIdx: index('transporte_chamada_passageiro_idx').on(t.passageiroId),
+  uniq: index('transporte_chamada_uniq').on(t.passageiroId, t.rotaId, t.data),
+}));

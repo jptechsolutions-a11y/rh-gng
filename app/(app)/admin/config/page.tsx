@@ -10,6 +10,8 @@ import {
   Target,
   MessagesSquare,
   ShieldCheck,
+  Bus,
+  Route,
 } from 'lucide-react';
 import { requireSession } from '@/lib/auth/session';
 
@@ -63,6 +65,18 @@ export default async function ConfigPage() {
       title: 'Usuários personalizados',
       desc: 'Criar acessos regionais/nacionais (só leitura) para indicadores.',
       href: '/admin/config/usuarios',
+    },
+    {
+      icon: Bus,
+      title: 'Módulos por filial',
+      desc: 'Ativar/desativar módulos específicos para cada filial.',
+      href: '/admin/config/modulos',
+    },
+    {
+      icon: Route,
+      title: 'Transporte — Rotas',
+      desc: 'Gerenciar rotas de van, passageiros e turnos.',
+      href: '/admin/config/transporte',
     },
   ];
   return (

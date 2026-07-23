@@ -4,6 +4,7 @@ import {
   CalendarClock, Plus, BarChart3, UserCog, Target, BookOpen, Printer, ClipboardCheck,
   GalleryHorizontal, Cloud, Clock, AlertTriangle, Trophy, GraduationCap, CalendarOff,
   Network, Upload, IdCard, ListTree, UsersRound,
+  Bus, Route,
 } from 'lucide-react';
 
 // Fonte ÚNICA de navegação — consumida pela Sidebar (desktop) e pela MobileNav.
@@ -86,4 +87,13 @@ export const QLP_NAV_ADMIN_EXTRAS: NavItem[] = [
   { href: '/qlp/lideres',   label: 'Líderes',      icon: ListTree },
   { href: '/qlp/cargos',    label: 'Cargos',       icon: IdCard },
   { href: '/qlp/importar',  label: 'Importar XLS', icon: Upload },
+];
+
+export const TRANSPORTE_NAV_BASE: NavItem[] = [
+  { href: '/transporte',              label: 'Visão geral',  icon: Bus },
+  { href: '/transporte/passageiros',  label: 'Passageiros',  icon: Users },
+  { href: '/transporte/chamada',      label: 'Chamada',      icon: ClipboardCheck },
+];
+export const TRANSPORTE_NAV_ADMIN_EXTRAS: NavItem[] = [
+  { href: '/admin/config/transporte', label: 'Rotas', icon: Route },
 ];

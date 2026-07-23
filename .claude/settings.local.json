@@ -141,7 +141,16 @@
       "Bash(node \"node_modules/vitest/vitest.mjs\" run)",
       "Bash(node \"node_modules/next/dist/bin/next\" build)",
       "Bash(node \"node_modules/next/dist/bin/next\" lint --dir actions/qlp --dir components/qlp --dir \"app/\\(app\\)/qlp\")",
-      "PowerShell(npx tsc --noEmit 2>&1)"
+      "PowerShell(npx tsc --noEmit 2>&1)",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "mcp__Claude_in_Chrome__switch_browser",
+      "mcp__Claude_in_Chrome__list_connected_browsers",
+      "Bash(pip show *)",
+      "Bash(python manual_rh_gng.py)",
+      "Bash(python manual_qlp.py)",
+      "Skill(artifact-design)",
+      "Skill(artifact-design:*)",
+      "Bash(gh pr *)"
     ]
   }
 }

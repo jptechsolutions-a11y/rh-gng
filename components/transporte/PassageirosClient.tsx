@@ -8,7 +8,7 @@ import {
 } from '@/actions/transporte';
 import {
   Search, MapPin, ArrowRight, Users, AlertTriangle, Bus,
-  CheckCircle2, XCircle, ChevronDown, Trash2, RotateCcw,
+  CheckCircle2, ChevronDown, Trash2, RotateCcw,
 } from 'lucide-react';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 
@@ -235,7 +235,7 @@ export function PassageirosClient({
             className="h-9 w-full rounded-md border border-slate-200 bg-white text-sm pl-9 pr-3"
           />
         </div>
-        <select value={filtroStatus} onChange={e => setFiltroStatus(e.target.value as any)}
+        <select value={filtroStatus} onChange={e => setFiltroStatus(e.target.value as 'todos' | 'sem_rota' | 'alocado')}
           className="h-9 rounded-md border border-slate-200 bg-white text-xs px-2">
           <option value="todos">Todos</option>
           <option value="sem_rota">Sem rota ({semRota})</option>

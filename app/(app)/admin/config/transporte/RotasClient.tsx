@@ -4,10 +4,10 @@ import { useState, useTransition, useEffect } from 'react';
 import { toast } from 'sonner';
 import {
   listarRotas, criarRota, toggleRotaAtiva,
-  listarPassageiros, adicionarPassageiro, removerPassageiro,
-  listarNaoAlocados, alocarPassageiro, alocarMultiplos, desalocarPassageiro,
+  listarPassageiros, removerPassageiro,
+  listarNaoAlocados, alocarMultiplos, desalocarPassageiro,
 } from '@/actions/transporte';
-import { Plus, X, CheckCircle2, Power, Trash2, ChevronDown, ChevronUp, UserPlus, MapPin, ArrowRight, Users, AlertTriangle } from 'lucide-react';
+import { Plus, X, CheckCircle2, Power, Trash2, ChevronDown, ChevronUp, MapPin, ArrowRight, Users, AlertTriangle } from 'lucide-react';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 
 type Filial = { id: string; codigo: string; nome: string };
@@ -29,7 +29,6 @@ export function RotasClient({ filiais }: { filiais: Filial[] }) {
   const [naoAlocados, setNaoAlocados] = useState<Passageiro[]>([]);
   const [showNaoAlocados, setShowNaoAlocados] = useState(false);
   const [selectedNaoAlocados, setSelectedNaoAlocados] = useState<Set<string>>(new Set());
-  const [alocandoParaRota, setAlocandoParaRota] = useState<string | null>(null);
   const [filtroCidade, setFiltroCidade] = useState('');
 
   // Form state

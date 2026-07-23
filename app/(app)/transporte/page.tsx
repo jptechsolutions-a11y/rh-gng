@@ -1,8 +1,7 @@
 import { TopBar } from '@/components/layout/TopBar';
 import { requireSession } from '@/lib/auth/session';
 import { db, schema } from '@/db/client';
-import { eq, and, asc, sql, isNull } from 'drizzle-orm';
-import { Bus, Users, MapPin, AlertTriangle } from 'lucide-react';
+import { eq, and, asc } from 'drizzle-orm';
 import { TransporteOverviewClient } from '@/components/transporte/TransporteOverviewClient';
 
 export const dynamic = 'force-dynamic';

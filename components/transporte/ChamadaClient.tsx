@@ -87,136 +87,159 @@ export function ChamadaClient({
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
-    const dataFormatada = new Date(data + 'T12:00:00').toLocaleDateString('pt-BR', {
-      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-    });
+    const sel = new Date(data + 'T12:00:00');
+    const dow = sel.getDay();
+    const monday = new Date(sel);
+    monday.setDate(sel.getDate() - ((dow === 0 ? 7 : dow) - 1));
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+
+    const fmt = (d: Date) => d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+    const semanaLabel = `${fmt(monday)} a ${fmt(sunday)}/${sunday.getFullYear()}`;
 
     const filialSelecionada = filiais.find(f => f.id === filialId);
     const filialLabel = filialSelecionada
       ? `${filialSelecionada.codigo} — ${filialSelecionada.nome}`
       : '';
 
+    const dias = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
+    const diasDates: string[] = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      diasDates.push(d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }));
+    }
+
+    const diasHeaders = dias.map((d, i) =>
+      `<th class="dia-col">${d}<br><span style="font-weight:normal;font-size:9px;">${diasDates[i]}</span></th>`
+    ).join('');
+
     const rows = registros.map((r, i) => `
       <tr>
         <td style="text-align:center;">${i + 1}</td>
-        <td>${r.nome}</td>
+        <td class="nome-col">${r.nome}</td>
         <td style="text-align:center;font-family:monospace;">${r.chapa ?? '—'}</td>
-        <td class="assinatura"></td>
+        ${dias.map(() => '<td class="dia-cell"></td>').join('')}
       </tr>
     `).join('');
 
     printWindow.document.write(`<!DOCTYPE html>
 <html>
 <head>
-  <title>Chamada — ${rotaSelecionada?.nome ?? ''}</title>
+  <title>Controle de Vans — ${rotaSelecionada?.nome ?? ''}</title>
   <style>
-    @page { size: landscape; margin: 12mm; }
+    @page { size: landscape; margin: 10mm; }
     * { box-sizing: border-box; }
-    body { font-family: 'Segoe UI', Arial, sans-serif; color: #1a1a1a; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; color: #000; margin: 0; padding: 0; }
 
     .page-border {
-      border: 2px solid #0D2B6B;
-      border-radius: 8px;
-      padding: 20px 24px;
-      min-height: calc(100vh - 24mm);
+      border: 3px solid #0D2B6B;
+      padding: 16px 20px;
+      min-height: calc(100vh - 20mm);
     }
 
-    .header {
+    .title-block {
       text-align: center;
-      padding-bottom: 12px;
-      margin-bottom: 16px;
-      border-bottom: 2px solid #0D2B6B;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 3px solid #0D2B6B;
     }
-    .header h1 {
-      font-size: 20px;
-      margin: 0 0 2px;
-      color: #0D2B6B;
-      letter-spacing: 1px;
+    .title-block h1 {
+      font-size: 22px;
+      font-weight: 900;
+      margin: 0 0 4px;
+      letter-spacing: 2px;
       text-transform: uppercase;
     }
-    .header h2 {
-      font-size: 15px;
-      margin: 0 0 4px;
-      font-weight: 600;
-      color: #E8621A;
-    }
-    .header .meta {
+    .title-block .subtitle {
       font-size: 12px;
-      color: #666;
+      color: #444;
     }
 
-    .info-bar {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 14px;
-      gap: 8px;
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+      margin-bottom: 12px;
+      border: 2px solid #0D2B6B;
     }
-    .info-bar .info-item {
-      flex: 1;
-      text-align: center;
-      padding: 8px 10px;
+    .info-grid .info-cell {
+      padding: 6px 10px;
       border: 1px solid #0D2B6B;
-      border-radius: 6px;
       font-size: 11px;
     }
-    .info-bar .info-item strong {
-      display: block;
+    .info-grid .info-cell .label {
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 9px;
+      letter-spacing: 0.5px;
+      color: #555;
+    }
+    .info-grid .info-cell .value {
+      font-weight: 700;
       font-size: 13px;
-      color: #0D2B6B;
-      margin-bottom: 2px;
     }
 
-    table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    table { width: 100%; border-collapse: collapse; }
     th {
       background: #0D2B6B;
       color: white;
-      padding: 8px 10px;
-      text-align: left;
-      font-size: 11px;
+      padding: 6px 4px;
+      text-align: center;
+      font-size: 10px;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.3px;
+      border: 1px solid #0a1f4d;
     }
+    th.nome-th { text-align: left; padding-left: 8px; }
     td {
-      padding: 7px 10px;
-      border: 1px solid #d1d5db;
+      padding: 5px 6px;
+      border: 1px solid #999;
+      font-size: 10px;
     }
-    tr:nth-child(even) td { background: #f8fafc; }
-    td.assinatura { min-width: 200px; border-bottom: 1px solid #999; }
+    .nome-col {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 200px;
+      font-weight: 600;
+    }
+    .dia-col { width: 70px; }
+    .dia-cell { width: 70px; height: 22px; }
+    tr:nth-child(even) td { background: #f5f5f5; }
 
     .footer {
-      margin-top: 20px;
-      padding-top: 10px;
-      border-top: 1px solid #d1d5db;
+      margin-top: 12px;
+      padding-top: 6px;
+      border-top: 2px solid #0D2B6B;
       display: flex;
       justify-content: space-between;
-      font-size: 10px;
-      color: #999;
+      font-size: 9px;
+      color: #888;
     }
   </style>
 </head>
 <body>
   <div class="page-border">
-    <div class="header">
-      <h1>Chamada Diária — Transporte</h1>
-      <h2>${rotaSelecionada?.nome ?? ''} — ${rotaSelecionada?.turno ?? ''}</h2>
-      <div class="meta">${dataFormatada}${filialLabel ? ` · ${filialLabel}` : ''}</div>
+    <div class="title-block">
+      <h1>Controle de Usuários de Vans</h1>
+      <div class="subtitle">Semana: ${semanaLabel}</div>
     </div>
 
-    <div class="info-bar">
-      <div class="info-item"><strong>${rotaSelecionada?.nome ?? ''}</strong>Rota</div>
-      <div class="info-item"><strong>${rotaSelecionada?.turno ?? ''}</strong>Turno</div>
-      <div class="info-item"><strong>${rotaSelecionada?.lugares ?? 0}</strong>Lugares</div>
-      <div class="info-item"><strong>${registros.length}</strong>Passageiros</div>
-      <div class="info-item"><strong>${data.split('-').reverse().join('/')}</strong>Data</div>
+    <div class="info-grid">
+      <div class="info-cell"><div class="label">Filial</div><div class="value">${filialLabel || '—'}</div></div>
+      <div class="info-cell"><div class="label">Rota</div><div class="value">${rotaSelecionada?.nome ?? ''}</div></div>
+      <div class="info-cell"><div class="label">Turno</div><div class="value">${rotaSelecionada?.turno ?? ''}</div></div>
+      <div class="info-cell"><div class="label">Lugares</div><div class="value">${rotaSelecionada?.lugares ?? 0}</div></div>
     </div>
 
     <table>
       <thead>
         <tr>
-          <th style="width:36px;text-align:center;">#</th>
-          <th>Nome do Colaborador</th>
-          <th style="width:100px;text-align:center;">Matrícula</th>
-          <th style="width:220px;text-align:center;">Assinatura</th>
+          <th style="width:28px;">#</th>
+          <th class="nome-th" style="min-width:180px;">Nome</th>
+          <th style="width:80px;">Chapa</th>
+          ${diasHeaders}
         </tr>
       </thead>
       <tbody>${rows}</tbody>

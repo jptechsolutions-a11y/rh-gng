@@ -124,9 +124,8 @@ export function ChamadaClient({
     `).join('');
 
     const n = registros.length;
-    const fs = n > 25 ? '7.5px' : n > 18 ? '8.5px' : '9px';
-    const cp = n > 25 ? '1px 3px' : n > 18 ? '2px 4px' : '3px 5px';
-    const rh = n > 25 ? '13px' : n > 18 ? '15px' : '17px';
+    const fs = n > 30 ? '8px' : n > 22 ? '9px' : '10px';
+    const cp = n > 30 ? '1px 4px' : '2px 5px';
 
     printWindow.document.write(`<!DOCTYPE html>
 <html>
@@ -194,8 +193,9 @@ export function ChamadaClient({
     }
 
     /* ── Tabela ── */
-    .table-wrap { flex: 1; overflow: hidden; }
-    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    .table-wrap { flex: 1; overflow: hidden; display: flex; }
+    table { width: 100%; height: 100%; border-collapse: collapse; table-layout: fixed; }
+    thead tr { height: 30px; }
     th {
       background: #e8e8e8;
       color: #000;
@@ -223,7 +223,6 @@ export function ChamadaClient({
       font-weight: 600;
     }
     .chapa-col { text-align: center; font-family: monospace; font-size: ${fs}; }
-    .dia-cell { height: ${rh}; }
 
     .footer-row {
       flex-shrink: 0;

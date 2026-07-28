@@ -123,131 +123,127 @@ export function ChamadaClient({
       </tr>
     `).join('');
 
+    const totalPass = registros.length;
+    const fontSize = totalPass > 25 ? '8px' : totalPass > 18 ? '9px' : '10px';
+    const cellPad = totalPass > 25 ? '2px 4px' : totalPass > 18 ? '3px 5px' : '4px 6px';
+    const rowH = totalPass > 25 ? '14px' : totalPass > 18 ? '16px' : '18px';
+
     printWindow.document.write(`<!DOCTYPE html>
 <html>
 <head>
   <title>Controle de Vans — ${rotaSelecionada?.nome ?? ''}</title>
   <style>
-    @page { size: landscape; margin: 10mm; }
-    * { box-sizing: border-box; }
-    body { font-family: Arial, sans-serif; color: #000; margin: 0; padding: 0; }
+    @page { size: landscape; margin: 6mm; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; color: #000; }
 
-    .page-border {
-      border: 3px solid #0D2B6B;
-      padding: 16px 20px;
-      min-height: calc(100vh - 20mm);
-    }
-
-    .title-block {
-      text-align: center;
-      margin-bottom: 12px;
-      padding-bottom: 10px;
-      border-bottom: 3px solid #0D2B6B;
-    }
-    .title-block h1 {
-      font-size: 22px;
-      font-weight: 900;
-      margin: 0 0 4px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-    }
-    .title-block .subtitle {
-      font-size: 12px;
-      color: #444;
-    }
-
-    .info-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 0;
-      margin-bottom: 12px;
+    .page {
       border: 2px solid #0D2B6B;
-    }
-    .info-grid .info-cell {
-      padding: 6px 10px;
-      border: 1px solid #0D2B6B;
-      font-size: 11px;
-    }
-    .info-grid .info-cell .label {
-      font-weight: 700;
-      text-transform: uppercase;
-      font-size: 9px;
-      letter-spacing: 0.5px;
-      color: #555;
-    }
-    .info-grid .info-cell .value {
-      font-weight: 700;
-      font-size: 13px;
+      padding: 8px 10px;
+      height: calc(100vh - 12mm);
+      display: flex;
+      flex-direction: column;
     }
 
-    table { width: 100%; border-collapse: collapse; }
+    .header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 6px;
+      margin-bottom: 6px;
+      border-bottom: 2px solid #0D2B6B;
+      flex-shrink: 0;
+    }
+    .header-row h1 {
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .header-row .info {
+      display: flex;
+      gap: 12px;
+      font-size: 9px;
+    }
+    .header-row .info span { white-space: nowrap; }
+    .header-row .info strong { color: #0D2B6B; }
+
+    .table-wrap { flex: 1; overflow: hidden; }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
     th {
       background: #0D2B6B;
       color: white;
-      padding: 6px 4px;
+      padding: 3px 4px;
       text-align: center;
-      font-size: 10px;
+      font-size: 8px;
       text-transform: uppercase;
       letter-spacing: 0.3px;
       border: 1px solid #0a1f4d;
     }
-    th.nome-th { text-align: left; padding-left: 8px; }
+    th.nome-th { text-align: left; padding-left: 6px; }
     td {
-      padding: 5px 6px;
-      border: 1px solid #999;
-      font-size: 10px;
+      padding: ${cellPad};
+      border: 1px solid #aaa;
+      font-size: ${fontSize};
+      line-height: 1.1;
     }
     .nome-col {
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 200px;
       font-weight: 600;
     }
-    .dia-col { width: 70px; }
-    .dia-cell { width: 70px; height: 22px; }
-    tr:nth-child(even) td { background: #f5f5f5; }
+    .dia-cell { height: ${rowH}; }
+    tr:nth-child(even) td { background: #f7f7f7; }
 
-    .footer {
-      margin-top: 12px;
-      padding-top: 6px;
-      border-top: 2px solid #0D2B6B;
+    .footer-row {
+      flex-shrink: 0;
+      padding-top: 4px;
+      margin-top: 4px;
+      border-top: 1px solid #ccc;
       display: flex;
       justify-content: space-between;
-      font-size: 9px;
-      color: #888;
+      font-size: 7px;
+      color: #999;
     }
   </style>
 </head>
 <body>
-  <div class="page-border">
-    <div class="title-block">
+  <div class="page">
+    <div class="header-row">
       <h1>Controle de Usuários de Vans</h1>
-      <div class="subtitle">Semana: ${semanaLabel}</div>
+      <div class="info">
+        <span><strong>Filial:</strong> ${filialLabel || '—'}</span>
+        <span><strong>Rota:</strong> ${rotaSelecionada?.nome ?? ''}</span>
+        <span><strong>Turno:</strong> ${rotaSelecionada?.turno ?? ''}</span>
+        <span><strong>Lugares:</strong> ${rotaSelecionada?.lugares ?? 0}</span>
+        <span><strong>Semana:</strong> ${semanaLabel}</span>
+      </div>
     </div>
 
-    <div class="info-grid">
-      <div class="info-cell"><div class="label">Filial</div><div class="value">${filialLabel || '—'}</div></div>
-      <div class="info-cell"><div class="label">Rota</div><div class="value">${rotaSelecionada?.nome ?? ''}</div></div>
-      <div class="info-cell"><div class="label">Turno</div><div class="value">${rotaSelecionada?.turno ?? ''}</div></div>
-      <div class="info-cell"><div class="label">Lugares</div><div class="value">${rotaSelecionada?.lugares ?? 0}</div></div>
+    <div class="table-wrap">
+      <table>
+        <colgroup>
+          <col style="width:22px">
+          <col>
+          <col style="width:60px">
+          <col span="7" style="width:56px">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th class="nome-th">Nome</th>
+            <th>Chapa</th>
+            ${diasHeaders}
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
     </div>
 
-    <table>
-      <thead>
-        <tr>
-          <th style="width:28px;">#</th>
-          <th class="nome-th" style="min-width:180px;">Nome</th>
-          <th style="width:80px;">Chapa</th>
-          ${diasHeaders}
-        </tr>
-      </thead>
-      <tbody>${rows}</tbody>
-    </table>
-
-    <div class="footer">
-      <span>Conecta G&G — Controle de Transporte</span>
-      <span>Impresso em ${new Date().toLocaleString('pt-BR')}</span>
+    <div class="footer-row">
+      <span>Conecta G&G</span>
+      <span>${new Date().toLocaleString('pt-BR')}</span>
     </div>
   </div>
 

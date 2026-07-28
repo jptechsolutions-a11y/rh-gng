@@ -91,116 +91,145 @@ export function ChamadaClient({
     const dow = sel.getDay();
     const monday = new Date(sel);
     monday.setDate(sel.getDate() - ((dow === 0 ? 7 : dow) - 1));
-    const sunday = new Date(monday);
-    sunday.setDate(monday.getDate() + 6);
-
     const fmt = (d: Date) => d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-    const semanaLabel = `${fmt(monday)} a ${fmt(sunday)}/${sunday.getFullYear()}`;
 
     const filialSelecionada = filiais.find(f => f.id === filialId);
     const filialLabel = filialSelecionada
       ? `${filialSelecionada.codigo} — ${filialSelecionada.nome}`
       : '';
 
-    const dias = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
+    const dias = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
     const diasDates: string[] = [];
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < 6; i++) {
       const d = new Date(monday);
       d.setDate(monday.getDate() + i);
       diasDates.push(d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }));
     }
 
+    const saturday = new Date(monday);
+    saturday.setDate(monday.getDate() + 5);
+    const semanaLabel = `${fmt(monday)} a ${fmt(saturday)}/${saturday.getFullYear()}`;
+
     const diasHeaders = dias.map((d, i) =>
-      `<th class="dia-col">${d}<br><span style="font-weight:normal;font-size:9px;">${diasDates[i]}</span></th>`
+      `<th class="dia-col">${d}<br><span class="dia-date">${diasDates[i]}</span></th>`
     ).join('');
 
     const rows = registros.map((r, i) => `
       <tr>
-        <td style="text-align:center;">${i + 1}</td>
+        <td class="num-col">${i + 1}</td>
         <td class="nome-col">${r.nome}</td>
-        <td style="text-align:center;font-family:monospace;">${r.chapa ?? '—'}</td>
+        <td class="chapa-col">${r.chapa ?? '—'}</td>
         ${dias.map(() => '<td class="dia-cell"></td>').join('')}
       </tr>
     `).join('');
 
-    const totalPass = registros.length;
-    const fontSize = totalPass > 25 ? '8px' : totalPass > 18 ? '9px' : '10px';
-    const cellPad = totalPass > 25 ? '2px 4px' : totalPass > 18 ? '3px 5px' : '4px 6px';
-    const rowH = totalPass > 25 ? '14px' : totalPass > 18 ? '16px' : '18px';
+    const n = registros.length;
+    const fs = n > 25 ? '7.5px' : n > 18 ? '8.5px' : '9px';
+    const cp = n > 25 ? '1px 3px' : n > 18 ? '2px 4px' : '3px 5px';
+    const rh = n > 25 ? '13px' : n > 18 ? '15px' : '17px';
 
     printWindow.document.write(`<!DOCTYPE html>
 <html>
 <head>
   <title>Controle de Vans — ${rotaSelecionada?.nome ?? ''}</title>
   <style>
-    @page { size: landscape; margin: 6mm; }
+    @page { size: landscape; margin: 5mm; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: Arial, sans-serif; color: #000; }
+    body { font-family: Arial, sans-serif; color: #000; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
     .page {
-      border: 2px solid #0D2B6B;
-      padding: 8px 10px;
-      height: calc(100vh - 12mm);
+      border: 2px solid #000;
+      padding: 6px 8px;
+      height: calc(100vh - 10mm);
       display: flex;
       flex-direction: column;
     }
 
-    .header-row {
+    /* ── Cabeçalho ── */
+    .header {
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding-bottom: 6px;
-      margin-bottom: 6px;
-      border-bottom: 2px solid #0D2B6B;
+      align-items: stretch;
+      gap: 0;
+      margin-bottom: 5px;
+      border: 2px solid #000;
       flex-shrink: 0;
     }
-    .header-row h1 {
-      font-size: 14px;
+    .header-title {
+      padding: 5px 12px;
+      border-right: 2px solid #000;
+      display: flex;
+      align-items: center;
+    }
+    .header-title h1 {
+      font-size: 12px;
       font-weight: 900;
       letter-spacing: 1px;
       text-transform: uppercase;
+      white-space: nowrap;
     }
-    .header-row .info {
+    .header-info {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      flex: 1;
+    }
+    .header-info .hcell {
+      padding: 3px 8px;
+      border-right: 1px solid #000;
+      font-size: 8px;
       display: flex;
-      gap: 12px;
-      font-size: 9px;
+      flex-direction: column;
+      justify-content: center;
     }
-    .header-row .info span { white-space: nowrap; }
-    .header-row .info strong { color: #0D2B6B; }
+    .header-info .hcell:last-child { border-right: none; }
+    .header-info .hcell .hlabel {
+      font-size: 7px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #555;
+      font-weight: 700;
+    }
+    .header-info .hcell .hvalue {
+      font-size: 10px;
+      font-weight: 800;
+    }
 
+    /* ── Tabela ── */
     .table-wrap { flex: 1; overflow: hidden; }
     table { width: 100%; border-collapse: collapse; table-layout: fixed; }
     th {
-      background: #0D2B6B;
-      color: white;
-      padding: 3px 4px;
+      background: #e8e8e8;
+      color: #000;
+      padding: 3px 2px;
       text-align: center;
       font-size: 8px;
+      font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.3px;
-      border: 1px solid #0a1f4d;
+      border: 1px solid #000;
     }
-    th.nome-th { text-align: left; padding-left: 6px; }
+    th.nome-th { text-align: left; padding-left: 5px; }
+    .dia-date { font-weight: normal; font-size: 7px; }
     td {
-      padding: ${cellPad};
-      border: 1px solid #aaa;
-      font-size: ${fontSize};
+      padding: ${cp};
+      border: 1px solid #555;
+      font-size: ${fs};
       line-height: 1.1;
     }
+    .num-col { text-align: center; }
     .nome-col {
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       font-weight: 600;
     }
-    .dia-cell { height: ${rowH}; }
-    tr:nth-child(even) td { background: #f7f7f7; }
+    .chapa-col { text-align: center; font-family: monospace; font-size: ${fs}; }
+    .dia-cell { height: ${rh}; }
 
     .footer-row {
       flex-shrink: 0;
-      padding-top: 4px;
-      margin-top: 4px;
-      border-top: 1px solid #ccc;
+      padding-top: 3px;
+      margin-top: 3px;
+      border-top: 1px solid #aaa;
       display: flex;
       justify-content: space-between;
       font-size: 7px;
@@ -210,24 +239,24 @@ export function ChamadaClient({
 </head>
 <body>
   <div class="page">
-    <div class="header-row">
-      <h1>Controle de Usuários de Vans</h1>
-      <div class="info">
-        <span><strong>Filial:</strong> ${filialLabel || '—'}</span>
-        <span><strong>Rota:</strong> ${rotaSelecionada?.nome ?? ''}</span>
-        <span><strong>Turno:</strong> ${rotaSelecionada?.turno ?? ''}</span>
-        <span><strong>Lugares:</strong> ${rotaSelecionada?.lugares ?? 0}</span>
-        <span><strong>Semana:</strong> ${semanaLabel}</span>
+    <div class="header">
+      <div class="header-title"><h1>Controle de Vans</h1></div>
+      <div class="header-info">
+        <div class="hcell"><span class="hlabel">Filial</span><span class="hvalue">${filialLabel || '—'}</span></div>
+        <div class="hcell"><span class="hlabel">Rota</span><span class="hvalue">${rotaSelecionada?.nome ?? ''}</span></div>
+        <div class="hcell"><span class="hlabel">Turno</span><span class="hvalue">${rotaSelecionada?.turno ?? ''}</span></div>
+        <div class="hcell"><span class="hlabel">Lugares</span><span class="hvalue">${rotaSelecionada?.lugares ?? 0}</span></div>
+        <div class="hcell"><span class="hlabel">Semana</span><span class="hvalue">${semanaLabel}</span></div>
       </div>
     </div>
 
     <div class="table-wrap">
       <table>
         <colgroup>
-          <col style="width:22px">
-          <col>
-          <col style="width:60px">
-          <col span="7" style="width:56px">
+          <col style="width:20px">
+          <col style="width:160px">
+          <col style="width:55px">
+          <col span="6">
         </colgroup>
         <thead>
           <tr>

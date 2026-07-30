@@ -40,6 +40,8 @@ export function InformacoesPassageiros({
   const [dados, setDados] = useState<Info[]>([]);
   const [loading, setLoading] = useState(true);
   const [busca, setBusca] = useState('');
+  const [filtroRota, setFiltroRota] = useState('');
+  const [filtroStatus, setFiltroStatus] = useState('');
   const [showImport, setShowImport] = useState(false);
 
   const carregar = async () => {
@@ -54,15 +56,31 @@ export function InformacoesPassageiros({
 
   useEffect(() => { carregar(); }, [filialId]);
 
+  const rotas = useMemo(() =>
+    [...new Set(dados.map(d => d.rotaNome).filter(Boolean))].sort() as string[],
+    [dados]
+  );
+
+  const statusList = useMemo(() =>
+    [...new Set(dados.map(d => d.situacao).filter(Boolean))].sort() as string[],
+    [dados]
+  );
+
   const filtrados = useMemo(() => {
-    if (!busca.trim()) return dados;
-    const q = busca.toLowerCase();
-    return dados.filter(d =>
-      d.nome.toLowerCase().includes(q) ||
-      (d.chapa ?? '').toLowerCase().includes(q) ||
-      (d.endereco ?? '').toLowerCase().includes(q)
-    );
-  }, [dados, busca]);
+    let result = dados;
+    if (busca.trim()) {
+      const q = busca.toLowerCase();
+      result = result.filter(d =>
+        d.nome.toLowerCase().includes(q) ||
+        (d.chapa ?? '').toLowerCase().includes(q) ||
+        (d.endereco ?? '').toLowerCase().includes(q)
+      );
+    }
+    if (filtroRota === '__sem_rota__') result = result.filter(d => !d.rotaNome);
+    else if (filtroRota) result = result.filter(d => d.rotaNome === filtroRota);
+    if (filtroStatus) result = result.filter(d => d.situacao === filtroStatus);
+    return result;
+  }, [dados, busca, filtroRota, filtroStatus]);
 
   if (loading) {
     return <div className="p-6 text-center text-conecta-muted text-sm">Carregando...</div>;
@@ -105,9 +123,9 @@ export function InformacoesPassageiros({
       )}
 
       {filialId && (
-        <div className="bg-white rounded-xl border border-conecta-primary/8 p-3"
+        <div className="bg-white rounded-xl border border-conecta-primary/8 p-3 flex flex-wrap items-center gap-3"
           style={{ boxShadow: '0 4px 24px -10px rgba(13,43,107,0.06)' }}>
-          <div className="relative">
+          <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-conecta-muted" />
             <input
               value={busca}
@@ -116,6 +134,21 @@ export function InformacoesPassageiros({
               className="h-9 w-full rounded-md border border-slate-200 bg-white text-sm pl-9 pr-3"
             />
           </div>
+          <select value={filtroRota} onChange={e => setFiltroRota(e.target.value)}
+            className="h-9 rounded-md border border-slate-200 bg-white text-xs px-2">
+            <option value="">Todas as rotas</option>
+            <option value="__sem_rota__">Sem rota</option>
+            {rotas.map(r => (
+              <option key={r} value={r}>{r}</option>
+            ))}
+          </select>
+          <select value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}
+            className="h-9 rounded-md border border-slate-200 bg-white text-xs px-2">
+            <option value="">Todos os status</option>
+            {statusList.map(s => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
         </div>
       )}
 
@@ -126,7 +159,6 @@ export function InformacoesPassageiros({
             <thead>
               <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-conecta-muted">
                 <th className="px-3 py-3 font-medium">Nome</th>
-                <th className="px-3 py-3 font-medium">Chapa</th>
                 <th className="px-3 py-3 font-medium">Rota</th>
                 <th className="px-3 py-3 font-medium">Veículo</th>
                 <th className="px-3 py-3 font-medium">Endereço</th>
@@ -138,7 +170,7 @@ export function InformacoesPassageiros({
             <tbody>
               {filtrados.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-conecta-muted text-sm">
+                  <td colSpan={7} className="px-4 py-8 text-center text-conecta-muted text-sm">
                     Nenhum passageiro encontrado
                   </td>
                 </tr>
@@ -146,7 +178,6 @@ export function InformacoesPassageiros({
                 filtrados.map(d => (
                   <tr key={d.id} className="border-b border-slate-50 hover:bg-slate-50/60">
                     <td className="px-3 py-2 font-medium text-conecta-primary whitespace-nowrap">{d.nome}</td>
-                    <td className="px-3 py-2 text-conecta-muted font-mono text-xs">{d.chapa ?? '—'}</td>
                     <td className="px-3 py-2">
                       {d.rotaNome ? (
                         <span className="inline-flex items-center gap-1 text-xs font-medium text-conecta-primary">

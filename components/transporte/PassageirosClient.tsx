@@ -11,6 +11,7 @@ import {
   CheckCircle2, ChevronDown, Trash2, RotateCcw,
 } from 'lucide-react';
 import { useConfirm } from '@/components/ui/confirm-dialog';
+import { ImportarPassageiros } from './ImportarPassageiros';
 
 type Filial = { id: string; codigo: string; nome: string };
 type Rota = { id: string; nome: string; turno: string; lugares: number; passageiros: number; ativo: boolean };
@@ -154,23 +155,30 @@ export function PassageirosClient({
 
   return (
     <div className="space-y-4 p-4 lg:p-6">
-      {/* Admin filial selector */}
-      {isAdmin && filiais.length > 0 && (
-        <div className="flex items-end gap-4">
-          <div className="flex-1 max-w-xs">
-            <label className="block text-xs font-medium text-conecta-primary mb-1">Filial</label>
-            <select
-              value={filialId}
-              onChange={e => { setFilialId(e.target.value); setSelecionados(new Set()); }}
-              className="h-9 w-full rounded-md border border-slate-200 bg-white text-sm px-3"
-            >
-              {filiais.map(f => (
-                <option key={f.id} value={f.id}>{f.codigo} — {f.nome}</option>
-              ))}
-            </select>
-          </div>
+      {/* Admin filial selector + Importar */}
+      {(isAdmin && filiais.length > 0) || !isAdmin ? (
+        <div className="flex items-end justify-between flex-wrap gap-4">
+          {isAdmin && filiais.length > 0 && (
+            <div className="flex-1 max-w-xs">
+              <label className="block text-xs font-medium text-conecta-primary mb-1">Filial</label>
+              <select
+                value={filialId}
+                onChange={e => { setFilialId(e.target.value); setSelecionados(new Set()); }}
+                className="h-9 w-full rounded-md border border-slate-200 bg-white text-sm px-3"
+              >
+                {filiais.map(f => (
+                  <option key={f.id} value={f.id}>{f.codigo} — {f.nome}</option>
+                ))}
+              </select>
+            </div>
+          )}
+          {filialId && (
+            <div className="ml-auto">
+              <ImportarPassageiros filialId={filialId} onImported={carregar} />
+            </div>
+          )}
         </div>
-      )}
+      ) : null}
 
       {/* Resumo */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">

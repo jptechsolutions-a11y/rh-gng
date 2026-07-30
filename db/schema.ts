@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm';
 import {
   pgTable, uuid, text, boolean, timestamp, integer, numeric, jsonb, date,
-  bigserial, primaryKey, index, check, smallint,
+  bigserial, primaryKey, index, uniqueIndex, check, smallint,
 } from 'drizzle-orm/pg-core';
 
 export const filiais = pgTable('filiais', {
@@ -586,6 +586,23 @@ export const transportePassageiros = pgTable('transporte_passageiros', {
   filialIdx: index('transporte_passageiros_filial_idx').on(t.filialId),
   rotaIdx: index('transporte_passageiros_rota_idx').on(t.rotaId),
   chapaIdx: index('transporte_passageiros_chapa_idx').on(t.chapa),
+}));
+
+export const transporteCadastro = pgTable('transporte_cadastro', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  filialId: uuid('filial_id').notNull().references(() => filiais.id, { onDelete: 'cascade' }),
+  chapa: text('chapa').notNull(),
+  nome: text('nome').notNull(),
+  rua: text('rua'),
+  bairro: text('bairro'),
+  cidade: text('cidade'),
+  telefone1: text('telefone1'),
+  telefone2: text('telefone2'),
+  situacao: text('situacao'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  filialChapaUniq: uniqueIndex('transporte_cadastro_filial_chapa_uniq').on(t.filialId, t.chapa),
 }));
 
 export const transporteChamada = pgTable('transporte_chamada', {

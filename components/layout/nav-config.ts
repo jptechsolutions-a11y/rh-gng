@@ -90,9 +90,10 @@ export const QLP_NAV_ADMIN_EXTRAS: NavItem[] = [
 ];
 
 export const TRANSPORTE_NAV_BASE: NavItem[] = [
-  { href: '/transporte',              label: 'Visão geral',  icon: Bus },
-  { href: '/transporte/passageiros',  label: 'Passageiros',  icon: Users },
-  { href: '/transporte/chamada',      label: 'Chamada',      icon: ClipboardCheck },
+  { href: '/transporte',              label: 'Visão geral',   icon: Bus },
+  { href: '/transporte/passageiros',  label: 'Passageiros',   icon: Users },
+  { href: '/transporte/informacoes',  label: 'Informações',   icon: IdCard },
+  { href: '/transporte/chamada',      label: 'Chamada',       icon: ClipboardCheck },
 ];
 export const TRANSPORTE_NAV_ADMIN_EXTRAS: NavItem[] = [
   { href: '/admin/config/transporte', label: 'Rotas', icon: Route },

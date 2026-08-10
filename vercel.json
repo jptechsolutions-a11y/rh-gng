@@ -2,6 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "regions": ["gru1"],
   "functions": {
-    "app/**": { "maxDuration": 15 }
+    "app/**": { "maxDuration": 15 },
+    "app/(app)/indicadores/**": { "maxDuration": 60 }
   }
 }

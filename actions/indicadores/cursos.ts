@@ -64,8 +64,8 @@ export async function importarCursos(formData: FormData): Promise<ImportarCursos
       SELECT * FROM ${schema.cursosSnapshotAtual}`);
     await tx.execute(sql`TRUNCATE TABLE ${schema.cursosSnapshotAtual}`);
     if (inserts.length) {
-      for (let i = 0; i < inserts.length; i += 500) {
-        await tx.insert(schema.cursosSnapshotAtual).values(inserts.slice(i, i + 500));
+      for (let i = 0; i < inserts.length; i += 1000) {
+        await tx.insert(schema.cursosSnapshotAtual).values(inserts.slice(i, i + 1000));
       }
     }
     const totalFiliais = new Set(inserts.map((i) => i.filialId).filter(Boolean)).size;

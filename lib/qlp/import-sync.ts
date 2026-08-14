@@ -13,6 +13,8 @@ import {
 } from '@/db/schema';
 import { autoclassify } from './autoclassify';
 import type { LinhaQuadro } from './xls-parser';
+import { detectarMudancas } from './detectar-mudancas';
+export type { ColaboradorAtual, MudancasDetectadas } from './detectar-mudancas';
 
 export interface ImportSummary {
   importId: string;
@@ -23,6 +25,7 @@ export interface ImportSummary {
   mudancaFilial: number;
   pendencias: number;
 }
+
 
 interface Pendencia {
   tipo: string;
@@ -151,14 +154,7 @@ export async function runImportSync(input: {
       continue;
     }
 
-    const tierMudou = (antes.tierResolvido ?? 'base') !== c.tier;
-    const filialMudou = antes.codfilial !== linha.codfilial;
-    const algoMudou =
-      tierMudou ||
-      filialMudou ||
-      antes.funcao !== linha.funcao ||
-      antes.nome !== linha.nome ||
-      antes.situacao !== linha.situacao;
+    const { algoMudou, tierMudou, filialMudou } = detectarMudancas(antes, linha, c.tier);
 
     if (algoMudou) {
       updatesColab.push({

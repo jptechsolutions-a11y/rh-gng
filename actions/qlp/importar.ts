@@ -3,7 +3,7 @@
 import { db } from '@/db/client';
 import { eq, inArray } from 'drizzle-orm';
 import { qlpColaboradores, qlpFuncoesCargo, filiais } from '@/db/schema';
-import { parseQuadroPerlog, type LinhaQuadro } from '@/lib/qlp/xls-parser';
+import { parseQuadroPerlog } from '@/lib/qlp/xls-parser';
 import { computeDiff } from '@/lib/qlp/sync-diff';
 import { autoclassify } from '@/lib/qlp/autoclassify';
 import { requireSession } from '@/lib/auth/session';
@@ -142,6 +142,3 @@ export async function aplicarSync(formData: FormData): Promise<ImportSummary> {
   revalidatePath('/qlp/indicadores');
   return summary;
 }
-
-// Re-export para uso por outras camadas se necessário
-export type { LinhaQuadro };

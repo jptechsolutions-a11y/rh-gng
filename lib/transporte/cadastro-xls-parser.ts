@@ -3,6 +3,7 @@ import * as XLSX from 'xlsx';
 export interface LinhaCadastro {
   chapa: string;
   nome: string;
+  cpf: string | null;
   rua: string | null;
   bairro: string | null;
   cidade: string | null;
@@ -19,6 +20,7 @@ const CIDADE_KEYS = ['CIDADE', 'MUNICIPIO', 'MUNICÍPIO'];
 const TEL1_KEYS = ['TELEFONE1', 'TELEFONE 1', 'TELEFONE'];
 const TEL2_KEYS = ['TELEFONE2', 'TELEFONE 2'];
 const SITUACAO_KEYS = ['SITUACAO', 'SITUAÇÃO', 'STATUS'];
+const CPF_KEYS = ['CPF'];
 
 function asString(v: unknown): string {
   if (v == null) return '';
@@ -41,6 +43,13 @@ function asOptionalString(rowUpper: Map<string, unknown>, keys: string[]): strin
   return s;
 }
 
+function asOptionalDigits(rowUpper: Map<string, unknown>, keys: string[]): string | null {
+  const v = pick(rowUpper, keys);
+  if (v == null) return null;
+  const digits = String(v).replace(/\D/g, '');
+  return digits || null;
+}
+
 export function parseCadastroPassageiros(buf: Buffer | ArrayBuffer): LinhaCadastro[] {
   const wb = XLSX.read(buf, { type: 'buffer', codepage: 1252, cellDates: false });
   const sheetName = wb.SheetNames[0];
@@ -55,6 +64,7 @@ export function parseCadastroPassageiros(buf: Buffer | ArrayBuffer): LinhaCadast
       return {
         chapa: asString(pick(upper, CHAPA_KEYS)),
         nome: asString(pick(upper, NOME_KEYS)),
+        cpf: asOptionalDigits(upper, CPF_KEYS),
         rua: asOptionalString(upper, RUA_KEYS),
         bairro: asOptionalString(upper, BAIRRO_KEYS),
         cidade: asOptionalString(upper, CIDADE_KEYS),

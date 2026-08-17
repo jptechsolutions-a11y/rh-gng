@@ -10,6 +10,7 @@ type Info = {
   id: string;
   nome: string;
   chapa: string | null;
+  cpf: string | null;
   rotaNome: string | null;
   rotaTurno: string | null;
   veiculo: string | null;
@@ -70,10 +71,12 @@ export function InformacoesPassageiros({
     let result = dados;
     if (busca.trim()) {
       const q = busca.toLowerCase();
+      const qDigits = busca.replace(/\D/g, '');
       result = result.filter(d =>
         d.nome.toLowerCase().includes(q) ||
         (d.chapa ?? '').toLowerCase().includes(q) ||
-        (d.endereco ?? '').toLowerCase().includes(q)
+        (d.endereco ?? '').toLowerCase().includes(q) ||
+        (qDigits !== '' && (d.cpf ?? '').replace(/\D/g, '').includes(qDigits))
       );
     }
     if (filtroRota === '__sem_rota__') result = result.filter(d => !d.rotaNome);
@@ -159,6 +162,7 @@ export function InformacoesPassageiros({
             <thead>
               <tr className="border-b border-slate-100 text-left text-xs uppercase tracking-wide text-conecta-muted">
                 <th className="px-3 py-3 font-medium">Nome</th>
+                <th className="px-3 py-3 font-medium">CPF</th>
                 <th className="px-3 py-3 font-medium">Rota</th>
                 <th className="px-3 py-3 font-medium">Veículo</th>
                 <th className="px-3 py-3 font-medium">Endereço</th>
@@ -170,7 +174,7 @@ export function InformacoesPassageiros({
             <tbody>
               {filtrados.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-conecta-muted text-sm">
+                  <td colSpan={8} className="px-4 py-8 text-center text-conecta-muted text-sm">
                     Nenhum passageiro encontrado
                   </td>
                 </tr>
@@ -178,6 +182,7 @@ export function InformacoesPassageiros({
                 filtrados.map(d => (
                   <tr key={d.id} className="border-b border-slate-50 hover:bg-slate-50/60">
                     <td className="px-3 py-2 font-medium text-conecta-primary whitespace-nowrap">{d.nome}</td>
+                    <td className="px-3 py-2 text-conecta-muted font-mono text-xs whitespace-nowrap">{d.cpf ?? '—'}</td>
                     <td className="px-3 py-2">
                       {d.rotaNome ? (
                         <span className="inline-flex items-center gap-1 text-xs font-medium text-conecta-primary">
@@ -269,9 +274,9 @@ function ImportCadastroPanel({
       </div>
       <p className="text-xs text-conecta-muted">
         Envie uma planilha (XLS/XLSX) com colunas <strong>Chapa</strong>, <strong>Nome</strong>,{' '}
-        <strong>Rua</strong>, <strong>Bairro</strong>, <strong>Cidade</strong>, <strong>Telefone1</strong>,{' '}
-        <strong>Telefone2</strong> e <strong>Situação</strong>. Os dados são atualizados por chapa —
-        registros já cadastrados são sobrescritos, novos são adicionados.
+        <strong>CPF</strong>, <strong>Rua</strong>, <strong>Bairro</strong>, <strong>Cidade</strong>,{' '}
+        <strong>Telefone1</strong>, <strong>Telefone2</strong> e <strong>Situação</strong>. Os dados são
+        atualizados por chapa — registros já cadastrados são sobrescritos, novos são adicionados.
       </p>
       <div className="flex flex-wrap items-center gap-2">
         <input

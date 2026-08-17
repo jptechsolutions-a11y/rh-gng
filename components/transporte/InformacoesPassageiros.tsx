@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useTransition } from 'react';
 import { toast } from 'sonner';
 import { listarInformacoesPassageiros, importarCadastro } from '@/actions/transporte-cadastro';
-import { Search, Phone, MapPin, Bus, Upload, X, CheckCircle2 } from 'lucide-react';
+import { Search, Phone, MapPin, Bus, Upload, X, CheckCircle2, FileSpreadsheet } from 'lucide-react';
 
 type Filial = { id: string; codigo: string; nome: string };
 type Info = {
@@ -85,6 +85,15 @@ export function InformacoesPassageiros({
     return result;
   }, [dados, busca, filtroRota, filtroStatus]);
 
+  const exportHref = useMemo(() => {
+    const qs = new URLSearchParams();
+    if (isAdmin && filialId) qs.set('filialId', filialId);
+    if (busca.trim()) qs.set('busca', busca.trim());
+    if (filtroRota) qs.set('rota', filtroRota);
+    if (filtroStatus) qs.set('status', filtroStatus);
+    return `/api/transporte/informacoes/export?${qs.toString()}`;
+  }, [isAdmin, filialId, busca, filtroRota, filtroStatus]);
+
   if (loading) {
     return <div className="p-6 text-center text-conecta-muted text-sm">Carregando...</div>;
   }
@@ -106,14 +115,24 @@ export function InformacoesPassageiros({
             </select>
           </div>
         )}
-        {filialId && !showImport && (
-          <button
-            type="button"
-            onClick={() => setShowImport(true)}
-            className="ml-auto inline-flex items-center gap-1.5 h-9 px-3 rounded-md text-sm font-medium border border-conecta-primary/20 text-conecta-primary hover:bg-slate-50"
-          >
-            <Upload className="h-4 w-4" /> Importar cadastro
-          </button>
+        {filialId && (
+          <div className="ml-auto flex items-center gap-2">
+            <a
+              href={exportHref}
+              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md text-sm font-medium border border-conecta-primary/20 text-conecta-primary hover:bg-slate-50"
+            >
+              <FileSpreadsheet className="h-4 w-4" /> Exportar Excel
+            </a>
+            {!showImport && (
+              <button
+                type="button"
+                onClick={() => setShowImport(true)}
+                className="inline-flex items-center gap-1.5 h-9 px-3 rounded-md text-sm font-medium border border-conecta-primary/20 text-conecta-primary hover:bg-slate-50"
+              >
+                <Upload className="h-4 w-4" /> Importar cadastro
+              </button>
+            )}
+          </div>
         )}
       </div>
 

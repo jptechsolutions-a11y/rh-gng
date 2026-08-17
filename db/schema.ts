@@ -593,6 +593,7 @@ export const transporteCadastro = pgTable('transporte_cadastro', {
   filialId: uuid('filial_id').notNull().references(() => filiais.id, { onDelete: 'cascade' }),
   chapa: text('chapa').notNull(),
   nome: text('nome').notNull(),
+  cpf: text('cpf'),
   rua: text('rua'),
   bairro: text('bairro'),
   cidade: text('cidade'),

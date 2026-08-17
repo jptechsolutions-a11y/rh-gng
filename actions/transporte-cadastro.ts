@@ -6,6 +6,7 @@ import { db, schema } from '@/db/client';
 import { requireSession, type Session } from '@/lib/auth/session';
 import { hasModuleAccess } from '@/lib/modules/permissions';
 import { parseCadastroPassageiros } from '@/lib/transporte/cadastro-xls-parser';
+import { formatCpf } from '@/lib/transporte/format';
 
 async function requireTransporte(): Promise<Session> {
   const s = await requireSession();
@@ -34,10 +35,10 @@ export async function importarCadastro(formData: FormData, filialIdParam?: strin
 
   for (const l of linhas) {
     await db.execute(sql`
-      INSERT INTO transporte_cadastro (filial_id, chapa, nome, rua, bairro, cidade, telefone1, telefone2, situacao, updated_at)
-      VALUES (${filialId}, ${l.chapa}, ${l.nome}, ${l.rua}, ${l.bairro}, ${l.cidade}, ${l.telefone1}, ${l.telefone2}, ${l.situacao}, now())
+      INSERT INTO transporte_cadastro (filial_id, chapa, nome, cpf, rua, bairro, cidade, telefone1, telefone2, situacao, updated_at)
+      VALUES (${filialId}, ${l.chapa}, ${l.nome}, ${l.cpf}, ${l.rua}, ${l.bairro}, ${l.cidade}, ${l.telefone1}, ${l.telefone2}, ${l.situacao}, now())
       ON CONFLICT (filial_id, chapa)
-      DO UPDATE SET nome = ${l.nome}, rua = ${l.rua}, bairro = ${l.bairro}, cidade = ${l.cidade},
+      DO UPDATE SET nome = ${l.nome}, cpf = ${l.cpf}, rua = ${l.rua}, bairro = ${l.bairro}, cidade = ${l.cidade},
         telefone1 = ${l.telefone1}, telefone2 = ${l.telefone2}, situacao = ${l.situacao}, updated_at = now()
     `);
   }
@@ -55,6 +56,7 @@ export async function listarInformacoesPassageiros(filialIdParam?: string) {
       id: schema.transportePassageiros.id,
       nome: schema.transportePassageiros.nome,
       chapa: schema.transportePassageiros.chapa,
+      cpf: schema.transporteCadastro.cpf,
       rotaId: schema.transportePassageiros.rotaId,
       rotaNome: schema.transporteRotas.nome,
       rotaTurno: schema.transporteRotas.turno,
@@ -85,6 +87,7 @@ export async function listarInformacoesPassageiros(filialIdParam?: string) {
     id: r.id,
     nome: r.nome,
     chapa: r.chapa,
+    cpf: formatCpf(r.cpf),
     rotaNome: r.rotaNome,
     rotaTurno: r.rotaTurno,
     veiculo: r.rotaLugares != null ? `Van ${r.rotaLugares} lugares` : null,

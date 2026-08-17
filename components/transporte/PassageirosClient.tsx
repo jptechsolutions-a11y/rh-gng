@@ -6,6 +6,7 @@ import {
   listarRotas, listarTodosPassageiros,
   alocarPassageiro, alocarMultiplos, desalocarPassageiro, removerPassageiro,
 } from '@/actions/transporte';
+import { formatRotaLabel } from '@/lib/transporte/format';
 import {
   Search, MapPin, ArrowRight, Users, AlertTriangle, Bus,
   CheckCircle2, ChevronDown, Trash2, RotateCcw,
@@ -14,7 +15,7 @@ import { useConfirm } from '@/components/ui/confirm-dialog';
 import { ImportarPassageiros } from './ImportarPassageiros';
 
 type Filial = { id: string; codigo: string; nome: string };
-type Rota = { id: string; nome: string; turno: string; lugares: number; passageiros: number; ativo: boolean };
+type Rota = { id: string; nome: string; turno: string; lugares: number; ordem: number; passageiros: number; ativo: boolean };
 type Passageiro = { id: string; nome: string; chapa: string | null; cidade: string | null; ativo: boolean; rotaId?: string | null };
 
 export function PassageirosClient({
@@ -343,8 +344,7 @@ export function PassageirosClient({
                       <td className="px-3 py-2">
                         {rota ? (
                           <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-                            <Bus className="h-3 w-3" />{rota.nome}
-                            <span className="text-[10px] text-emerald-600">({rota.turno})</span>
+                            <Bus className="h-3 w-3" />{formatRotaLabel(rota)}
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">

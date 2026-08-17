@@ -2,11 +2,12 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Filter, Search, Users, UsersRound } from 'lucide-react';
+import { Filter, Search, Users, UsersRound, FileSpreadsheet } from 'lucide-react';
 import { ConectaCard, SectionHeader } from '@/components/ui/conecta-card';
 import { Input } from '@/components/ui/input';
 import { AtribuirLiderModal } from './AtribuirLiderModal';
 import { AtribuirTimeLoteModal, type LiderOpt } from './AtribuirTimeLoteModal';
+import { ExportarQuadroModal } from './ExportarQuadroModal';
 
 export interface QuadroRow {
   id: string;
@@ -19,6 +20,7 @@ export interface QuadroRow {
   filial_id: string | null;
   filial_codigo: string | null;
   lider_nome: string | null;
+  lider_secao: string | null;
   lider_tier: string | null;
   lider_id: string | null;
 }
@@ -39,6 +41,7 @@ export function QuadroTable({
 }) {
   const [alvo, setAlvo] = useState<QuadroRow | null>(null);
   const [loteOpen, setLoteOpen] = useState(false);
+  const [exportOpen, setExportOpen] = useState(false);
   const [busca, setBusca] = useState('');
   const [semLider, setSemLider] = useState(false);
   const [tierFiltro, setTierFiltro] = useState<string>('');
@@ -107,6 +110,14 @@ export function QuadroTable({
                     Atribuir em lote
                   </button>
                 )}
+                <button
+                  type="button"
+                  onClick={() => setExportOpen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-conecta-primary/15 text-conecta-primary px-3 py-1.5 text-[11px] font-display font-semibold uppercase tracking-[0.14em] hover:bg-slate-50 transition"
+                >
+                  <FileSpreadsheet className="h-3.5 w-3.5" />
+                  Exportar Excel
+                </button>
                 <button
                   type="button"
                   onClick={limparFiltros}
@@ -264,6 +275,12 @@ export function QuadroTable({
           lideres={lideres}
           colaboradores={rows}
           onClose={() => setLoteOpen(false)}
+        />
+      )}
+      {exportOpen && (
+        <ExportarQuadroModal
+          filiais={filiaisList}
+          onClose={() => setExportOpen(false)}
         />
       )}
     </>

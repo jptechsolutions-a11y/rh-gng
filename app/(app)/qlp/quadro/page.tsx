@@ -17,6 +17,7 @@ export default async function QuadroPage() {
       c.tier_resolvido, c.filial_id,
       f.codigo AS filial_codigo,
       cl.nome AS lider_nome,
+      cl.secao AS lider_secao,
       l.tier  AS lider_tier,
       l.id    AS lider_id
     FROM qlp_colaboradores c

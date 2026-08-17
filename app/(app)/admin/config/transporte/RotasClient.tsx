@@ -3,11 +3,11 @@
 import { useState, useTransition, useEffect } from 'react';
 import { toast } from 'sonner';
 import {
-  listarRotas, criarRota, toggleRotaAtiva,
+  listarRotas, criarRota, atualizarRota, toggleRotaAtiva,
   listarPassageiros, removerPassageiro,
   listarNaoAlocados, alocarMultiplos, desalocarPassageiro,
 } from '@/actions/transporte';
-import { Plus, X, CheckCircle2, Power, Trash2, ChevronDown, ChevronUp, MapPin, ArrowRight, Users, AlertTriangle } from 'lucide-react';
+import { Plus, X, CheckCircle2, Power, Trash2, ChevronDown, ChevronUp, MapPin, ArrowRight, Users, AlertTriangle, Pencil } from 'lucide-react';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 
 type Filial = { id: string; codigo: string; nome: string };
@@ -22,6 +22,7 @@ export function RotasClient({ filiais }: { filiais: Filial[] }) {
   const [pending, start] = useTransition();
   const [showForm, setShowForm] = useState(false);
   const [expandedRota, setExpandedRota] = useState<string | null>(null);
+  const [editingRota, setEditingRota] = useState<Rota | null>(null);
   const [passageiros, setPassageiros] = useState<Passageiro[]>([]);
   const [loadingPass, setLoadingPass] = useState(false);
 
@@ -384,6 +385,10 @@ export function RotasClient({ filiais }: { filiais: Filial[] }) {
                             {expandedRota === r.id ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
                             <Users className="h-3.5 w-3.5" />
                           </button>
+                          <button type="button" onClick={() => setEditingRota(r)}
+                            className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs border border-conecta-primary/20 hover:bg-slate-50 text-conecta-primary">
+                            <Pencil className="h-3.5 w-3.5" />
+                          </button>
                           <button type="button" onClick={() => handleToggleAtiva(r.id)} disabled={pending}
                             className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs border ${
                               r.ativo ? 'border-amber-200 hover:bg-amber-50 text-amber-700' : 'border-emerald-200 hover:bg-emerald-50 text-emerald-700'
@@ -444,6 +449,89 @@ export function RotasClient({ filiais }: { filiais: Filial[] }) {
           </table>
         </div>
       )}
+
+      {editingRota && (
+        <EditRotaModal
+          rota={editingRota}
+          onClose={() => setEditingRota(null)}
+          onSaved={() => { setEditingRota(null); carregarRotas(); }}
+        />
+      )}
+    </div>
+  );
+}
+
+function EditRotaModal({
+  rota,
+  onClose,
+  onSaved,
+}: {
+  rota: Rota;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [nome, setNome] = useState(rota.nome);
+  const [turno, setTurno] = useState(rota.turno);
+  const [lugares, setLugares] = useState(rota.lugares);
+  const [ordem, setOrdem] = useState(rota.ordem);
+  const [pending, start] = useTransition();
+
+  const handleSalvar = () => {
+    if (!nome.trim()) { toast.error('Nome obrigatório'); return; }
+    start(async () => {
+      try {
+        await atualizarRota(rota.id, { nome, turno, lugares, ordem });
+        toast.success('Rota atualizada');
+        onSaved();
+      } catch (e) { toast.error(e instanceof Error ? e.message : 'Erro'); }
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-40 grid place-items-center bg-conecta-primary/40 px-4">
+      <div className="bg-white rounded-xl border border-conecta-accent/30 p-4 space-y-3 w-full max-w-lg"
+        style={{ boxShadow: '0 12px 40px -10px rgba(13,43,107,0.3)' }}>
+        <div className="flex items-center justify-between">
+          <h3 className="font-display text-sm font-bold text-conecta-primary">Editar rota</h3>
+          <button type="button" onClick={onClose}><X className="h-4 w-4 text-conecta-muted" /></button>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-conecta-primary mb-1">Nome</label>
+            <input value={nome} onChange={e => setNome(e.target.value)}
+              className="h-9 w-full rounded-md border border-slate-200 bg-white text-sm px-3" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-conecta-primary mb-1">Turno</label>
+            <select value={turno} onChange={e => setTurno(e.target.value)}
+              className="h-9 w-full rounded-md border border-slate-200 bg-white text-sm px-3">
+              <option>1º Turno</option>
+              <option>2º Turno</option>
+              <option>3º Turno</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-conecta-primary mb-1">Lugares</label>
+            <input type="number" min={1} value={lugares} onChange={e => setLugares(Number(e.target.value))}
+              className="h-9 w-full rounded-md border border-slate-200 bg-white text-sm px-3" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-conecta-primary mb-1">Ordem</label>
+            <input type="number" min={1} value={ordem} onChange={e => setOrdem(Number(e.target.value))}
+              className="h-9 w-full rounded-md border border-slate-200 bg-white text-sm px-3" />
+          </div>
+        </div>
+        <div className="flex justify-end gap-2">
+          <button type="button" onClick={onClose} disabled={pending}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium border border-slate-200 text-conecta-muted hover:bg-slate-50 disabled:opacity-50">
+            Cancelar
+          </button>
+          <button type="button" onClick={handleSalvar} disabled={pending}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium bg-conecta-accent text-white hover:bg-conecta-accent/90 disabled:opacity-50">
+            <CheckCircle2 className="h-4 w-4" /> {pending ? 'Salvando...' : 'Salvar'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

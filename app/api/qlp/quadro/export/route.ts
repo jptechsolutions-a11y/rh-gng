@@ -29,6 +29,18 @@ export async function GET(req: NextRequest) {
     ? filiaisParam.split(',').map((c) => c.trim()).filter(Boolean)
     : null;
 
+  // postgres.js não converte um array JS em parâmetro `text[]` automaticamente
+  // dentro de db.execute(sql`...`) — ANY(${codigos}::text[]) falha com
+  // "malformed array literal". Em vez disso, construímos um IN (...)
+  // parametrizado com sql.join, mesmo padrão já usado em
+  // db/queries/qlp-ocorrencias.ts.
+  const filialCondition =
+    codigos === null
+      ? sql`TRUE`
+      : codigos.length === 0
+        ? sql`FALSE`
+        : sql`f.codigo IN (${sql.join(codigos.map((c) => sql`${c}`), sql`, `)})`;
+
   const rows = (await db.execute(sql`
     SELECT
       c.chapa, c.nome, c.funcao, c.secao,
@@ -42,7 +54,7 @@ export async function GET(req: NextRequest) {
     LEFT JOIN filiais f ON f.id = c.filial_id
     WHERE c.ativo
       AND (${filialSessao}::uuid IS NULL OR c.filial_id = ${filialSessao}::uuid)
-      AND (${codigos}::text[] IS NULL OR f.codigo = ANY(${codigos}::text[]))
+      AND (${filialCondition})
     ORDER BY c.nome
   `)) as unknown as QuadroExportRow[];
 

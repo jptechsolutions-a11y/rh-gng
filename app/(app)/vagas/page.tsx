@@ -61,7 +61,7 @@ export default async function VagasPage() {
   }
   const chartFilial = Array.from(porFilial.entries())
     .map(([filial, total]) => ({ filial, total }))
-    .sort((a, b) => a.filial.localeCompare(b.filial));
+    .sort((a, b) => b.total - a.total || a.filial.localeCompare(b.filial));
 
   const podeEditar = s.perfil === 'admin' || s.perfil === 'filial';
   const badge =

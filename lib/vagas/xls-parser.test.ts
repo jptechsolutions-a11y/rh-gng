@@ -65,4 +65,35 @@ describe('parseQuadroVagas', () => {
     const linhas = parseQuadroVagas(buf);
     expect(linhas[0]?.emAberto).toBe(0);
   });
+
+  it('reconhece headers em minúsculo/misto (case-insensitive)', () => {
+    const buf = buildXlsx([
+      {
+        regional: 'DF',
+        Bandeira: 'PERLOG',
+        Filial: '364',
+        nome_funcao: 'AUX. ADMINISTRATIVO',
+        desc_secao: 'OPERACIONAL (OPERACAO)',
+        'em aberto': 2,
+        limite: 4,
+        Potencial: 4,
+        alocados: 3,
+        AFASTADOS: 1,
+      },
+    ]);
+    const linhas = parseQuadroVagas(buf);
+    expect(linhas).toHaveLength(1);
+    expect(linhas[0]).toEqual({
+      regional: 'DF',
+      bandeira: 'PERLOG',
+      filialCodigo: '364',
+      funcao: 'AUX. ADMINISTRATIVO',
+      secao: 'OPERACIONAL (OPERACAO)',
+      emAberto: 2,
+      limite: 4,
+      potencial: 4,
+      alocados: 3,
+      afastados: 1,
+    });
+  });
 });

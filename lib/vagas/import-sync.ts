@@ -47,6 +47,22 @@ async function resolverFiliais(
   return { resolvidas, filiaisDesconhecidas: Array.from(desconhecidasSet) };
 }
 
+/**
+ * A planilha não garante unicidade por filial+função+seção (linha duplicada,
+ * turnos mesclados, etc.). Deduplicamos por essa combinação com semântica
+ * "última vence" — a última ocorrência no arquivo é a autoritativa — para que
+ * `previewImportVagas` e `aplicarImportVagas` sempre operem sobre o mesmo
+ * conjunto e nunca divirjam entre si.
+ */
+function dedupeResolvidas(resolvidas: ResolvidoLinha[]): ResolvidoLinha[] {
+  const map = new Map<string, ResolvidoLinha>();
+  for (const item of resolvidas) {
+    const chave = chaveLinha(item.filialId, item.linha.funcao, item.linha.secao);
+    map.set(chave, item);
+  }
+  return Array.from(map.values());
+}
+
 async function contarAbertasAtuais(linhaIds: string[]): Promise<Map<string, number>> {
   if (linhaIds.length === 0) return new Map();
   const rows = await db
@@ -73,7 +89,9 @@ async function contarAbertasAtuais(linhaIds: string[]): Promise<Map<string, numb
  * existiam antes e não aparecem mais na planilha.
  */
 export async function previewImportVagas(linhas: LinhaQuadroVagas[]): Promise<ImportSummaryVagas> {
-  const { resolvidas, filiaisDesconhecidas } = await resolverFiliais(linhas);
+  const resolucao = await resolverFiliais(linhas);
+  const resolvidas = dedupeResolvidas(resolucao.resolvidas);
+  const { filiaisDesconhecidas } = resolucao;
 
   const existentes = await db
     .select({
@@ -144,7 +162,9 @@ export async function aplicarImportVagas(
   linhas: LinhaQuadroVagas[],
   opts: { arquivoNome: string; importadoPorNome: string },
 ): Promise<ImportSummaryVagas> {
-  const { resolvidas, filiaisDesconhecidas } = await resolverFiliais(linhas);
+  const resolucao = await resolverFiliais(linhas);
+  const resolvidas = dedupeResolvidas(resolucao.resolvidas);
+  const { filiaisDesconhecidas } = resolucao;
 
   return db.transaction(async (tx) => {
     /**
@@ -160,6 +180,7 @@ export async function aplicarImportVagas(
     async function upsertLinha(
       filialId: string,
       linha: LinhaQuadroVagas,
+      target: number,
       importId: string,
     ): Promise<string> {
       const condSecao =
@@ -185,7 +206,7 @@ export async function aplicarImportVagas(
         potencial: linha.potencial,
         alocados: linha.alocados,
         afastados: linha.afastados,
-        emAbertoImportado: linha.emAberto,
+        emAbertoImportado: target,
         ultimaImportId: importId,
         updatedAt: new Date(),
       };
@@ -248,11 +269,11 @@ export async function aplicarImportVagas(
     const linhaIdsTocadas = new Set<string>();
 
     for (const { linha, filialId } of resolvidas) {
-      const linhaId = await upsertLinha(filialId, linha, importId);
+      const target = Math.max(0, linha.emAberto);
+      const linhaId = await upsertLinha(filialId, linha, target, importId);
       linhaIdsTocadas.add(linhaId);
 
       const abertas = await buscarAbertasDaLinha(linhaId);
-      const target = Math.max(0, linha.emAberto);
       const plano = planejarReconciliacao(abertas, target);
 
       if (plano.criar > 0) {

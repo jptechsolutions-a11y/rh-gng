@@ -4,7 +4,7 @@ import {
   CalendarClock, Plus, BarChart3, UserCog, Target, BookOpen, Printer, ClipboardCheck,
   GalleryHorizontal, Cloud, Clock, AlertTriangle, Trophy, GraduationCap, CalendarOff,
   Network, Upload, IdCard, ListTree, UsersRound,
-  Bus, Route,
+  Bus, Route, Briefcase, ListChecks,
 } from 'lucide-react';
 
 // Fonte ÚNICA de navegação — consumida pela Sidebar (desktop) e pela MobileNav.
@@ -97,4 +97,12 @@ export const TRANSPORTE_NAV_BASE: NavItem[] = [
 ];
 export const TRANSPORTE_NAV_ADMIN_EXTRAS: NavItem[] = [
   { href: '/admin/config/transporte', label: 'Rotas', icon: Route },
+];
+
+export const VAGAS_NAV_BASE: NavItem[] = [
+  { href: '/vagas', label: 'Quadro de Vagas', icon: Briefcase },
+];
+export const VAGAS_NAV_ADMIN_EXTRAS: NavItem[] = [
+  { href: '/vagas/importar', label: 'Importar planilha', icon: Upload },
+  { href: '/vagas/status',   label: 'Status',            icon: ListChecks },
 ];

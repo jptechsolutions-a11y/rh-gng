@@ -5,6 +5,8 @@ import { TopBar } from '@/components/layout/TopBar';
 import { VagasQuadroTable, type VagaRow } from '@/components/vagas/VagasQuadroTable';
 import { VagasPorStatusChart } from '@/components/vagas/VagasPorStatusChart';
 import { VagasAbertoPorFilialChart } from '@/components/vagas/VagasAbertoPorFilialChart';
+import { VagasAbertoPorSecaoChart } from '@/components/vagas/VagasAbertoPorSecaoChart';
+import { VagasAbertoPorFuncaoChart } from '@/components/vagas/VagasAbertoPorFuncaoChart';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,6 +65,21 @@ export default async function VagasPage() {
     .map(([filial, total]) => ({ filial, total }))
     .sort((a, b) => b.total - a.total || a.filial.localeCompare(b.filial));
 
+  const porSecao = new Map<string, number>();
+  const porFuncao = new Map<string, number>();
+  for (const r of rows) {
+    if (statusSistema && r.statusId !== statusSistema.id) continue;
+    const secao = r.secao ?? 'Sem seção';
+    porSecao.set(secao, (porSecao.get(secao) ?? 0) + 1);
+    porFuncao.set(r.funcao, (porFuncao.get(r.funcao) ?? 0) + 1);
+  }
+  const chartSecao = Array.from(porSecao.entries())
+    .map(([secao, total]) => ({ secao, total }))
+    .sort((a, b) => b.total - a.total || a.secao.localeCompare(b.secao));
+  const chartFuncao = Array.from(porFuncao.entries())
+    .map(([funcao, total]) => ({ funcao, total }))
+    .sort((a, b) => b.total - a.total || a.funcao.localeCompare(b.funcao));
+
   const podeEditar = s.perfil === 'admin' || s.perfil === 'filial';
   const badge =
     s.perfil === 'filial' ? `Filial ${s.filialCodigo}` :
@@ -76,6 +93,8 @@ export default async function VagasPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           <VagasPorStatusChart data={chartStatus} />
           <VagasAbertoPorFilialChart data={chartFilial} />
+          <VagasAbertoPorSecaoChart data={chartSecao} />
+          <VagasAbertoPorFuncaoChart data={chartFuncao} />
         </div>
         <VagasQuadroTable rows={rows} statusOptions={statusOptions} podeEditar={podeEditar} />
       </div>

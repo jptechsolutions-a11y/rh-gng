@@ -75,10 +75,12 @@ export default async function VagasPage() {
   }
   const chartSecao = Array.from(porSecao.entries())
     .map(([secao, total]) => ({ secao, total }))
-    .sort((a, b) => b.total - a.total || a.secao.localeCompare(b.secao));
+    .sort((a, b) => b.total - a.total || a.secao.localeCompare(b.secao))
+    .slice(0, 10);
   const chartFuncao = Array.from(porFuncao.entries())
     .map(([funcao, total]) => ({ funcao, total }))
-    .sort((a, b) => b.total - a.total || a.funcao.localeCompare(b.funcao));
+    .sort((a, b) => b.total - a.total || a.funcao.localeCompare(b.funcao))
+    .slice(0, 10);
 
   const podeEditar = s.perfil === 'admin' || s.perfil === 'filial';
   const badge =

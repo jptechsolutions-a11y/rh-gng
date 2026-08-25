@@ -15,6 +15,9 @@ export async function criarStatusVaga(nome: string) {
   const nomeLimpo = nome.trim();
   if (!nomeLimpo) throw new Error('nome do status é obrigatório');
 
+  const existente = await db.query.vagasStatus.findFirst({ where: eq(schema.vagasStatus.nome, nomeLimpo) });
+  if (existente) throw new Error('já existe um status com esse nome');
+
   const max = await db
     .select({ ordem: schema.vagasStatus.ordem })
     .from(schema.vagasStatus)
@@ -35,6 +38,9 @@ export async function editarStatusVaga(id: string, nome: string, ordem: number) 
 
   const nomeLimpo = nome.trim();
   if (!nomeLimpo) throw new Error('nome do status é obrigatório');
+
+  const existente = await db.query.vagasStatus.findFirst({ where: eq(schema.vagasStatus.nome, nomeLimpo) });
+  if (existente && existente.id !== id) throw new Error('já existe um status com esse nome');
 
   await db.update(schema.vagasStatus).set({ nome: nomeLimpo, ordem }).where(eq(schema.vagasStatus.id, id));
   revalidatePath('/vagas/status');

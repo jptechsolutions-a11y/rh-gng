@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import { Users, Search } from 'lucide-react';
 import { ConectaCard, SectionHeader } from '@/components/ui/conecta-card';
 import { atualizarStatusVaga } from '@/actions/vagas/vagas';
@@ -37,6 +37,10 @@ export function VagasQuadroTable({
   const [localRows, setLocalRows] = useState(rows);
   const [pending, start] = useTransition();
   const [erroId, setErroId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setLocalRows(rows);
+  }, [rows]);
 
   const filiaisList = useMemo(() => {
     const set = new Set(localRows.map((r) => r.filialCodigo));

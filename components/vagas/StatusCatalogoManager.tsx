@@ -29,12 +29,9 @@ export function StatusCatalogoManager({ statusInicial }: { statusInicial: VagaSt
     setErro(null);
     start(async () => {
       try {
-        await criarStatusVaga(nome);
+        const criado = await criarStatusVaga(nome);
         setNovoNome('');
-        refrescarLocal((l) => [
-          ...l,
-          { id: crypto.randomUUID(), nome, ordem: l.length, sistema: false, ativo: true, createdAt: new Date() },
-        ]);
+        refrescarLocal((l) => [...l, criado]);
       } catch (e) {
         setErro(e instanceof Error ? e.message : 'erro ao criar status');
       }

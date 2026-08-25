@@ -25,9 +25,13 @@ export async function criarStatusVaga(nome: string) {
     .limit(1);
   const ordem = (max[0]?.ordem ?? 0) + 1;
 
-  await db.insert(schema.vagasStatus).values({ nome: nomeLimpo, ordem, sistema: false, ativo: true });
+  const inserido = await db
+    .insert(schema.vagasStatus)
+    .values({ nome: nomeLimpo, ordem, sistema: false, ativo: true })
+    .returning();
   revalidatePath('/vagas/status');
   revalidatePath('/vagas');
+  return inserido[0]!;
 }
 
 export async function editarStatusVaga(id: string, nome: string, ordem: number) {

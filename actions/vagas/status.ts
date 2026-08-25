@@ -57,6 +57,17 @@ export async function alternarAtivoStatusVaga(id: string, ativo: boolean) {
   if (!atual) throw new Error('status não encontrado');
   if (atual.sistema && !ativo) throw new Error('status "Em aberto" não pode ser desativado');
 
+  if (!ativo) {
+    const emUso = await db
+      .select({ id: schema.vagas.id })
+      .from(schema.vagas)
+      .where(eq(schema.vagas.statusId, id))
+      .limit(1);
+    if (emUso.length > 0) {
+      throw new Error('status em uso por vagas — não é possível desativar enquanto houver vagas com esse status');
+    }
+  }
+
   await db.update(schema.vagasStatus).set({ ativo }).where(eq(schema.vagasStatus.id, id));
   revalidatePath('/vagas/status');
   revalidatePath('/vagas');

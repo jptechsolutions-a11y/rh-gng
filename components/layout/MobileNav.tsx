@@ -14,6 +14,7 @@ import {
   INDICADORES_NAV_BASE,
   QLP_NAV_BASE, QLP_NAV_ADMIN_EXTRAS,
   TRANSPORTE_NAV_BASE, TRANSPORTE_NAV_ADMIN_EXTRAS,
+  VAGAS_NAV_BASE, VAGAS_NAV_ADMIN_EXTRAS,
 } from './nav-config';
 
 export function MobileNav({ perfil, nome, subtitulo }: { perfil: 'filial' | 'admin' | 'visualizador'; nome: string; subtitulo: string }) {
@@ -39,6 +40,9 @@ export function MobileNav({ perfil, nome, subtitulo }: { perfil: 'filial' | 'adm
     pathname === '/transporte' ||
     pathname.startsWith('/transporte/') ||
     pathname.startsWith('/admin/config/transporte');
+  const inVagas =
+    pathname === '/vagas' ||
+    pathname.startsWith('/vagas/');
 
   const inEntrevistasVisualizador =
     perfil === 'visualizador' && (
@@ -52,6 +56,10 @@ export function MobileNav({ perfil, nome, subtitulo }: { perfil: 'filial' | 'adm
     ? perfil === 'admin'
       ? [...TRANSPORTE_NAV_BASE, ...TRANSPORTE_NAV_ADMIN_EXTRAS]
       : TRANSPORTE_NAV_BASE
+    : inVagas
+    ? perfil === 'admin'
+      ? [...VAGAS_NAV_BASE, ...VAGAS_NAV_ADMIN_EXTRAS]
+      : VAGAS_NAV_BASE
     : inQlp
     ? perfil === 'admin'
       ? [...QLP_NAV_BASE, ...QLP_NAV_ADMIN_EXTRAS]
@@ -155,7 +163,8 @@ export function MobileNav({ perfil, nome, subtitulo }: { perfil: 'filial' | 'adm
                   href === '/painel' ||
                   href === '/avaliacao' ||
                   href === '/qlp' ||
-                  href === '/transporte';
+                  href === '/transporte' ||
+                  href === '/vagas';
                 const active = isRoot ? pathname === href : (pathname === href || pathname.startsWith(href + '/'));
                 return (
                   <Link

@@ -619,3 +619,71 @@ export const transporteChamada = pgTable('transporte_chamada', {
   passageiroIdx: index('transporte_chamada_passageiro_idx').on(t.passageiroId),
   uniq: index('transporte_chamada_uniq').on(t.passageiroId, t.rotaId, t.data),
 }));
+
+// ============================================================
+// Quadro de Vagas — import do quadro (limite/potencial/em aberto)
+// e status individual por vaga em aberto
+// ============================================================
+
+export const vagasStatus = pgTable('vagas_status', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  nome: text('nome').notNull().unique(),
+  ordem: integer('ordem').notNull().default(0),
+  sistema: boolean('sistema').notNull().default(false), // true só para "Em aberto" — protegido
+  ativo: boolean('ativo').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const vagasQuadroImports = pgTable('vagas_quadro_imports', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  arquivoNome: text('arquivo_nome').notNull(),
+  importadoPorNome: text('importado_por_nome').notNull(),
+  totalLinhas: integer('total_linhas').notNull(),
+  vagasCriadas: integer('vagas_criadas').notNull().default(0),
+  vagasFechadas: integer('vagas_fechadas').notNull().default(0),
+  filiaisDesconhecidas: jsonb('filiais_desconhecidas').$type<string[]>().notNull().default([]),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const vagasQuadroLinhas = pgTable('vagas_quadro_linhas', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  filialId: uuid('filial_id').notNull().references(() => filiais.id, { onDelete: 'restrict' }),
+  regional: text('regional'),
+  bandeira: text('bandeira'),
+  funcao: text('funcao').notNull(),
+  secao: text('secao'),
+  limite: integer('limite').notNull().default(0),
+  potencial: integer('potencial').notNull().default(0),
+  alocados: integer('alocados').notNull().default(0),
+  afastados: integer('afastados').notNull().default(0),
+  emAbertoImportado: integer('em_aberto_importado').notNull().default(0),
+  ultimaImportId: uuid('ultima_import_id').references(() => vagasQuadroImports.id),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  unq: uniqueIndex('vagas_quadro_linhas_unq').on(t.filialId, t.funcao, t.secao),
+  filialIdx: index('vagas_quadro_linhas_filial_idx').on(t.filialId),
+}));
+
+export const vagas = pgTable('vagas', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  linhaId: uuid('linha_id').notNull().references(() => vagasQuadroLinhas.id, { onDelete: 'cascade' }),
+  filialId: uuid('filial_id').notNull().references(() => filiais.id, { onDelete: 'restrict' }),
+  funcao: text('funcao').notNull(),
+  secao: text('secao'),
+  statusId: uuid('status_id').notNull().references(() => vagasStatus.id, { onDelete: 'restrict' }),
+  statusAtualizadoEm: timestamp('status_atualizado_em', { withTimezone: true }).notNull().defaultNow(),
+  statusAtualizadoPorNome: text('status_atualizado_por_nome'),
+  ativa: boolean('ativa').notNull().default(true),
+  motivoFechamento: text('motivo_fechamento'),
+  origemImportId: uuid('origem_import_id').references(() => vagasQuadroImports.id),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  linhaIdx: index('vagas_linha_idx').on(t.linhaId),
+  filialIdx: index('vagas_filial_idx').on(t.filialId),
+  statusIdx: index('vagas_status_idx').on(t.statusId),
+  ativaIdx: index('vagas_ativa_idx').on(t.ativa),
+}));
+
+export type VagaStatus = typeof vagasStatus.$inferSelect;
+export type VagaQuadroLinha = typeof vagasQuadroLinhas.$inferSelect;
+export type Vaga = typeof vagas.$inferSelect;

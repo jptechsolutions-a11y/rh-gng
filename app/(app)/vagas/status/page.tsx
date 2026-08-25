@@ -1,13 +1,13 @@
 import { requireSession } from '@/lib/auth/session';
-import { db, schema } from '@/db/client';
 import { TopBar } from '@/components/layout/TopBar';
 import { StatusCatalogoManager } from '@/components/vagas/StatusCatalogoManager';
+import { listarStatusVagas } from '@/actions/vagas/status';
 
 export const dynamic = 'force-dynamic';
 
 export default async function StatusVagasPage() {
   await requireSession('admin');
-  const status = await db.select().from(schema.vagasStatus).orderBy(schema.vagasStatus.ordem);
+  const status = await listarStatusVagas();
   return (
     <>
       <TopBar titulo="Quadro de Vagas — Status" subtitulo="Catálogo de status das vagas" badge="ADMIN" />

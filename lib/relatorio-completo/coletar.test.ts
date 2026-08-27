@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { montarRankingIndicador } from './coletar';
+import { montarRankingIndicador, coletarConsolidado } from './coletar';
 
 describe('montarRankingIndicador', () => {
   const cds = [
@@ -45,5 +45,33 @@ describe('montarRankingIndicador', () => {
     });
     expect(r.semDados).toBe(true);
     expect(r.cds.every((c) => c.valor === 0)).toBe(true);
+  });
+});
+
+describe('coletarConsolidado', () => {
+  it('inclui vagasDetalhe ordenado por totalAbertas', () => {
+    const ctx: any = {
+      bhAtual: [], bhAnterior: [], inconsist: [], cursosAtual: [], cursosAnterior: [], feriados: [],
+      vagas: [
+        { filialId: 'a', statusNome: 'Em aberto', statusSistema: true, secao: 'SEPARACAO (OPERACAO)' },
+        { filialId: 'a', statusNome: 'Entrevista', statusSistema: false, secao: 'COZINHA' },
+        { filialId: 'b', statusNome: 'Em aberto', statusSistema: true, secao: 'FINANCEIRO (ADM)' },
+      ],
+      vagasQuadro: [{ filialId: 'a', secao: 'SEPARACAO (OPERACAO)', limite: 10, alocados: 8 }],
+      statusVagas: ['Em aberto', 'Entrevista'],
+      classifMapa: new Map([['SEPARACAO (OPERACAO)', 'Operação'], ['COZINHA', 'Área de Apoio'], ['FINANCEIRO (ADM)', 'Área de Apoio']]),
+      meta: { bh: null, inconsist: null, cursos: null, feriados: null },
+    };
+    const d = coletarConsolidado(ctx, [
+      { filialId: 'a', codigo: '001', nome: 'A' },
+      { filialId: 'b', codigo: '002', nome: 'B' },
+    ]);
+    expect(d.vagasDetalhe[0]!.codigo).toBe('001');            // 2 abertas > 1
+    expect(d.vagasDetalhe[0]!.totalAbertas).toBe(2);
+    expect(d.vagasDetalhe[0]!.contratarPorClassificacao['Operação']).toBe(1);
+    expect(d.vagasDetalhe[0]!.contratarPorClassificacao['Área de Apoio']).toBe(1);
+    expect(d.vagasDetalhe[0]!.aprov).toBe(10);
+    expect(d.vagasDetalhe[0]!.ativo).toBe(8);
+    expect(d.statusVagas).toEqual(['Em aberto', 'Entrevista']);
   });
 });

@@ -26,6 +26,8 @@ const base: DadosConsolidado = {
     rk({ chave: 'feriados', titulo: 'Feriados Pendentes' }),
     rk({ chave: 'vagas', titulo: 'Vagas em Aberto' }),
   ],
+  vagasDetalhe: [],
+  statusVagas: [],
 };
 
 describe('gerarDeckConsolidado', () => {

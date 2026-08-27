@@ -1,5 +1,5 @@
 import 'server-only';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, asc, eq, inArray } from 'drizzle-orm';
 import { db, schema } from '@/db/client';
 import { fetchSnapshotRows } from '@/lib/indicadores/bh-db';
 import { fetchInconsistRows } from '@/lib/indicadores/inconsist-db';
@@ -8,20 +8,60 @@ import { fetchFeriadosRows } from '@/lib/indicadores/feriados-db';
 import { calcVariacao } from '@/app/(app)/indicadores/bh/variacao';
 import { posicaoNoRanking } from './ranking';
 import { leituraRanking } from './texto';
-import type { CDIndicador, ChaveIndicador, DadosConsolidado, RankingIndicador } from './tipos';
+import {
+  CLASSIFICACOES,
+  carregarMapaClassificacao,
+  classificarSecao,
+  type Classificacao,
+} from './classificacao-secao';
+import type {
+  CDIndicador,
+  ChaveIndicador,
+  DadosConsolidado,
+  RankingIndicador,
+  VagasDetalheCD,
+} from './tipos';
 
 // ---------- contexto (fetch único p/ todo o escopo) ----------
 
 export type Contexto = Awaited<ReturnType<typeof coletarContexto>>;
 
 export async function coletarContexto(escopo: string[] | null) {
-  const [bhAtual, bhAnterior, inconsist, cursosAtual, cursosAnterior, feriados] = await Promise.all([
+  const vagasQuadroQuery = db
+    .select({
+      filialId: schema.vagasQuadroLinhas.filialId,
+      secao: schema.vagasQuadroLinhas.secao,
+      limite: schema.vagasQuadroLinhas.limite,
+      alocados: schema.vagasQuadroLinhas.alocados,
+    })
+    .from(schema.vagasQuadroLinhas);
+
+  const [
+    bhAtual,
+    bhAnterior,
+    inconsist,
+    cursosAtual,
+    cursosAnterior,
+    feriados,
+    vagasQuadro,
+    statusAtivos,
+    classifMapa,
+  ] = await Promise.all([
     fetchSnapshotRows(schema.bhSnapshotAtual, escopo),
     fetchSnapshotRows(schema.bhSnapshotAnterior, escopo),
     fetchInconsistRows(escopo),
     fetchCursosRows(schema.cursosSnapshotAtual, escopo),
     fetchCursosRows(schema.cursosSnapshotAnterior, escopo),
     fetchFeriadosRows(escopo),
+    escopo
+      ? vagasQuadroQuery.where(inArray(schema.vagasQuadroLinhas.filialId, escopo))
+      : vagasQuadroQuery,
+    db
+      .select({ nome: schema.vagasStatus.nome })
+      .from(schema.vagasStatus)
+      .where(eq(schema.vagasStatus.ativo, true))
+      .orderBy(asc(schema.vagasStatus.ordem)),
+    carregarMapaClassificacao(),
   ]);
 
   const vagasCond = [eq(schema.vagas.ativa, true)];
@@ -47,6 +87,9 @@ export async function coletarContexto(escopo: string[] | null) {
 
   return {
     bhAtual, bhAnterior, inconsist, cursosAtual, cursosAnterior, feriados, vagas,
+    vagasQuadro,
+    statusVagas: statusAtivos.map((r) => r.nome),
+    classifMapa,
     meta: {
       bh: metas[0][0]?.ts?.toISOString() ?? null,
       inconsist: metas[1][0]?.ts?.toISOString() ?? null,
@@ -148,5 +191,35 @@ export function coletarConsolidado(ctx: Contexto, cds: CDBasico[]): DadosConsoli
     }),
   ];
 
-  return { geradoEm: new Date().toISOString(), totalCDs: cds.length, rankings };
+  const zerosClassif = (): Record<Classificacao, number> =>
+    Object.fromEntries(CLASSIFICACOES.map((c) => [c, 0])) as Record<Classificacao, number>;
+
+  const vagasDetalhe: VagasDetalheCD[] = cds
+    .map((cd): VagasDetalheCD => {
+      const quadro = ctx.vagasQuadro.filter((q) => q.filialId === cd.filialId);
+      const abertas = ctx.vagas.filter((v) => v.filialId === cd.filialId);
+      const contratarPorClassificacao = zerosClassif();
+      const porStatus: Record<string, number> = {};
+      for (const v of abertas) {
+        contratarPorClassificacao[classificarSecao(v.secao, ctx.classifMapa)] += 1;
+        porStatus[v.statusNome] = (porStatus[v.statusNome] ?? 0) + 1;
+      }
+      return {
+        filialId: cd.filialId, codigo: cd.codigo, nome: cd.nome,
+        contratarPorClassificacao,
+        aprov: quadro.reduce((a, q) => a + q.limite, 0),
+        ativo: quadro.reduce((a, q) => a + q.alocados, 0),
+        totalAbertas: abertas.length,
+        porStatus,
+      };
+    })
+    .sort((a, b) => b.totalAbertas - a.totalAbertas || a.nome.localeCompare(b.nome));
+
+  return {
+    geradoEm: new Date().toISOString(),
+    totalCDs: cds.length,
+    rankings,
+    vagasDetalhe,
+    statusVagas: ctx.statusVagas,
+  };
 }

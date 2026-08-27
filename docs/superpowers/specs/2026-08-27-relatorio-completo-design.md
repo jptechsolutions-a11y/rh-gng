@@ -1,181 +1,167 @@
-# Relatório Completo de Indicadores — Design
+# Relatório Consolidado de Indicadores — Design
 
 **Data:** 2026-08-27
-**Status:** aprovado (aguardando revisão da spec)
+**Status:** revisado (era "1 deck por filial"; agora **1 deck consolidado comparando os CDs**)
 **Autor:** Juliano Correa + Claude
 
 ## Objetivo
 
-Novo módulo **Relatório Completo** que gera uma apresentação PowerPoint (`.pptx`)
-resumindo todos os indicadores de Gente & Gestão de uma filial num único deck —
-espelhando o `RelatorioCompleto` da *Produtividade Perlog* (`Desktop/JP/
-Produtividade-Perlog-main`), que usa `pptxgenjs` como motor.
+Novo módulo admin **Relatório Completo** (`/relatorio-completo`) que gera **UMA
+apresentação PowerPoint consolidada** comparando todos os CDs (filiais) nos
+indicadores de Gente & Gestão, com **ranking por indicador** — espelha o modo
+*benchmarking* do `RelatorioCompleto` da *Produtividade Perlog*
+(`Desktop/JP/Produtividade-Perlog-main/.../utils/pptxExportCompleto.ts`), que usa
+`pptxgenjs`.
 
-Cada deck traz uma tela de **resumo executivo** com todos os indicadores e depois
-**1 slide por indicador** (gráfico + leitura curta dos números).
+**Não** é um arquivo por filial. É um único `.pptx` que ranqueia os CDs.
 
 Indicadores no escopo:
 
-1. Banco de Horas
+1. Banco de Horas (ranking por saldo de horas)
 2. Inconsistências
 3. Cursos Obrigatórios
 4. Feriados Pendentes
-5. Quadro de Vagas
+5. Quadro de Vagas (vagas em aberto)
 
-Fora do escopo: QLP / Liderança, ranking "Início" como slide próprio, seletor de
-datas (os indicadores de RH são snapshot atual vs. anterior).
+Regra de ranking: **menor valor = melhor = posição 1** em todos os indicadores.
 
-## Abordagem escolhida
+Fora do escopo: QLP / Liderança; seletor de datas (indicadores de RH são snapshot
+atual vs. anterior).
 
-**Route handler no servidor.** `POST /api/relatorio-completo` recebe os IDs das
-filiais, roda `pptxgenjs` no Node (gráficos de PPTX são XML — não precisam de
-render), gera 1 `.pptx` por filial, empacota num `.zip` com `jszip` e devolve para
-download.
+## Abordagem
 
-Motivos: mantém `pptxgenjs` fora do bundle do cliente; os dados já vêm da camada
-`db`/server; evita o bloqueio de downloads múltiplos do navegador (na Produtividade
-Perlog isso funciona só porque é Electron).
+**Route handler no servidor.** `POST /api/relatorio-completo` recebe (opcional)
+os IDs dos CDs a comparar — padrão: todos do escopo do usuário. Roda `pptxgenjs`
+no Node, monta **um** deck e devolve `.pptx` para download. Sem `.zip`, sem
+geração por filial.
 
-Rejeitado — geração no cliente (espelho literal da referência): manda ~1 MB de
-`pptxgenjs` para o browser e esbarra no bloqueio de downloads múltiplos.
+`pptxgenjs` fica fora do bundle do cliente; os dados já vêm da camada `db`/server;
+gráficos de PPTX são XML nativo (não precisam de render).
+
+## Estrutura do deck (9 slides)
+
+| # | Slide | Conteúdo |
+|---|---|---|
+| 1 | **Capa** | navy; "Relatório Consolidado de Indicadores — Gente & Gestão"; "{N} CDs comparados"; "Gerado em {data}" |
+| 2 | **Visão geral comparativa** | Tabela: **CDs nas linhas × 5 indicadores nas colunas** (valor atual). Células com **heatmap** — verde = melhor (menor), vermelho = pior (maior). Coluna final: posição média (ranking geral do CD). |
+| 3 | **Ranking — Banco de Horas** | Gráfico de barras horizontais, todos os CDs, ordenado do melhor (topo) ao pior. Callouts: 🥇 melhor CD + valor · 🔻 pior CD + valor. Linha de variação: "maior evolução {CD} ({Δ%}) · maior piora {CD} ({Δ%})" (BH tem histórico). Leitura curta. |
+| 4 | **Ranking — Inconsistências** | idem, sem linha de variação (sem histórico). |
+| 5 | **Ranking — Cursos Obrigatórios** | idem #3, com linha de variação (tem histórico). |
+| 6 | **Ranking — Feriados Pendentes** | idem #4. |
+| 7 | **Ranking — Vagas em Aberto** | idem #4. |
+| 8 | **Pódio** | 5 cards (um por indicador): 🏆 o CD nº 1 + valor. Estilo `drawPodiumCard` da referência. |
+| 9 | **Encerramento** | navy; "Gente & Gestão · Perlog"; data. |
+
+Indicador **sem dados importados** (meta nula / zero linhas): o CD entra no
+ranking com valor `0` e um marcador "sem dados"; se **nenhum** CD tem dados do
+indicador, o slide mostra aviso "Sem dados importados" no lugar do gráfico.
+
+**Variação vs. anterior:** só Banco de Horas e Cursos têm snapshot anterior.
+Inconsistências, Feriados e Vagas não — nesses, sem coluna/linha de Δ.
+
+**Paleta:** marca G&G — navy `#0B2447`, orange `#F37021` (igual
+`scripts/build-manual-pptx.js`). Heatmap: escala verde→amarelo→vermelho.
 
 ## Arquitetura
 
 ```
-app/(app)/relatorio-completo/
-  page.tsx                      server component; guard admin; lista filiais visíveis
-components/relatorio-completo/
-  RelatorioCompletoClient.tsx   client; multi-seleção de filiais, botão gerar, progresso, baixa o zip
-lib/relatorio-completo/
-  coletar.ts                    (server) agrega os dados de UMA filial
-  pptx.ts                       o motor: gerarDeckFilial(dados) => Uint8Array + helpers de slide
-  texto.ts                      regras que transformam números em frases de leitura
-  tipos.ts                      DadosFilialRelatorio e sub-tipos
-app/api/relatorio-completo/
-  route.ts                      POST { filialIds }; guard admin; loop; zip; resposta
-components/layout/nav-config.ts item novo no menu admin
-components/layout/Sidebar.tsx   fiação do item (segue o padrão existente)
+app/(app)/relatorio-completo/page.tsx        server; guard admin; lista CDs visíveis
+components/relatorio-completo/RelatorioCompletoClient.tsx
+                                             client; multi-seleção de CDs (padrão todos), botão, download
+lib/relatorio-completo/tipos.ts              DadosConsolidado, RankingIndicador, CDIndicador
+lib/relatorio-completo/ranking.ts            posicaoNoRanking() — JÁ IMPLEMENTADO, sem mudança
+lib/relatorio-completo/coletar.ts            (server) coletarContexto() + coletarConsolidado()
+lib/relatorio-completo/texto.ts              leituraRanking() por indicador — regras, sem IA
+lib/relatorio-completo/pptx.ts               gerarDeckConsolidado() + helpers de slide
+app/api/relatorio-completo/route.ts          POST { filialIds? }; guard admin; 1 .pptx
+components/layout/nav-config.ts              item "Relatório Completo" em ADMIN_NAV — JÁ FEITO
 ```
 
 ### Dependências
 
-- **Adicionar** `pptxgenjs@^4.0.1` em `dependencies` (hoje só é usado por
-  `scripts/build-manual-pptx.js` e nem está instalado em `node_modules`).
-- `jszip` já existe como transitivo — promover a dependência direta.
-- **Caveat de instalação:** o path do projeto tem `&`
-  (`C:\Users\juliano.correa\Desktop\G&G`), o que quebra shims spawnados via
-  `cmd.exe`. `npm install <pkg>` costuma funcionar; se falhar, instalar por outro
-  caminho. Ver `memory/build-gotchas.md`.
+- `pptxgenjs@^4.0.1` — **já instalado**.
+- `jszip` — **não é mais necessário** para este módulo (deck único). Deixar a dep
+  como está (é transitiva de qualquer forma); remover só o uso em `route.ts`.
 
-## Coleta de dados (`lib/relatorio-completo/coletar.ts`)
+### Coleta (`coletar.ts`)
 
-Reusa a camada existente, escopada a **uma** filial via `[filialId]`:
+- `coletarContexto(escopo: string[] | null)` — **já implementado**, sem mudança:
+  faz os fetches de todas as filiais do escopo (bh atual+anterior, inconsist,
+  cursos atual+anterior, feriados, vagas) + metas.
+- **NOVO** `coletarConsolidado(ctx, cds: {id,codigo,nome}[]): DadosConsolidado`:
+  para cada indicador, para cada CD → agrega valor atual (reusa
+  `agregarResumo*`), calcula Δ% vs. anterior (BH, Cursos), ranqueia via
+  `posicaoNoRanking`, ordena, e chama `texto.leituraRanking`.
 
-| Indicador | Fetch | Agregação |
-|---|---|---|
-| Banco de Horas | `fetchSnapshotRows(bhSnapshotAtual, [id])` + `...Anterior` | `agregarResumo`, `top5Por(_, 'secao'\|'funcao')`, `bhMeta` |
-| Inconsistências | `fetchInconsistRows([id])` | `agregarResumoInconsist`, `top5PorInconsist(_, 'tipo'\|'secao')`, `inconsistMeta` |
-| Cursos | `fetchCursosRows(cursosSnapshotAtual, [id])` + `...Anterior` | `agregarResumoCursos` (atual + anterior), `top5PorCursos(_, 'tipo'\|'secao')`, `cursosMeta` |
-| Feriados | `fetchFeriadosRows([id])` | `agregarResumoFeriados`, `top5PorFeriados(_, 'pendencia'\|'secao')`, `feriadosMeta` |
-| Vagas | query de `schema.vagas` (ativa=true, filialId=id) — mesma lógica de `app/(app)/vagas/page.tsx` | contagem por status / por seção; total do status "sistema" (aberta) |
+O que sai: `montarResumoExecutivo`, `coletarFilial` (eram do modelo por-filial).
 
-Ranking: para o card "posição no ranking" do resumo executivo, `coletar.ts`
-recebe também os totais das outras filiais visíveis (uma passada agregada, sem
-detalhe) e devolve a posição da filial em cada indicador.
+### `tipos.ts` (reescrito)
 
-### Comparação com período anterior
+```ts
+export type CDIndicador = {
+  filialId: string; codigo: string; nome: string;
+  valor: number; valorFmt: string;
+  variacao: { deltaPct: number | null; tendencia: 'melhorou'|'piorou'|'neutro' } | null;
+  posicao: number;                 // 1 = melhor (menor valor)
+};
+export type RankingIndicador = {
+  chave: 'bh'|'inconsist'|'cursos'|'feriados'|'vagas';
+  titulo: string; temHistorico: boolean; semDados: boolean;
+  cds: CDIndicador[];              // ordenado por posicao asc
+  leitura: string;
+};
+export type DadosConsolidado = {
+  geradoEm: string; totalCDs: number;
+  rankings: RankingIndicador[];    // ordem: bh, inconsist, cursos, feriados, vagas
+};
+```
 
-| Indicador | Tem histórico? | Card do resumo executivo |
-|---|---|---|
-| Banco de Horas | sim (snapshot anterior) | valor + variação ▲/▼ + ranking |
-| Cursos | sim (snapshot anterior) | valor + variação ▲/▼ + ranking |
-| Inconsistências | não | valor atual + ranking |
-| Feriados | não | valor atual + ranking |
-| Vagas | não | valor atual + ranking |
+### `texto.ts`
 
-## Motor de slides (`lib/relatorio-completo/pptx.ts`)
+`leituraRanking(chave, cds: CDIndicador[]): string` — ex.:
+`"{CD líder} lidera com {valor}; {CD lanterna} é o ponto de atenção ({valor}). Amplitude de {X}× entre o melhor e o pior."`
+Para BH/Cursos, acrescenta a maior evolução e a maior piora.
 
-Estrutura e helpers portados do estilo de `utils/pptxExportCompleto.ts`:
-`LAYOUT_WIDE` (13.33 × 7.5), `capa()`, `header(titulo, subtitulo, filial)`,
-`rodape(pagina, total)`, `card()`, `chartBarras()` / `chartRosca()`, `tabela()`
-com faixa de cabeçalho navy.
+### `pptx.ts`
 
-**Paleta — marca G&G** (igual `scripts/build-manual-pptx.js`):
-navy `#0B2447`, orange `#F37021`, apoio slate/soft/border; verde/âmbar/vermelho
-para variações.
+Helpers reaproveitados do que já existe (`header`, `footer`, `card`,
+`chartBarras`) + **novos**: `tabelaHeatmap(cds × indicadores)` e `podio(rankings)`.
+`gerarDeckConsolidado(d: DadosConsolidado): Promise<Uint8Array>`.
 
-### Deck por filial — 8 slides
+Sai: `gerarDeckFilial`.
 
-| # | Slide | Conteúdo |
-|---|---|---|
-| 1 | **Capa** | navy; "Relatório Completo de Indicadores — Gente & Gestão"; nome + código da filial; "Gerado em <data>" |
-| 2 | **Resumo executivo** | 5 cards (um por indicador): valor atual, variação ▲/▼ quando houver, posição no ranking; um gráfico de barras horizontais com a posição da filial vs. as demais (indicador âncora: Banco de Horas) |
-| 3 | **Banco de Horas** | cards (colaboradores c/ saldo, total de horas, valor c/ encargos); gráfico Top 5 seções (barras); parágrafo de leitura; "Atualizado em <bhMeta>" |
-| 4 | **Inconsistências** | cards (total, nº colaboradores); gráfico Top 5 tipos; parágrafo; meta |
-| 5 | **Cursos Obrigatórios** | cards (pendências atual, variação vs. anterior); gráfico Top 5 cursos/tipos; parágrafo; meta |
-| 6 | **Feriados Pendentes** | cards (total pendências, nº seções afetadas); gráfico Top 5 seções; parágrafo; meta |
-| 7 | **Quadro de Vagas** | cards (vagas abertas, seções com vaga); gráfico por status + gráfico por seção; parágrafo |
-| 8 | **Encerramento** | navy; "Gente & Gestão · Perlog"; data |
+### Route (`route.ts`)
 
-Slide de indicador **sem dados importados** (meta nula): mantém o slide com aviso
-"Sem dados importados para esta filial" no lugar do gráfico.
-
-### Textos de leitura (`lib/relatorio-completo/texto.ts`)
-
-Frases geradas por regras sobre os números — **sem IA**. Exemplos:
-
-- BH: `"Saldo de {h} h em {n} colaboradores. {Cresceu|Caiu} {p}% vs. período anterior. Maior concentração em {secaoTop}."`
-- Inconsist.: `"{n} inconsistências em {c} colaboradores. Tipo predominante: {tipoTop} ({pct}%)."`
-- Vagas: `"{n} vagas abertas. {secaoTop} concentra {pct}% do quadro em aberto."`
-
-Regras de sinal/limiar (ex.: variação < 1% = "estável") ficam em constantes no topo
-do arquivo. Testável isoladamente.
-
-## API (`app/api/relatorio-completo/route.ts`)
-
-- `POST`, body `{ filialIds: string[] }`.
+- `POST`, body `{ filialIds?: string[] }` (ausente/vazio ⇒ todos do escopo).
 - `requireSession()` → **403 se `perfil !== 'admin'`**.
-- Valida que cada `filialId` está no escopo visível do usuário.
-- Para cada filial: `coletar(filialId, contexto)` → `gerarDeckFilial(dados)`.
-- 1 filial → responde o `.pptx` (`Content-Type` pptx, `Content-Disposition`
-  `Relatorio_Completo_<FILIAL>_<AAAA-MM-DD>.pptx`).
-- 2+ filiais → `jszip` com um `.pptx` por filial →
-  `Relatorio_Completo_Indicadores_<AAAA-MM-DD>.zip`.
-- Erro em uma filial não derruba o lote: registra e segue; se todas falharem, 500.
-- Timeout: em muitas filiais a geração pode passar de alguns segundos — a rota
-  declara `export const maxDuration = 60` e `dynamic = 'force-dynamic'`.
+- Valida IDs contra o escopo visível.
+- `coletarContexto` → `coletarConsolidado` → `gerarDeckConsolidado`.
+- Responde **um** `.pptx`: `Relatorio_Consolidado_Indicadores_<AAAA-MM-DD>.pptx`.
+- `export const runtime = 'nodejs'`, `dynamic = 'force-dynamic'`, `maxDuration = 60`.
+- Remove: import de `jszip`, ramo do `.zip`, header `X-Relatorio-Falhas`.
 
-## UI (`RelatorioCompletoClient.tsx`)
+### UI
 
-- Lista de filiais visíveis com checkbox; "Selecionar todas" marcado por padrão.
-- Botão **Gerar relatório** → `fetch('/api/relatorio-completo', { method: POST })`
-  → `res.blob()` → download via link temporário.
-- Estados: ocioso / gerando (spinner + "Gerando N decks…") / erro (toast `sonner`).
-- Segue o visual dos outros módulos (`TopBar`, cartões shadcn, `font-display`).
-
-## Navegação
-
-`nav-config.ts`: novo array `RELATORIO_COMPLETO_NAV` **ou** item adicionado ao
-bloco admin — a decisão de fiação segue como a Sidebar já monta os menus por
-perfil. Ícone: `FileBarChart` (lucide). Rota `/relatorio-completo`, só admin.
+Multi-seleção de CDs (default: todos) para poder comparar um subconjunto. Botão
+**"Gerar relatório consolidado"** → `fetch` POST → baixa **um** `.pptx`. Toast de
+sucesso/erro (`sonner`). Sem aviso de "_falhas.txt".
 
 ## Testes
 
-- `lib/relatorio-completo/texto.test.ts` — cada regra de frase, incluindo bordas
-  (zero, variação nula, sem seção).
-- `lib/relatorio-completo/coletar.test.ts` — agregação e cálculo de posição no
-  ranking com fixtures (mesma abordagem de `bh-queries.test.ts`).
-- `pptx.ts`: smoke test — `gerarDeckFilial(fixture)` resolve para `Uint8Array`
-  não-vazio e não lança com indicador sem dados.
-- Sem teste E2E do arquivo PPTX renderizado.
+- `ranking.test.ts` — **já passa**, sem mudança.
+- `texto.test.ts` — reescrito para `leituraRanking` (líder, lanterna, amplitude,
+  evolução; bordas: 1 CD, valores zero, sem histórico).
+- `coletar.test.ts` — reescrito: testa a parte pura de `coletarConsolidado`
+  (ordenação, posições, Δ%) com fixtures de contexto.
+- `pptx.test.ts` — smoke: `gerarDeckConsolidado(fixture)` → `Uint8Array` não-vazio,
+  9 slides; não quebra com indicador `semDados` e com 1 CD só.
 
-## Riscos / questões em aberto
+## Riscos
 
-- **Formato dos gráficos no PPTX gerado no servidor:** `pptxgenjs` embute os
-  gráficos como XML nativo do Office — validar num PowerPoint real no primeiro
-  corte.
-- **`maxDuration` da Vercel:** plano atual pode limitar a 60 s; se o lote de 9
-  filiais estourar, cair para geração sequencial com resposta em streaming ou
-  limitar filiais por request.
-- **`top5Por` para 'tipo' em cursos:** confirmar no código que o campo existe
-  (`top5PorCursos(_, 'tipo')` já é usado em `getDadosCursos`).
+- Legibilidade da tabela heatmap e do gráfico de ranking com ~15 CDs — validar
+  num PowerPoint real (fontSize, altura de linha).
+- `maxDuration` da Vercel: um único deck com 15 CDs deve ficar bem abaixo de 60 s
+  (o modelo por-filial gerava 1 deck em ~2 s).
+- Trabalho já implementado no modelo "por filial" (`coletarFilial`,
+  `gerarDeckFilial`, ramo zip) será substituído — commits ficam no histórico da
+  branch.

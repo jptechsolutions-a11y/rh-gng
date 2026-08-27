@@ -1,33 +1,49 @@
 import { describe, it, expect } from 'vitest';
-import { montarResumoExecutivo } from './coletar';
+import { montarRankingIndicador } from './coletar';
 
-describe('montarResumoExecutivo', () => {
-  const entrada = {
-    filialId: 'f1',
-    totaisPorIndicador: {
-      bh:        [{ filialId: 'f1', valor: 100 }, { filialId: 'f2', valor: 50 }],
-      inconsist: [{ filialId: 'f1', valor: 5 },   { filialId: 'f2', valor: 9 }],
-      cursos:    [{ filialId: 'f1', valor: 8 },   { filialId: 'f2', valor: 8 }],
-      feriados:  [{ filialId: 'f1', valor: 2 },   { filialId: 'f2', valor: 7 }],
-      vagas:     [{ filialId: 'f1', valor: 3 },   { filialId: 'f2', valor: 1 }],
-    },
-    valores: { bh: 100, inconsist: 5, cursos: 8, feriados: 2, vagas: 3 },
-    variacoes: {
-      bh:     { deltaPct: 12.5, tendencia: 'piorou' as const },
-      cursos: { deltaPct: -50, tendencia: 'melhorou' as const },
-    },
-  };
+describe('montarRankingIndicador', () => {
+  const cds = [
+    { filialId: 'a', codigo: '001', nome: 'A' },
+    { filialId: 'b', codigo: '002', nome: 'B' },
+    { filialId: 'c', codigo: '003', nome: 'C' },
+  ];
 
-  it('gera 5 cards com posição e variação corretas', () => {
-    const cards = montarResumoExecutivo(entrada);
-    expect(cards.map((c) => c.chave)).toEqual(['bh', 'inconsist', 'cursos', 'feriados', 'vagas']);
+  it('ordena por valor asc e atribui posições', () => {
+    const r = montarRankingIndicador({
+      chave: 'inconsist', titulo: 'Inconsistências', temHistorico: false,
+      metaNula: false, cds,
+      valorAtual: new Map([['a', 30], ['b', 10], ['c', 20]]),
+      valorAnterior: new Map(),
+      fmt: (n) => String(n),
+    });
+    expect(r.cds.map((c) => c.nome)).toEqual(['B', 'C', 'A']);
+    expect(r.cds.map((c) => c.posicao)).toEqual([1, 2, 3]);
+    expect(r.cds[0]!.variacao).toBeNull();
+    expect(r.semDados).toBe(false);
+  });
 
-    const bh = cards.find((c) => c.chave === 'bh')!;
-    expect(bh.posicao).toBe(2);          // 100 > 50 → 2º de 2
-    expect(bh.variacao).toEqual({ deltaPct: 12.5, tendencia: 'piorou' });
+  it('com histórico calcula deltaPct e tendência', () => {
+    const r = montarRankingIndicador({
+      chave: 'bh', titulo: 'Banco de Horas', temHistorico: true,
+      metaNula: false, cds,
+      valorAtual: new Map([['a', 120], ['b', 100], ['c', 90]]),
+      valorAnterior: new Map([['a', 100], ['b', 100], ['c', 120]]),
+      fmt: (n) => `${n} h`,
+    });
+    const a = r.cds.find((c) => c.nome === 'A')!;
+    expect(a.variacao).toEqual({ deltaPct: 20, tendencia: 'piorou' });
+    const c = r.cds.find((c) => c.nome === 'C')!;
+    expect(c.variacao!.tendencia).toBe('melhorou');
+  });
 
-    const feriados = cards.find((c) => c.chave === 'feriados')!;
-    expect(feriados.posicao).toBe(1);    // 2 < 7
-    expect(feriados.variacao).toBeNull(); // sem histórico
+  it('todos zerados + meta nula ⇒ semDados', () => {
+    const r = montarRankingIndicador({
+      chave: 'feriados', titulo: 'Feriados', temHistorico: false,
+      metaNula: true, cds,
+      valorAtual: new Map(), valorAnterior: new Map(),
+      fmt: (n) => String(n),
+    });
+    expect(r.semDados).toBe(true);
+    expect(r.cds.every((c) => c.valor === 0)).toBe(true);
   });
 });

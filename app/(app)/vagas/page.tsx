@@ -2,11 +2,8 @@ import { and, eq, inArray } from 'drizzle-orm';
 import { db, schema } from '@/db/client';
 import { requireSession, getFiliaisVisiveis } from '@/lib/auth/session';
 import { TopBar } from '@/components/layout/TopBar';
-import { VagasQuadroTable, type VagaRow } from '@/components/vagas/VagasQuadroTable';
-import { VagasPorStatusChart } from '@/components/vagas/VagasPorStatusChart';
-import { VagasAbertoPorFilialChart } from '@/components/vagas/VagasAbertoPorFilialChart';
-import { VagasAbertoPorSecaoChart } from '@/components/vagas/VagasAbertoPorSecaoChart';
-import { VagasAbertoPorFuncaoChart } from '@/components/vagas/VagasAbertoPorFuncaoChart';
+import { VagasView } from '@/components/vagas/VagasView';
+import type { VagaRow } from '@/components/vagas/VagasQuadroTable';
 
 export const dynamic = 'force-dynamic';
 
@@ -93,14 +90,16 @@ export default async function VagasPage() {
   return (
     <>
       <TopBar titulo="Quadro de Vagas" subtitulo={`${rows.length} vagas ativas`} badge={badge} />
-      <div className="space-y-5 p-4 lg:p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          <VagasPorStatusChart data={chartStatus} />
-          <VagasAbertoPorFilialChart data={chartFilial} />
-          <VagasAbertoPorSecaoChart data={chartSecao} />
-          <VagasAbertoPorFuncaoChart data={chartFuncao} />
-        </div>
-        <VagasQuadroTable rows={rows} statusOptions={statusOptions} podeEditar={podeEditar} />
+      <div className="p-4 lg:p-6">
+        <VagasView
+          rows={rows}
+          statusOptions={statusOptions}
+          podeEditar={podeEditar}
+          chartStatus={chartStatus}
+          chartFilial={chartFilial}
+          chartSecao={chartSecao}
+          chartFuncao={chartFuncao}
+        />
       </div>
     </>
   );

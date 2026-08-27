@@ -26,17 +26,23 @@ const base: DadosConsolidado = {
     rk({ chave: 'feriados', titulo: 'Feriados Pendentes' }),
     rk({ chave: 'vagas', titulo: 'Vagas em Aberto' }),
   ],
-  vagasDetalhe: [],
-  statusVagas: [],
+  vagasDetalhe: [
+    { filialId: 'a', codigo: '001', nome: 'A', contratarPorClassificacao: { 'Área de Apoio': 2, 'Expansão': 0, 'Operação': 5, 'Transporte': 1 }, aprov: 100, ativo: 92, totalAbertas: 8, porStatus: { 'Em aberto': 6, 'Entrevista': 2 } },
+    { filialId: 'b', codigo: '002', nome: 'B', contratarPorClassificacao: { 'Área de Apoio': 0, 'Expansão': 0, 'Operação': 1, 'Transporte': 0 }, aprov: 40, ativo: 39, totalAbertas: 1, porStatus: { 'Em aberto': 1, 'Entrevista': 0 } },
+  ],
+  statusVagas: ['Em aberto', 'Entrevista'],
 };
+
+async function contarSlides(bytes: Uint8Array): Promise<number> {
+  const zip = await JSZip.loadAsync(bytes);
+  return Object.keys(zip.files).filter((f) => /ppt\/slides\/slide\d+\.xml$/.test(f)).length;
+}
 
 describe('gerarDeckConsolidado', () => {
   it('produz um pptx de 9 slides', async () => {
     const bytes = await gerarDeckConsolidado(base);
     expect(bytes).toBeInstanceOf(Uint8Array);
-    const zip = await JSZip.loadAsync(bytes);
-    const slides = Object.keys(zip.files).filter((f) => /ppt\/slides\/slide\d+\.xml$/.test(f));
-    expect(slides.length).toBe(9);
+    expect(await contarSlides(bytes)).toBe(9);
   });
 
   it('não quebra com indicador semDados nem com 1 CD', async () => {
@@ -48,5 +54,6 @@ describe('gerarDeckConsolidado', () => {
     };
     const bytes = await gerarDeckConsolidado(d);
     expect(bytes.byteLength).toBeGreaterThan(2000);
+    expect(await contarSlides(bytes)).toBe(9);
   });
 });

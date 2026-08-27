@@ -53,7 +53,9 @@ export default async function VagasPage() {
 
   const porStatus = new Map<string, number>();
   for (const r of rows) porStatus.set(r.statusNome, (porStatus.get(r.statusNome) ?? 0) + 1);
-  const chartStatus = Array.from(porStatus.entries()).map(([status, total]) => ({ status, total }));
+  const chartStatus = Array.from(porStatus.entries())
+    .map(([status, total]) => ({ status, total }))
+    .sort((a, b) => b.total - a.total || a.status.localeCompare(b.status));
 
   const statusSistema = statusOptions.find((st) => st.sistema);
   const porFilial = new Map<string, number>();

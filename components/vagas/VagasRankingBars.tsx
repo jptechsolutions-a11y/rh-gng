@@ -19,14 +19,21 @@ export function VagasRankingBars({
   icon,
   data,
   labelWidthClass = 'w-12',
+  color = 'navy',
 }: {
   titulo: string;
   icon: LucideIcon;
   data: RankingBarItem[];
   /** Largura da coluna do rótulo — maior para rótulos textuais (seção/função) do que para código de filial. */
   labelWidthClass?: string;
+  /** Cor da barra — navy (padrão) ou orange. */
+  color?: 'navy' | 'orange';
 }) {
   const max = data.reduce((m, it) => Math.max(m, it.total), 0) || 1;
+  const barBg = color === 'orange'
+    ? 'linear-gradient(90deg, #E8621A 0%, #FF8C42 100%)'
+    : 'linear-gradient(90deg, #0D2B6B 0%, #1A3F8F 100%)';
+  const labelColor = color === 'orange' ? 'text-conecta-accent' : 'text-conecta-primary';
 
   return (
     <ConectaCard noPadding>
@@ -43,7 +50,7 @@ export function VagasRankingBars({
             return (
               <div key={it.label} className="flex items-center gap-3">
                 <div
-                  className={`${labelWidthClass} shrink-0 font-display text-[12px] font-semibold text-conecta-primary truncate`}
+                  className={`${labelWidthClass} shrink-0 font-display text-[12px] font-semibold ${labelColor} truncate`}
                   title={it.label}
                 >
                   {it.label}
@@ -51,10 +58,7 @@ export function VagasRankingBars({
                 <div className="flex-1 relative h-7 rounded-md bg-conecta-primary/5 overflow-visible">
                   <div
                     className="absolute inset-y-0 left-0 rounded-md flex items-center justify-end pr-2.5"
-                    style={{
-                      width: `${pct}%`,
-                      background: 'linear-gradient(90deg, #0D2B6B 0%, #1A3F8F 100%)',
-                    }}
+                    style={{ width: `${pct}%`, background: barBg }}
                   >
                     {valorInterno && (
                       <span className="font-display font-bold text-white text-[12px] tabular-nums whitespace-nowrap">
@@ -64,7 +68,7 @@ export function VagasRankingBars({
                   </div>
                   {!valorInterno && (
                     <span
-                      className="absolute inset-y-0 flex items-center font-display font-bold text-[12px] tabular-nums whitespace-nowrap text-conecta-primary"
+                      className={`absolute inset-y-0 flex items-center font-display font-bold text-[12px] tabular-nums whitespace-nowrap ${labelColor}`}
                       style={{ left: `calc(${pct}% + 8px)` }}
                     >
                       {it.total}

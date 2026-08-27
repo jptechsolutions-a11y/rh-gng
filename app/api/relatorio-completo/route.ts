@@ -77,6 +77,7 @@ export async function POST(req: NextRequest) {
       'Content-Type': 'application/zip',
       'Content-Disposition': `attachment; filename="Relatorio_Completo_Indicadores_${stamp}.zip"`,
       'Cache-Control': 'no-store',
+      ...(falhas.length ? { 'X-Relatorio-Falhas': String(falhas.length) } : {}),
     },
   });
 }

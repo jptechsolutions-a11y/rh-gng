@@ -50,7 +50,7 @@ describe('montarRankingIndicador', () => {
 
 describe('coletarConsolidado', () => {
   it('inclui vagasDetalhe ordenado por totalAbertas', () => {
-    const ctx: any = {
+    const ctx = {
       bhAtual: [], bhAnterior: [], inconsist: [], cursosAtual: [], cursosAnterior: [], feriados: [],
       vagas: [
         { filialId: 'a', statusNome: 'Em aberto', statusSistema: true, secao: 'SEPARACAO (OPERACAO)' },
@@ -61,7 +61,7 @@ describe('coletarConsolidado', () => {
       statusVagas: ['Em aberto', 'Entrevista'],
       classifMapa: new Map([['SEPARACAO (OPERACAO)', 'Operação'], ['COZINHA', 'Área de Apoio'], ['FINANCEIRO (ADM)', 'Área de Apoio']]),
       meta: { bh: null, inconsist: null, cursos: null, feriados: null },
-    };
+    } as unknown as Parameters<typeof coletarConsolidado>[0];
     const d = coletarConsolidado(ctx, [
       { filialId: 'a', codigo: '001', nome: 'A' },
       { filialId: 'b', codigo: '002', nome: 'B' },

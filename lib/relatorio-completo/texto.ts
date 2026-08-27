@@ -1,58 +1,38 @@
-import type { Resumo } from '@/lib/indicadores/bh-queries';
-import type { ResumoInconsist } from '@/lib/indicadores/inconsist-queries';
-import type { ResumoCursos } from '@/lib/indicadores/cursos-queries';
-import type { ResumoFeriados } from '@/lib/indicadores/feriados-queries';
-import type { Top5 } from './tipos';
-
-const LIMIAR_ESTAVEL = 1; // |%| abaixo disso = "estável"
+import type { CDIndicador, ChaveIndicador } from './tipos';
 
 const nf = (n: number) => n.toLocaleString('pt-BR', { maximumFractionDigits: 1 });
+const nf1 = (n: number) =>
+  n.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const pctFmt = (p: number) => `${p > 0 ? '+' : ''}${nf(p)}%`;
 
-/** Frase de tendência a partir de atual vs anterior. Verbo padrão: cresceu/caiu. */
-function tendencia(
-  atual: number,
-  anterior: number,
-  verbos: { subiu: string; caiu: string } = { subiu: 'cresceu', caiu: 'caiu' },
-): string {
-  if (!anterior) return 'sem base de comparação com o período anterior';
-  const pct = ((atual - anterior) / anterior) * 100;
-  if (Math.abs(pct) < LIMIAR_ESTAVEL) return 'manteve-se estável vs. o período anterior';
-  const verbo = pct > 0 ? verbos.subiu : verbos.caiu;
-  return `${verbo} ${nf(Math.abs(pct))}% vs. o período anterior`;
-}
+const COM_HISTORICO: ChaveIndicador[] = ['bh', 'cursos'];
 
-export function textoBH(atual: Resumo, anterior: Resumo, topSecoes: Top5): string {
-  const t = tendencia(atual.totalHoras, anterior.totalHoras);
-  const sec = topSecoes[0]
-    ? ` Maior concentração em ${topSecoes[0].label} (${nf(topSecoes[0].valor)} h).`
-    : '';
-  return `Saldo de ${nf(atual.totalHoras)} h em ${atual.colaboradores} colaboradores; ${t}.${sec}`;
-}
+export function leituraRanking(chave: ChaveIndicador, cds: CDIndicador[]): string {
+  if (cds.length === 0) return 'Sem CDs para comparar neste indicador.';
 
-export function textoInconsist(resumo: ResumoInconsist, topTipos: Top5): string {
-  const tipo = topTipos[0]
-    ? ` Tipo predominante: ${topTipos[0].label} (${nf(topTipos[0].pct ?? 0)}%).`
-    : '';
-  return `${resumo.totalInconsist} inconsistências em ${resumo.colaboradores} colaboradores (média ${nf(resumo.mediaPorPessoa)} por pessoa).${tipo}`;
-}
+  const lider = cds[0]!;
+  const lanterna = cds[cds.length - 1]!;
 
-export function textoCursos(atual: ResumoCursos, anterior: ResumoCursos, topTipos: Top5): string {
-  const t = tendencia(atual.totalPendencias, anterior.totalPendencias, { subiu: 'subiu', caiu: 'caiu' });
-  const tipo = topTipos[0] ? ` Curso mais pendente: ${topTipos[0].label}.` : '';
-  return `${atual.totalPendencias} pendências de treinamento em ${atual.colaboradores} colaboradores; ${t}.${tipo}`;
-}
+  let base = `${lider.nome} lidera com ${lider.valorFmt}`;
+  if (cds.length > 1) base += `; ${lanterna.nome} é o ponto de atenção (${lanterna.valorFmt}).`;
+  else base += '.';
 
-export function textoFeriados(resumo: ResumoFeriados, topSecoes: Top5): string {
-  const sec = topSecoes[0]
-    ? ` ${topSecoes[0].label} concentra ${nf(topSecoes[0].pct ?? 0)}% das pendências.`
-    : '';
-  return `${resumo.totalPendencias} pendências de feriado em ${resumo.colaboradores} colaboradores.${sec}`;
-}
+  let amplitude = '';
+  if (cds.length > 1) {
+    if (lider.valor > 0) amplitude = ` Amplitude de ${nf1(lanterna.valor / lider.valor)}× entre o melhor e o pior.`;
+    else if (lanterna.valor > 0) amplitude = ' O melhor CD zerou o indicador.';
+  }
 
-export function textoVagas(totalAbertas: number, porSecao: Top5): string {
-  if (totalAbertas === 0) return 'Nenhuma vaga em aberto no quadro atual.';
-  const sec = porSecao[0]
-    ? ` ${porSecao[0].label} concentra ${nf(porSecao[0].pct ?? 0)}% do quadro em aberto.`
-    : '';
-  return `${totalAbertas} vagas em aberto.${sec}`;
+  let deltas = '';
+  if (COM_HISTORICO.includes(chave)) {
+    const comVar = cds.filter((c) => c.variacao && c.variacao.deltaPct !== null);
+    if (comVar.length > 0) {
+      const evolucao = [...comVar].sort((a, b) => (a.variacao!.deltaPct ?? 0) - (b.variacao!.deltaPct ?? 0))[0]!;
+      const piora = [...comVar].sort((a, b) => (b.variacao!.deltaPct ?? 0) - (a.variacao!.deltaPct ?? 0))[0]!;
+      if (evolucao.variacao!.deltaPct! < 0) deltas += ` Maior evolução: ${evolucao.nome} (${pctFmt(evolucao.variacao!.deltaPct!)}).`;
+      if (piora.variacao!.deltaPct! > 0) deltas += ` Maior piora: ${piora.nome} (${pctFmt(piora.variacao!.deltaPct!)}).`;
+    }
+  }
+
+  return base + amplitude + deltas;
 }

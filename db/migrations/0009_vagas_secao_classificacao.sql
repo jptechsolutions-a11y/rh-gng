@@ -1,0 +1,55 @@
+-- DE-PARA: seção (DESC_SECAO do quadro de vagas) → classificação.
+-- Editável no admin (/admin/config/classificacao-secao).
+
+CREATE TABLE IF NOT EXISTS vagas_secao_classificacao (
+  id                   uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  secao                text NOT NULL UNIQUE,
+  classificacao        text NOT NULL,
+  atualizado_por_nome  text,
+  updated_at           timestamptz NOT NULL DEFAULT now()
+);
+
+INSERT INTO vagas_secao_classificacao (secao, classificacao) VALUES
+  ('ABASTECIMENTO (OPERACAO)', 'Área de Apoio'),
+  ('GENTE E GESTAO', 'Área de Apoio'),
+  ('OPERACIONAL (OPERACAO)', 'Operação'),
+  ('TRANSPORTE (OPERACAO)', 'Transporte'),
+  ('APOIO - JOVEM APRENDIZ', 'Área de Apoio'),
+  ('GESTAO DE ESTOQUE (OPERACAO)', 'Área de Apoio'),
+  ('FINANCEIRO (ADM)', 'Área de Apoio'),
+  ('PREVENCAO DE PERDAS (ADM)', 'Área de Apoio'),
+  ('SEPARACAO (OPERACAO)', 'Operação'),
+  ('EXPEDICAO (OPERACAO)', 'Operação'),
+  ('DEVOLUCAO (OPERACAO)', 'Área de Apoio'),
+  ('RECEBIMENTO (OPERACAO)', 'Operação'),
+  ('COZINHA', 'Área de Apoio'),
+  ('LIMPEZA E CONSERVACAO', 'Área de Apoio'),
+  ('MANUTENCAO (ADM)', 'Área de Apoio'),
+  ('GERENCIA (OPERACAO)', 'Operação'),
+  ('ARMAZENAGEM (OPERACAO)', 'Área de Apoio'),
+  ('SEGURANCA/PORTARIA (ADM)', 'Área de Apoio'),
+  ('PROMOTORES (INTEGRADO) - PERECIVEIS', 'Área de Apoio'),
+  ('PROMOTORES (INTEGRADO)', 'Área de Apoio'),
+  ('F.L.V. (OPERACAO)', 'Operação'),
+  ('INFORMATICA (ADM)', 'Área de Apoio'),
+  ('MOTORISTAS (OPERACAO)', 'Transporte'),
+  ('SAC', 'Área de Apoio'),
+  ('SORTER (OPERACAO)', 'Área de Apoio'),
+  ('EXPANSAO', 'Expansão'),
+  ('SAUDE E SEGURANCA NO TRABALHO', 'Área de Apoio'),
+  ('DIVISAO PERLOG (OPERACOES)', 'Área de Apoio'),
+  ('PREVENCAO PERLOG (OPERACAO)', 'Área de Apoio'),
+  ('DIRETORIA PERLOG (OPERACOES)', 'Área de Apoio'),
+  ('GERENCIA PERLOG (OPERACOES)', 'Área de Apoio'),
+  ('OPERACAO DE ALIMENTOS (OP. PERLOG)', 'Área de Apoio'),
+  ('CESTA BASICA (OPERACAO)', 'Operação'),
+  ('DEPOSITO', 'Área de Apoio'),
+  ('PREVENCAO', 'Área de Apoio'),
+  ('MOTORISTAS', 'Área de Apoio'),
+  ('PREVENCAO (PERLOG)', 'Área de Apoio'),
+  ('NOVOS NEGOCIOS (OPERACOES)', 'Área de Apoio'),
+  ('MONITORAMENTO PERLOG (OPERACOES)', 'Transporte'),
+  ('GENTE E GESTAO PERLOG (OPERACOES)', 'Área de Apoio'),
+  ('DIVISAO PERLOG (NEGOCIOS)', 'Área de Apoio'),
+  ('ABASTECIMENTO PERLOG (OPERACOES)', 'Área de Apoio')
+ON CONFLICT (secao) DO NOTHING;

@@ -684,6 +684,16 @@ export const vagas = pgTable('vagas', {
   ativaIdx: index('vagas_ativa_idx').on(t.ativa),
 }));
 
+// DE-PARA: seção (DESC_SECAO do quadro) → classificação, editável no admin.
+export const vagasSecaoClassificacao = pgTable('vagas_secao_classificacao', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  secao: text('secao').notNull().unique(),
+  classificacao: text('classificacao').notNull(), // 'Área de Apoio' | 'Operação' | 'Transporte' | 'Expansão'
+  atualizadoPorNome: text('atualizado_por_nome'),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 export type VagaStatus = typeof vagasStatus.$inferSelect;
 export type VagaQuadroLinha = typeof vagasQuadroLinhas.$inferSelect;
 export type Vaga = typeof vagas.$inferSelect;
+export type VagaSecaoClassificacao = typeof vagasSecaoClassificacao.$inferSelect;

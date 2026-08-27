@@ -24,8 +24,8 @@ export function RelatorioCompletoClient({ filiais }: { filiais: Filial[] }) {
   const toggleTodas = () => setSel(todas ? new Set() : new Set(filiais.map((f) => f.id)));
 
   const gerar = async () => {
-    if (sel.size === 0) {
-      toast.error('Selecione ao menos uma filial');
+    if (sel.size < 2) {
+      toast.error('Selecione ao menos 2 CDs para comparar');
       return;
     }
     setGerando(true);
@@ -41,16 +41,14 @@ export function RelatorioCompletoClient({ filiais }: { filiais: Filial[] }) {
       }
       const blob = await res.blob();
       const cd = res.headers.get('Content-Disposition') ?? '';
-      const nome = /filename="([^"]+)"/.exec(cd)?.[1] ?? 'Relatorio_Completo.pptx';
+      const nome = /filename="([^"]+)"/.exec(cd)?.[1] ?? 'Relatorio_Consolidado_Indicadores.pptx';
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = nome;
       a.click();
       URL.revokeObjectURL(url);
-      if (res.headers.get('X-Relatorio-Falhas'))
-        toast.warning('Algumas filiais falharam — ver arquivo _falhas.txt no .zip');
-      else toast.success('Relatório gerado');
+      toast.success('Relatório consolidado gerado');
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Erro ao gerar');
     } finally {
@@ -67,12 +65,12 @@ export function RelatorioCompletoClient({ filiais }: { filiais: Filial[] }) {
         </span>
       </div>
       <h2 className="font-display text-[22px] font-extrabold text-conecta-primary tracking-tight mt-1.5">
-        Gerar relatório de indicadores
+        Relatório consolidado de indicadores
       </h2>
       <p className="text-[13px] text-conecta-muted mt-1">
-        Um PowerPoint por filial com resumo executivo e um slide por indicador
-        (Banco de Horas, Inconsistências, Cursos, Feriados, Vagas). Mais de uma
-        filial é entregue num arquivo <code>.zip</code>.
+        Um PowerPoint consolidado comparando os CDs selecionados, com tabela geral
+        e um ranking por indicador (Banco de Horas, Inconsistências, Cursos,
+        Feriados, Vagas). Selecione ao menos 2 CDs.
       </p>
 
       <div className="mt-4 flex items-center justify-between">
@@ -116,7 +114,7 @@ export function RelatorioCompletoClient({ filiais }: { filiais: Filial[] }) {
 
       <Button onClick={gerar} disabled={gerando} className="mt-5">
         {gerando ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileBarChart className="h-4 w-4" />}
-        {gerando ? `Gerando ${sel.size} deck(s)…` : 'Gerar relatório'}
+        {gerando ? 'Gerando relatório…' : 'Gerar relatório consolidado'}
       </Button>
     </ConectaCard>
   );

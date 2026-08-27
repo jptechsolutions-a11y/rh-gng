@@ -9,7 +9,7 @@ import { RoscaTop5Inconsist } from './RoscaTop5';
 import { TabelaResumoFilialInconsist } from './TabelaResumoFilial';
 import { TabelaDetalhadoInconsist } from './TabelaDetalhado';
 import { ImportarInconsistDialog } from './ImportarInconsistDialog';
-import { SubTabs } from '../_shared/SubTabs';
+import { SubTabs } from '@/components/ui/sub-tabs';
 
 export function InconsistView({ dados, podeImportar, multiFilial }: { dados: DadosInconsist; podeImportar: boolean; multiFilial: boolean }) {
   const ts = dados.meta?.ultimaAtualizacao

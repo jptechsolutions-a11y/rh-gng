@@ -9,7 +9,7 @@ import { RoscaTop5Feriados } from './RoscaTop5';
 import { TabelaResumoFilialFeriados } from './TabelaResumoFilial';
 import { TabelaDetalhadoFeriados } from './TabelaDetalhado';
 import { ImportarFeriadosDialog } from './ImportarFeriadosDialog';
-import { SubTabs } from '../_shared/SubTabs';
+import { SubTabs } from '@/components/ui/sub-tabs';
 
 export function FeriadosView({ dados, podeImportar, multiFilial }: { dados: DadosFeriados; podeImportar: boolean; multiFilial: boolean }) {
   const ts = dados.meta?.ultimaAtualizacao

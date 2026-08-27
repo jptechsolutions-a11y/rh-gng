@@ -8,7 +8,7 @@ import {
   LayoutDashboard, List,
 } from 'lucide-react';
 import { ConectaCard, SectionHeader } from '@/components/ui/conecta-card';
-import { SubTabs } from '@/app/(app)/indicadores/_shared/SubTabs';
+import { SubTabs } from '@/components/ui/sub-tabs';
 import { TimeDistribuicaoCard } from './TimeDistribuicaoCard';
 import { MeuTimeTable, type TimeColab } from './MeuTimeTable';
 

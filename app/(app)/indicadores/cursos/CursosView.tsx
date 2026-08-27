@@ -10,7 +10,7 @@ import { RoscaTop5Cursos } from './RoscaTop5';
 import { TabelaResumoFilialCursos } from './TabelaResumoFilial';
 import { TabelaDetalhadoCursos } from './TabelaDetalhado';
 import { ImportarCursosDialog } from './ImportarCursosDialog';
-import { SubTabs } from '../_shared/SubTabs';
+import { SubTabs } from '@/components/ui/sub-tabs';
 
 export function CursosView({ dados, podeImportar, multiFilial }: { dados: DadosCursos; podeImportar: boolean; multiFilial: boolean }) {
   const ts = dados.meta?.ultimaAtualizacao

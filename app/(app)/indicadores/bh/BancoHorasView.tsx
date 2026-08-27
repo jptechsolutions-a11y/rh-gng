@@ -8,7 +8,7 @@ import { RoscaTop5 } from './RoscaTop5';
 import { TabelaResumoFilial } from './TabelaResumoFilial';
 import { TabelaDetalhado } from './TabelaDetalhado';
 import { ImportarBHDialog } from './ImportarBHDialog';
-import { SubTabs } from '../_shared/SubTabs';
+import { SubTabs } from '@/components/ui/sub-tabs';
 import { agregarResumo, top5Por, type ResumoFilial } from '@/lib/indicadores/bh-queries';
 import { calcVariacao } from './variacao';
 

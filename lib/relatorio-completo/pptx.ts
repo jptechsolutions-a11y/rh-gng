@@ -158,27 +158,73 @@ function slideRankingTabela(pres: PptxGenJS, r: RankingIndicador, page: number, 
   footer(s, page, total);
 }
 
-function slideVagas(pres: PptxGenJS, d: DadosConsolidado, page: number, total: number) {
-  const s = pres.addSlide();
-  header(s, 'INDICADOR', 'Vagas em Aberto por CD');
+const VAGAS_POR_SLIDE = 4; // grade 2 x 2
+
+function cardVagas(s: PptxGenJS.Slide, x: number, y: number, w: number, h: number, c: DadosConsolidado['vagasDetalhe'][number], statusVagas: string[]) {
+  s.addShape('roundRect', { x, y, w, h, fill: { color: WHITE }, line: { color: BORDER, width: 1 }, rectRadius: 0.05 });
+  s.addShape('rect', { x, y, w, h: 0.34, fill: { color: 'DBEAFE' }, line: { color: 'DBEAFE' } });
+  s.addText(`CD ${c.nome}  ·  ${c.codigo}`, { x: x + 0.15, y, w: w - 0.3, h: 0.34, valign: 'middle', fontFace: FONT, fontSize: 9, color: NAVY, bold: true });
+
+  const th = ['CLASSIFICAÇÃO', 'QUADRO APROV.', 'ATIVO', 'CONTRATAR'];
+  const rows: PptxGenJS.TableRow[] = [
+    th.map((t, i) => ({ text: t, options: { bold: true, color: NAVY, fontSize: 6.5, align: (i === 0 ? 'left' : 'center') as HAlign, valign: 'middle' as VAlign } })),
+  ];
+  for (const l of c.porClassificacao) {
+    rows.push([
+      { text: l.classificacao.toUpperCase(), options: { color: SLATE, fontSize: 6.5 } },
+      { text: String(l.aprov), options: { align: 'center' as HAlign, color: NAVY, fontSize: 6.5 } },
+      { text: String(l.ativo), options: { align: 'center' as HAlign, color: NAVY, fontSize: 6.5 } },
+      { text: String(l.contratar), options: { align: 'center' as HAlign, bold: true, color: l.contratar > 0 ? BAD : SLATE, fontSize: 6.5 } },
+    ]);
+  }
+  rows.push([
+    { text: 'TOTAL', options: { bold: true, color: NAVY, fontSize: 6.5 } },
+    { text: String(c.totalAprov), options: { align: 'center' as HAlign, bold: true, color: NAVY, fontSize: 6.5 } },
+    { text: String(c.totalAtivo), options: { align: 'center' as HAlign, bold: true, color: NAVY, fontSize: 6.5 } },
+    { text: String(c.totalContratar), options: { align: 'center' as HAlign, bold: true, color: NAVY, fontSize: 6.5 } },
+  ]);
+
+  const tableH = Math.min(h - 0.78, 0.24 * rows.length);
+  s.addTable(rows, {
+    x: x + 0.12, y: y + 0.42, w: w - 0.24, h: tableH,
+    fontFace: FONT, fontSize: 6.5,
+    border: { type: 'solid', color: BORDER, pt: 0.5 },
+    colW: [(w - 0.24) * 0.4, (w - 0.24) * 0.22, (w - 0.24) * 0.16, (w - 0.24) * 0.22],
+  });
+
+  const st = statusVagas.filter((n) => (c.porStatus[n] ?? 0) > 0).map((n) => `${n}: ${c.porStatus[n]}`);
+  s.addText(`Vagas em aberto (${c.totalAbertas})${st.length ? ' — ' + st.join('  ·  ') : ''}`, {
+    x: x + 0.15, y: y + h - 0.3, w: w - 0.3, h: 0.24, fontFace: FONT, fontSize: 6.5, italic: true, color: SLATE,
+  });
+}
+
+function slidesVagas(pres: PptxGenJS, d: DadosConsolidado, startPage: number, total: number): number {
   const det = d.vagasDetalhe;
   if (det.length === 0) {
+    const s = pres.addSlide();
+    header(s, 'INDICADOR', 'Vagas em Aberto por CD');
     s.addText('Sem dados de vagas.', { x: 0.5, y: 3.2, w: W - 1, h: 0.5, align: 'center', italic: true, color: SLATE, fontFace: FONT, fontSize: 12 });
-    footer(s, page, total); return;
+    footer(s, startPage, total);
+    return 1;
   }
-  const rows: PptxGenJS.TableRow[] = [
-    ['CD', 'Aprov', 'Ativo', 'Contratar', 'Abertas'].map((t, i) => ({ text: t, options: { bold: true, color: WHITE, fill: { color: NAVY }, align: (i === 0 ? 'left' : 'center') as HAlign, fontSize: 9 } })),
-  ];
-  for (const c of det) rows.push([
-    { text: `${c.codigo} ${c.nome}`, options: { bold: true, color: NAVY, fontSize: 9 } },
-    { text: String(c.totalAprov), options: { align: 'center' as HAlign, color: SLATE, fontSize: 9 } },
-    { text: String(c.totalAtivo), options: { align: 'center' as HAlign, color: SLATE, fontSize: 9 } },
-    { text: String(c.totalContratar), options: { align: 'center' as HAlign, bold: true, color: NAVY, fontSize: 9 } },
-    { text: String(c.totalAbertas), options: { align: 'center' as HAlign, bold: true, color: NAVY, fontSize: 9 } },
-  ]);
-  const h = Math.min(5.4, 0.4 + rows.length * 0.32);
-  s.addTable(rows, { x: 0.5, y: 1.1, w: W - 1, h, fontFace: FONT, fontSize: 9, border: { type: 'solid', color: BORDER, pt: 0.5 }, colW: [W - 1 - 4 * 1.6, 1.6, 1.6, 1.6, 1.6] });
-  footer(s, page, total);
+
+  const nSlides = Math.ceil(det.length / VAGAS_POR_SLIDE);
+  const gap = 0.35;
+  const cw = (W - 0.8 - gap) / 2;
+  const ch = (H - 1.55 - gap) / 2;
+
+  for (let i = 0; i < nSlides; i++) {
+    const s = pres.addSlide();
+    header(s, `INDICADOR ${nSlides > 1 ? `(${i + 1}/${nSlides})` : ''}`.trim(), 'Vagas em Aberto — quadro por CD');
+    const bloco = det.slice(i * VAGAS_POR_SLIDE, (i + 1) * VAGAS_POR_SLIDE);
+    bloco.forEach((c, j) => {
+      const col = j % 2;
+      const row = Math.floor(j / 2);
+      cardVagas(s, 0.4 + col * (cw + gap), 1.15 + row * (ch + gap), cw, ch, c, d.statusVagas);
+    });
+    footer(s, startPage + i, total);
+  }
+  return nSlides;
 }
 
 function slidePodio(pres: PptxGenJS, d: DadosConsolidado, page: number, total: number) {
@@ -207,7 +253,8 @@ export async function gerarDeckConsolidado(d: DadosConsolidado): Promise<Uint8Ar
   pres.company = 'Grupo Perlog';
   pres.author = 'Conecta G&G';
 
-  const TOTAL = 9;
+  const vagasSlides = d.vagasDetalhe.length === 0 ? 1 : Math.ceil(d.vagasDetalhe.length / VAGAS_POR_SLIDE);
+  const TOTAL = 8 + vagasSlides;
 
   // 1 — Capa
   {
@@ -235,13 +282,13 @@ export async function gerarDeckConsolidado(d: DadosConsolidado): Promise<Uint8Ar
   // 3..6 — Ranking (tabela) dos 4 primeiros indicadores
   d.rankings.slice(0, 4).forEach((r, i) => slideRankingTabela(pres, r, 3 + i, TOTAL));
 
-  // 7 — Vagas
-  slideVagas(pres, d, 7, TOTAL);
+  // 7.. — Vagas (um quadro por CD, vários por slide)
+  const usados = slidesVagas(pres, d, 7, TOTAL);
 
-  // 8 — Pódio
-  slidePodio(pres, d, 8, TOTAL);
+  // Pódio
+  slidePodio(pres, d, 7 + usados, TOTAL);
 
-  // 9 — Encerramento
+  // Encerramento
   {
     const s = pres.addSlide();
     s.background = { color: NAVY };

@@ -1,6 +1,5 @@
 import PptxGenJS from 'pptxgenjs';
 import type { DadosConsolidado, RankingIndicador } from './tipos';
-import { CLASSIFICACOES } from './classificacao-secao';
 
 const NAVY = '0B2447';
 const ORANGE = 'F37021';
@@ -26,17 +25,6 @@ const heat = (posicao: number, total: number): string => {
   if (p <= 0.4) return 'E2F0D9';
   if (p <= 0.6) return 'FFF2CC';
   if (p <= 0.8) return 'FCE4D6';
-  return 'F8CEC7';
-};
-
-// heat por volume: 0 = verde, máximo do conjunto = vermelho
-const heatVol = (v: number, max: number): string => {
-  if (max <= 0) return 'D4EDDA';
-  const p = v / max;
-  if (p <= 0.001) return 'D4EDDA';
-  if (p <= 0.25) return 'E2F0D9';
-  if (p <= 0.5) return 'FFF2CC';
-  if (p <= 0.75) return 'FCE4D6';
   return 'F8CEC7';
 };
 
@@ -173,69 +161,23 @@ function slideRankingTabela(pres: PptxGenJS, r: RankingIndicador, page: number, 
 function slideVagas(pres: PptxGenJS, d: DadosConsolidado, page: number, total: number) {
   const s = pres.addSlide();
   header(s, 'INDICADOR', 'Vagas em Aberto por CD');
-
   const det = d.vagasDetalhe;
   if (det.length === 0) {
     s.addText('Sem dados de vagas.', { x: 0.5, y: 3.2, w: W - 1, h: 0.5, align: 'center', italic: true, color: SLATE, fontFace: FONT, fontSize: 12 });
-    footer(s, page, total);
-    return;
+    footer(s, page, total); return;
   }
-
-  const maxAbertas = Math.max(1, ...det.map((c) => c.totalAbertas));
-
-  // ---- Tabela esquerda: contratar por classificação ----
-  const lx = 0.4, lw = 7.4;
-  const headL = ['CD', ...CLASSIFICACOES, 'Abertas', 'Aprov', 'Ativo'];
-  const rowsL: PptxGenJS.TableRow[] = [
-    headL.map((t, i) => ({ text: t, options: { bold: true, color: WHITE, fill: { color: NAVY }, align: (i === 0 ? 'left' : 'center') as HAlign, fontSize: 7, valign: 'middle' as VAlign } })),
+  const rows: PptxGenJS.TableRow[] = [
+    ['CD', 'Aprov', 'Ativo', 'Contratar', 'Abertas'].map((t, i) => ({ text: t, options: { bold: true, color: WHITE, fill: { color: NAVY }, align: (i === 0 ? 'left' : 'center') as HAlign, fontSize: 9 } })),
   ];
-  for (const c of det) {
-    const cells: PptxGenJS.TableCell[] = [{ text: `${c.codigo} ${c.nome}`, options: { bold: true, color: NAVY, fontSize: 7.5 } }];
-    for (const cl of CLASSIFICACOES) {
-      const v = c.contratarPorClassificacao[cl] ?? 0;
-      cells.push({ text: String(v), options: { align: 'center' as HAlign, bold: true, color: NAVY, fontSize: 7.5, fill: { color: heatVol(v, maxAbertas) } } });
-    }
-    cells.push({ text: String(c.totalAbertas), options: { align: 'center' as HAlign, bold: true, color: NAVY, fontSize: 7.5, fill: { color: heatVol(c.totalAbertas, maxAbertas) } } });
-    cells.push({ text: String(c.aprov), options: { align: 'center' as HAlign, color: SLATE, fontSize: 7.5 } });
-    cells.push({ text: String(c.ativo), options: { align: 'center' as HAlign, color: SLATE, fontSize: 7.5 } });
-    rowsL.push(cells);
-  }
-  const lh = Math.min(5.3, 0.35 + rowsL.length * 0.3);
-  s.addTable(rowsL, {
-    x: lx, y: 1.15, w: lw, h: lh, fontFace: FONT, fontSize: 7.5,
-    border: { type: 'solid', color: BORDER, pt: 0.5 },
-    colW: [2.0, ...CLASSIFICACOES.map(() => (lw - 2.0 - 1.7) / CLASSIFICACOES.length), 0.7, 0.5, 0.5],
-  });
-  s.addText('Vagas a contratar por classificação (verde = 0). Aprov = quadro aprovado · Ativo = alocados.', {
-    x: lx, y: 1.15 + lh + 0.08, w: lw, h: 0.3, fontFace: FONT, fontSize: 7, italic: true, color: SLATE,
-  });
-
-  // ---- Tabela direita: vagas em aberto por status ----
-  const rx = lx + lw + 0.3, rw = W - rx - 0.4;
-  const st = d.statusVagas;
-  const headR = ['CD', ...st, 'Total'];
-  const rowsR: PptxGenJS.TableRow[] = [
-    headR.map((t, i) => ({ text: t, options: { bold: true, color: WHITE, fill: { color: NAVY }, align: (i === 0 ? 'left' : 'center') as HAlign, fontSize: 7, valign: 'middle' as VAlign } })),
-  ];
-  for (const c of det) {
-    const cells: PptxGenJS.TableCell[] = [{ text: c.codigo, options: { bold: true, color: NAVY, fontSize: 7.5 } }];
-    for (const s2 of st) {
-      const v = c.porStatus[s2] ?? 0;
-      cells.push({ text: String(v), options: { align: 'center' as HAlign, color: v > 0 ? NAVY : SLATE, fontSize: 7.5 } });
-    }
-    cells.push({ text: String(c.totalAbertas), options: { align: 'center' as HAlign, bold: true, color: NAVY, fontSize: 7.5 } });
-    rowsR.push(cells);
-  }
-  const rh = Math.min(5.3, 0.35 + rowsR.length * 0.3);
-  s.addTable(rowsR, {
-    x: rx, y: 1.15, w: rw, h: rh, fontFace: FONT, fontSize: 7.5,
-    border: { type: 'solid', color: BORDER, pt: 0.5 },
-    colW: [0.8, ...st.map(() => Math.max(0.4, (rw - 0.8 - 0.6) / Math.max(1, st.length))), 0.6],
-  });
-  s.addText('Vagas em aberto por status do sistema.', {
-    x: rx, y: 1.15 + rh + 0.08, w: rw, h: 0.3, fontFace: FONT, fontSize: 7, italic: true, color: SLATE,
-  });
-
+  for (const c of det) rows.push([
+    { text: `${c.codigo} ${c.nome}`, options: { bold: true, color: NAVY, fontSize: 9 } },
+    { text: String(c.totalAprov), options: { align: 'center' as HAlign, color: SLATE, fontSize: 9 } },
+    { text: String(c.totalAtivo), options: { align: 'center' as HAlign, color: SLATE, fontSize: 9 } },
+    { text: String(c.totalContratar), options: { align: 'center' as HAlign, bold: true, color: NAVY, fontSize: 9 } },
+    { text: String(c.totalAbertas), options: { align: 'center' as HAlign, bold: true, color: NAVY, fontSize: 9 } },
+  ]);
+  const h = Math.min(5.4, 0.4 + rows.length * 0.32);
+  s.addTable(rows, { x: 0.5, y: 1.1, w: W - 1, h, fontFace: FONT, fontSize: 9, border: { type: 'solid', color: BORDER, pt: 0.5 }, colW: [W - 1 - 4 * 1.6, 1.6, 1.6, 1.6, 1.6] });
   footer(s, page, total);
 }
 

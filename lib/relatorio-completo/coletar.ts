@@ -19,6 +19,7 @@ import type {
   ChaveIndicador,
   DadosConsolidado,
   RankingIndicador,
+  VagasClassifLinha,
   VagasDetalheCD,
 } from './tipos';
 
@@ -191,24 +192,51 @@ export function coletarConsolidado(ctx: Contexto, cds: CDBasico[]): DadosConsoli
     }),
   ];
 
-  const zerosClassif = (): Record<Classificacao, number> =>
-    Object.fromEntries(CLASSIFICACOES.map((c) => [c, 0])) as Record<Classificacao, number>;
-
   const vagasDetalhe: VagasDetalheCD[] = cds
     .map((cd): VagasDetalheCD => {
       const quadro = ctx.vagasQuadro.filter((q) => q.filialId === cd.filialId);
       const abertas = ctx.vagas.filter((v) => v.filialId === cd.filialId);
-      const contratarPorClassificacao = zerosClassif();
-      const porStatus: Record<string, number> = {};
-      for (const v of abertas) {
-        contratarPorClassificacao[classificarSecao(v.secao, ctx.classifMapa)] += 1;
-        porStatus[v.statusNome] = (porStatus[v.statusNome] ?? 0) + 1;
+
+      // agrega por classificação
+      const acc = new Map<Classificacao, { aprov: number; ativo: number; abertas: number; temLinha: boolean }>();
+      const get = (c: Classificacao) => {
+        let e = acc.get(c);
+        if (!e) { e = { aprov: 0, ativo: 0, abertas: 0, temLinha: false }; acc.set(c, e); }
+        return e;
+      };
+      for (const q of quadro) {
+        const e = get(classificarSecao(q.secao, ctx.classifMapa));
+        e.aprov += q.limite; e.ativo += q.alocados; e.temLinha = true;
       }
+      for (const v of abertas) {
+        get(classificarSecao(v.secao, ctx.classifMapa)).abertas += 1;
+      }
+
+      const porClassificacao: VagasClassifLinha[] = CLASSIFICACOES
+        .map((classificacao) => {
+          const e = acc.get(classificacao) ?? { aprov: 0, ativo: 0, abertas: 0, temLinha: false };
+          return {
+            classificacao,
+            aprov: e.aprov,
+            ativo: e.ativo,
+            contratar: Math.max(0, e.aprov - e.ativo),
+            abertas: e.abertas,
+          };
+        })
+        .filter((l) => {
+          const e = acc.get(l.classificacao);
+          return (e?.temLinha ?? false) || l.abertas > 0;
+        });
+
+      const porStatus: Record<string, number> = {};
+      for (const v of abertas) porStatus[v.statusNome] = (porStatus[v.statusNome] ?? 0) + 1;
+
       return {
         filialId: cd.filialId, codigo: cd.codigo, nome: cd.nome,
-        contratarPorClassificacao,
-        aprov: quadro.reduce((a, q) => a + q.limite, 0),
-        ativo: quadro.reduce((a, q) => a + q.alocados, 0),
+        porClassificacao,
+        totalAprov: porClassificacao.reduce((a, l) => a + l.aprov, 0),
+        totalAtivo: porClassificacao.reduce((a, l) => a + l.ativo, 0),
+        totalContratar: porClassificacao.reduce((a, l) => a + l.contratar, 0),
         totalAbertas: abertas.length,
         porStatus,
       };

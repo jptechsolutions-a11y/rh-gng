@@ -35,13 +35,22 @@ export type DadosConsolidado = {
 
 // ---------- Vagas: detalhe por CD (classificação + status) ----------
 
+export type VagasClassifLinha = {
+  classificacao: Classificacao;
+  aprov: number;    // Σ limite das linhas do quadro dessa classificação
+  ativo: number;    // Σ alocados
+  contratar: number; // max(0, aprov - ativo)  — igual à imagem do quadro
+  abertas: number;  // nº de vagas em aberto (registros na tabela `vagas`) dessa classificação
+};
+
 export type VagasDetalheCD = {
   filialId: string;
   codigo: string;
   nome: string;
-  contratarPorClassificacao: Record<Classificacao, number>; // nº de vagas em aberto (contratar)
-  aprov: number;          // Σ limite (quadro aprovado)
-  ativo: number;          // Σ alocados
-  totalAbertas: number;   // total de vagas em aberto no sistema
+  porClassificacao: VagasClassifLinha[]; // só classificações que têm linha no quadro OU vaga em aberto
+  totalAprov: number;
+  totalAtivo: number;
+  totalContratar: number;   // Σ contratar das linhas exibidas
+  totalAbertas: number;
   porStatus: Record<string, number>;
 };

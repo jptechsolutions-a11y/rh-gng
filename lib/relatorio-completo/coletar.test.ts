@@ -57,7 +57,10 @@ describe('coletarConsolidado', () => {
         { filialId: 'a', statusNome: 'Entrevista', statusSistema: false, secao: 'COZINHA' },
         { filialId: 'b', statusNome: 'Em aberto', statusSistema: true, secao: 'FINANCEIRO (ADM)' },
       ],
-      vagasQuadro: [{ filialId: 'a', secao: 'SEPARACAO (OPERACAO)', limite: 10, alocados: 8 }],
+      vagasQuadro: [
+        { filialId: 'a', secao: 'SEPARACAO (OPERACAO)', limite: 10, alocados: 8 },
+        { filialId: 'a', secao: 'COZINHA', limite: 3, alocados: 3 },
+      ],
       statusVagas: ['Em aberto', 'Entrevista'],
       classifMapa: new Map([['SEPARACAO (OPERACAO)', 'Operação'], ['COZINHA', 'Área de Apoio'], ['FINANCEIRO (ADM)', 'Área de Apoio']]),
       meta: { bh: null, inconsist: null, cursos: null, feriados: null },
@@ -67,11 +70,13 @@ describe('coletarConsolidado', () => {
       { filialId: 'b', codigo: '002', nome: 'B' },
     ]);
     expect(d.vagasDetalhe[0]!.codigo).toBe('001');            // 2 abertas > 1
-    expect(d.vagasDetalhe[0]!.totalAbertas).toBe(2);
-    expect(d.vagasDetalhe[0]!.contratarPorClassificacao['Operação']).toBe(1);
-    expect(d.vagasDetalhe[0]!.contratarPorClassificacao['Área de Apoio']).toBe(1);
-    expect(d.vagasDetalhe[0]!.aprov).toBe(10);
-    expect(d.vagasDetalhe[0]!.ativo).toBe(8);
+    const a = d.vagasDetalhe.find((x) => x.codigo === '001')!;
+    expect(a.totalAbertas).toBe(2);
+    const op = a.porClassificacao.find((l) => l.classificacao === 'Operação')!;
+    expect(op).toMatchObject({ aprov: 10, ativo: 8, contratar: 2, abertas: 1 });
+    const apoio = a.porClassificacao.find((l) => l.classificacao === 'Área de Apoio')!;
+    expect(apoio).toMatchObject({ aprov: 3, ativo: 3, contratar: 0, abertas: 1 });
+    expect(a.totalAprov).toBe(13);
     expect(d.statusVagas).toEqual(['Em aberto', 'Entrevista']);
   });
 });

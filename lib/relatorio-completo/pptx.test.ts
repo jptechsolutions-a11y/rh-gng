@@ -27,8 +27,24 @@ const base: DadosConsolidado = {
     rk({ chave: 'vagas', titulo: 'Vagas em Aberto' }),
   ],
   vagasDetalhe: [
-    { filialId: 'a', codigo: '001', nome: 'A', contratarPorClassificacao: { 'Área de Apoio': 2, 'Expansão': 0, 'Operação': 5, 'Transporte': 1 }, aprov: 100, ativo: 92, totalAbertas: 8, porStatus: { 'Em aberto': 6, 'Entrevista': 2 } },
-    { filialId: 'b', codigo: '002', nome: 'B', contratarPorClassificacao: { 'Área de Apoio': 0, 'Expansão': 0, 'Operação': 1, 'Transporte': 0 }, aprov: 40, ativo: 39, totalAbertas: 1, porStatus: { 'Em aberto': 1, 'Entrevista': 0 } },
+    {
+      filialId: 'a', codigo: '001', nome: 'A',
+      porClassificacao: [
+        { classificacao: 'Área de Apoio', aprov: 20, ativo: 18, contratar: 2, abertas: 2 },
+        { classificacao: 'Operação', aprov: 70, ativo: 65, contratar: 5, abertas: 5 },
+        { classificacao: 'Transporte', aprov: 10, ativo: 9, contratar: 1, abertas: 1 },
+      ],
+      totalAprov: 100, totalAtivo: 92, totalContratar: 8, totalAbertas: 8,
+      porStatus: { 'Em aberto': 6, 'Entrevista': 2 },
+    },
+    {
+      filialId: 'b', codigo: '002', nome: 'B',
+      porClassificacao: [
+        { classificacao: 'Operação', aprov: 40, ativo: 39, contratar: 1, abertas: 1 },
+      ],
+      totalAprov: 40, totalAtivo: 39, totalContratar: 1, totalAbertas: 1,
+      porStatus: { 'Em aberto': 1, 'Entrevista': 0 },
+    },
   ],
   statusVagas: ['Em aberto', 'Entrevista'],
 };

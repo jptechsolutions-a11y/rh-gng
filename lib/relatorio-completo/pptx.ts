@@ -7,7 +7,6 @@ const WHITE = 'FFFFFF';
 const SLATE = '64748B';
 const SOFT = 'F1F5F9';
 const BORDER = 'E2E8F0';
-const TEXT = '0F172A';
 const OK = '059669';
 const BAD = 'B91C1C';
 const FONT = 'Calibri';
@@ -134,26 +133,9 @@ function slideRankingTabela(pres: PptxGenJS, r: RankingIndicador, page: number, 
     colW: [0.7, W - 1 - 0.7 - 2.2 - 2.2, 2.2, 2.2],
   });
 
-  let y = 1.1 + th + 0.2;
+  const y = 1.1 + th + 0.25;
   pill(s, 0.5, y, 6.1, `🥇 Melhor: ${lider.nome} — ${lider.valorFmt}`, 'D1FAE5', OK);
   pill(s, 6.8, y, 6.0, `🔻 Atenção: ${lanterna.nome} — ${lanterna.valorFmt}`, 'FEE2E2', BAD);
-  y += 0.55;
-
-  if (r.temHistorico) {
-    const comVar = cds.filter((c) => c.variacao && c.variacao.deltaPct !== null);
-    const evo = [...comVar].sort((a, b) => (a.variacao!.deltaPct ?? 0) - (b.variacao!.deltaPct ?? 0))[0];
-    const pio = [...comVar].sort((a, b) => (b.variacao!.deltaPct ?? 0) - (a.variacao!.deltaPct ?? 0))[0];
-    const partes: string[] = [];
-    if (evo && (evo.variacao!.deltaPct ?? 0) < 0) partes.push(`Maior evolução: ${evo.nome} (${fmtP(evo.variacao!.deltaPct!)})`);
-    if (pio && (pio.variacao!.deltaPct ?? 0) > 0) partes.push(`Maior piora: ${pio.nome} (${fmtP(pio.variacao!.deltaPct!)})`);
-    if (partes.length) {
-      s.addText(partes.join('   ·   '), { x: 0.5, y, w: W - 1, h: 0.3, fontFace: FONT, fontSize: 10, color: NAVY, bold: true });
-      y += 0.4;
-    }
-  }
-
-  s.addShape('roundRect', { x: 0.5, y, w: W - 1, h: Math.max(0.5, H - 0.6 - y), fill: { color: SOFT }, line: { color: BORDER, width: 1 }, rectRadius: 0.06 });
-  s.addText(r.leitura, { x: 0.75, y: y + 0.05, w: W - 1.5, h: Math.max(0.4, H - 0.7 - y), fontFace: FONT, fontSize: 10, color: TEXT, valign: 'middle' });
 
   footer(s, page, total);
 }
@@ -232,20 +214,34 @@ function slidesVagas(pres: PptxGenJS, d: DadosConsolidado, startPage: number, to
 
 function slidePodio(pres: PptxGenJS, d: DadosConsolidado, page: number, total: number) {
   const s = pres.addSlide();
-  header(s, 'DESTAQUES', 'Pódio — melhor CD por indicador');
+  header(s, 'DESTAQUES', 'Pódio por indicador');
   const gap = 0.2;
   const cw = (W - 1 - gap * 4) / 5;
-  d.rankings.forEach((r, i) => {
-    const x = 0.5 + i * (cw + gap);
-    s.addShape('roundRect', { x, y: 1.4, w: cw, h: 4.2, fill: { color: WHITE }, line: { color: BORDER, width: 1 }, rectRadius: 0.06 });
-    s.addShape('rect', { x, y: 1.4, w: cw, h: 0.06, fill: { color: NAVY }, line: { color: NAVY } });
-    s.addText(r.titulo.toUpperCase(), { x: x + 0.15, y: 1.6, w: cw - 0.3, h: 0.6, fontFace: FONT, fontSize: 8, color: SLATE, bold: true });
-    s.addText('🏆', { x: x + 0.15, y: 2.4, w: cw - 0.3, h: 0.7, align: 'center', fontSize: 28 });
-    const campeoes = r.cds.filter((c) => c.valor > 0);
-    const campeao = !r.semDados && campeoes[0] ? campeoes[0] : null;
-    s.addText(campeao ? campeao.nome : '—', { x: x + 0.1, y: 3.3, w: cw - 0.2, h: 0.9, align: 'center', fontFace: FONT, fontSize: 13, color: NAVY, bold: true });
-    s.addText(campeao ? campeao.valorFmt : '', { x: x + 0.1, y: 4.2, w: cw - 0.2, h: 0.4, align: 'center', fontFace: FONT, fontSize: 12, color: OK, bold: true });
+
+  const faixa = (
+    y: number, titulo: string, accent: string,
+    pick: (r: DadosConsolidado['rankings'][number]) => { nome: string; valorFmt: string } | null,
+  ) => {
+    s.addShape('rect', { x: 0.5, y, w: W - 1, h: 0.34, fill: { color: accent }, line: { color: accent } });
+    s.addText(titulo, { x: 0.65, y, w: W - 1.3, h: 0.34, valign: 'middle', fontFace: FONT, fontSize: 10, color: WHITE, bold: true, charSpacing: 2 });
+    d.rankings.forEach((r, i) => {
+      const x = 0.5 + i * (cw + gap);
+      const cardY = y + 0.44;
+      s.addShape('roundRect', { x, y: cardY, w: cw, h: 2.1, fill: { color: WHITE }, line: { color: BORDER, width: 1 }, rectRadius: 0.06 });
+      s.addShape('rect', { x, y: cardY, w: cw, h: 0.08, fill: { color: accent }, line: { color: accent } });
+      s.addText(r.titulo.toUpperCase(), { x: x + 0.15, y: cardY + 0.18, w: cw - 0.3, h: 0.55, fontFace: FONT, fontSize: 7.5, color: SLATE, bold: true });
+      const cd = !r.semDados ? pick(r) : null;
+      s.addText(cd ? cd.nome : '—', { x: x + 0.1, y: cardY + 0.8, w: cw - 0.2, h: 0.8, align: 'center', fontFace: FONT, fontSize: 12, color: NAVY, bold: true });
+      s.addText(cd ? cd.valorFmt : '', { x: x + 0.1, y: cardY + 1.6, w: cw - 0.2, h: 0.4, align: 'center', fontFace: FONT, fontSize: 11, color: accent, bold: true });
+    });
+  };
+
+  faixa(1.2, '🥇  MELHOR DESEMPENHO', OK, (r) => r.cds.find((c) => c.valor > 0) ?? null);
+  faixa(4.15, '🔻  PONTO DE ATENÇÃO', BAD, (r) => {
+    const com = r.cds.filter((c) => c.valor > 0);
+    return com.length ? com[com.length - 1]! : null;
   });
+
   footer(s, page, total);
 }
 
@@ -267,10 +263,9 @@ export async function gerarDeckConsolidado(d: DadosConsolidado): Promise<Uint8Ar
     s.addShape('rect', { x: 0.7, y: 0.7, w: 2.6, h: 0.45, fill: { color: ORANGE }, line: { color: ORANGE }, rectRadius: 0.2 });
     s.addText('GENTE & GESTÃO', { x: 0.7, y: 0.7, w: 2.6, h: 0.45, align: 'center', valign: 'middle', fontFace: FONT, fontSize: 11, color: WHITE, bold: true, charSpacing: 2 });
     s.addText('CONECTA G&G', { x: 0.7, y: 1.9, w: 11.9, h: 0.4, fontFace: FONT, fontSize: 13, color: 'CBD5E1', bold: true, charSpacing: 4 });
-    s.addText('Relatório Consolidado de Indicadores', { x: 0.7, y: 2.4, w: 11.9, h: 1.1, fontFace: FONT, fontSize: 38, color: WHITE, bold: true });
-    s.addText(`${d.totalCDs} CDs comparados`, { x: 0.7, y: 3.7, w: 11.9, h: 0.7, fontFace: FONT, fontSize: 24, color: ORANGE, bold: true });
+    s.addText('Relatório Consolidado de Indicadores', { x: 0.7, y: 2.5, w: 11.9, h: 1.1, fontFace: FONT, fontSize: 38, color: WHITE, bold: true });
     const dt = new Date(d.geradoEm).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
-    s.addText(`Gerado em ${dt}`, { x: 0.7, y: 4.5, w: 11.9, h: 0.4, fontFace: FONT, fontSize: 12, color: 'CBD5E1' });
+    s.addText(`Gerado em ${dt}`, { x: 0.7, y: 3.7, w: 11.9, h: 0.4, fontFace: FONT, fontSize: 12, color: 'CBD5E1' });
     s.addShape('rect', { x: 0, y: H - 0.9, w: W, h: 0.05, fill: { color: ORANGE }, line: { color: ORANGE } });
     s.addText('DESENVOLVIDO POR JULIANO PATRICK', { x: 0.7, y: H - 0.75, w: 11.9, h: 0.35, fontFace: FONT, fontSize: 10, color: 'CBD5E1', bold: true, charSpacing: 2 });
   }

@@ -158,43 +158,43 @@ function slideRankingTabela(pres: PptxGenJS, r: RankingIndicador, page: number, 
   footer(s, page, total);
 }
 
-const VAGAS_POR_SLIDE = 4; // grade 2 x 2
+const VAGAS_POR_SLIDE = 6; // grade 2 x 3
 
 function cardVagas(s: PptxGenJS.Slide, x: number, y: number, w: number, h: number, c: DadosConsolidado['vagasDetalhe'][number], statusVagas: string[]) {
   s.addShape('roundRect', { x, y, w, h, fill: { color: WHITE }, line: { color: BORDER, width: 1 }, rectRadius: 0.05 });
-  s.addShape('rect', { x, y, w, h: 0.34, fill: { color: 'DBEAFE' }, line: { color: 'DBEAFE' } });
-  s.addText(`CD ${c.nome}  ·  ${c.codigo}`, { x: x + 0.15, y, w: w - 0.3, h: 0.34, valign: 'middle', fontFace: FONT, fontSize: 9, color: NAVY, bold: true });
+  s.addShape('rect', { x, y, w, h: 0.3, fill: { color: NAVY }, line: { color: NAVY } });
+  s.addText(`CD ${c.nome}  ·  ${c.codigo}`, { x: x + 0.15, y, w: w - 0.3, h: 0.3, valign: 'middle', fontFace: FONT, fontSize: 8, color: WHITE, bold: true });
 
-  const th = ['CLASSIFICAÇÃO', 'QUADRO APROV.', 'ATIVO', 'CONTRATAR'];
+  const th = ['CLASSIFICAÇÃO', 'APROV.', 'ATIVO', 'CONTRATAR'];
   const rows: PptxGenJS.TableRow[] = [
-    th.map((t, i) => ({ text: t, options: { bold: true, color: NAVY, fontSize: 6.5, align: (i === 0 ? 'left' : 'center') as HAlign, valign: 'middle' as VAlign } })),
+    th.map((t, i) => ({ text: t, options: { bold: true, color: WHITE, fill: { color: NAVY }, fontSize: 6, align: (i === 0 ? 'left' : 'center') as HAlign, valign: 'middle' as VAlign } })),
   ];
   for (const l of c.porClassificacao) {
     rows.push([
-      { text: l.classificacao.toUpperCase(), options: { color: SLATE, fontSize: 6.5 } },
-      { text: String(l.aprov), options: { align: 'center' as HAlign, color: NAVY, fontSize: 6.5 } },
-      { text: String(l.ativo), options: { align: 'center' as HAlign, color: NAVY, fontSize: 6.5 } },
-      { text: String(l.contratar), options: { align: 'center' as HAlign, bold: true, color: l.contratar > 0 ? BAD : SLATE, fontSize: 6.5 } },
+      { text: l.classificacao.toUpperCase(), options: { color: SLATE, fontSize: 6 } },
+      { text: String(l.aprov), options: { align: 'center' as HAlign, color: NAVY, fontSize: 6 } },
+      { text: String(l.ativo), options: { align: 'center' as HAlign, color: NAVY, fontSize: 6 } },
+      { text: String(l.contratar), options: { align: 'center' as HAlign, bold: true, color: l.contratar > 0 ? BAD : SLATE, fontSize: 6 } },
     ]);
   }
   rows.push([
-    { text: 'TOTAL', options: { bold: true, color: NAVY, fontSize: 6.5 } },
-    { text: String(c.totalAprov), options: { align: 'center' as HAlign, bold: true, color: NAVY, fontSize: 6.5 } },
-    { text: String(c.totalAtivo), options: { align: 'center' as HAlign, bold: true, color: NAVY, fontSize: 6.5 } },
-    { text: String(c.totalContratar), options: { align: 'center' as HAlign, bold: true, color: NAVY, fontSize: 6.5 } },
+    { text: 'TOTAL', options: { bold: true, color: NAVY, fontSize: 6, fill: { color: SOFT } } },
+    { text: String(c.totalAprov), options: { align: 'center' as HAlign, bold: true, color: NAVY, fontSize: 6, fill: { color: SOFT } } },
+    { text: String(c.totalAtivo), options: { align: 'center' as HAlign, bold: true, color: NAVY, fontSize: 6, fill: { color: SOFT } } },
+    { text: String(c.totalContratar), options: { align: 'center' as HAlign, bold: true, color: NAVY, fontSize: 6, fill: { color: SOFT } } },
   ]);
 
-  const tableH = Math.min(h - 0.78, 0.24 * rows.length);
+  const tableH = Math.min(h - 0.62, 0.2 * rows.length);
   s.addTable(rows, {
-    x: x + 0.12, y: y + 0.42, w: w - 0.24, h: tableH,
-    fontFace: FONT, fontSize: 6.5,
+    x: x + 0.1, y: y + 0.36, w: w - 0.2, h: tableH,
+    fontFace: FONT, fontSize: 6,
     border: { type: 'solid', color: BORDER, pt: 0.5 },
-    colW: [(w - 0.24) * 0.4, (w - 0.24) * 0.22, (w - 0.24) * 0.16, (w - 0.24) * 0.22],
+    colW: [(w - 0.2) * 0.4, (w - 0.2) * 0.22, (w - 0.2) * 0.16, (w - 0.2) * 0.22],
   });
 
   const st = statusVagas.filter((n) => (c.porStatus[n] ?? 0) > 0).map((n) => `${n}: ${c.porStatus[n]}`);
   s.addText(`Vagas em aberto (${c.totalAbertas})${st.length ? ' — ' + st.join('  ·  ') : ''}`, {
-    x: x + 0.15, y: y + h - 0.3, w: w - 0.3, h: 0.24, fontFace: FONT, fontSize: 6.5, italic: true, color: SLATE,
+    x: x + 0.12, y: y + h - 0.26, w: w - 0.24, h: 0.22, fontFace: FONT, fontSize: 6, italic: true, color: SLATE,
   });
 }
 
@@ -209,9 +209,9 @@ function slidesVagas(pres: PptxGenJS, d: DadosConsolidado, startPage: number, to
   }
 
   const nSlides = Math.ceil(det.length / VAGAS_POR_SLIDE);
-  const gap = 0.35;
+  const gap = 0.3;
   const cw = (W - 0.8 - gap) / 2;
-  const ch = (H - 1.55 - gap) / 2;
+  const ch = (H - 1.5 - gap * 2) / 3;
 
   for (let i = 0; i < nSlides; i++) {
     const s = pres.addSlide();
@@ -220,7 +220,7 @@ function slidesVagas(pres: PptxGenJS, d: DadosConsolidado, startPage: number, to
     bloco.forEach((c, j) => {
       const col = j % 2;
       const row = Math.floor(j / 2);
-      cardVagas(s, 0.4 + col * (cw + gap), 1.15 + row * (ch + gap), cw, ch, c, d.statusVagas);
+      cardVagas(s, 0.4 + col * (cw + gap), 1.1 + row * (ch + gap), cw, ch, c, d.statusVagas);
     });
     footer(s, startPage + i, total);
   }

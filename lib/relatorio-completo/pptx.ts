@@ -160,6 +160,9 @@ function slideRankingTabela(pres: PptxGenJS, r: RankingIndicador, page: number, 
 
 const VAGAS_POR_SLIDE = 6; // grade 2 x 3
 
+const cdTemVagas = (c: DadosConsolidado['vagasDetalhe'][number]): boolean =>
+  c.porClassificacao.length > 0 || c.totalAbertas > 0 || c.totalAprov > 0;
+
 function cardVagas(s: PptxGenJS.Slide, x: number, y: number, w: number, h: number, c: DadosConsolidado['vagasDetalhe'][number], statusVagas: string[]) {
   s.addShape('roundRect', { x, y, w, h, fill: { color: WHITE }, line: { color: BORDER, width: 1 }, rectRadius: 0.05 });
   s.addShape('rect', { x, y, w, h: 0.3, fill: { color: NAVY }, line: { color: NAVY } });
@@ -199,7 +202,7 @@ function cardVagas(s: PptxGenJS.Slide, x: number, y: number, w: number, h: numbe
 }
 
 function slidesVagas(pres: PptxGenJS, d: DadosConsolidado, startPage: number, total: number): number {
-  const det = d.vagasDetalhe;
+  const det = d.vagasDetalhe.filter(cdTemVagas);
   if (det.length === 0) {
     const s = pres.addSlide();
     header(s, 'INDICADOR', 'Vagas em Aberto por CD');
@@ -253,7 +256,8 @@ export async function gerarDeckConsolidado(d: DadosConsolidado): Promise<Uint8Ar
   pres.company = 'Grupo Perlog';
   pres.author = 'Conecta G&G';
 
-  const vagasSlides = d.vagasDetalhe.length === 0 ? 1 : Math.ceil(d.vagasDetalhe.length / VAGAS_POR_SLIDE);
+  const nVagasCds = d.vagasDetalhe.filter(cdTemVagas).length;
+  const vagasSlides = nVagasCds === 0 ? 1 : Math.ceil(nVagasCds / VAGAS_POR_SLIDE);
   const TOTAL = 8 + vagasSlides;
 
   // 1 — Capa

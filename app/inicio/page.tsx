@@ -6,6 +6,7 @@ import {
   ShieldCheck,
   Settings,
   FileText,
+  FileBarChart,
   MessagesSquare,
   LineChart,
   Network,
@@ -353,6 +354,7 @@ export default async function InicioPage() {
             {[
               { href: '/admin/config', icon: Settings, label: 'Configurações' },
               { href: '/admin/relatorios', icon: FileText, label: 'Relatórios' },
+              { href: '/relatorio-completo', icon: FileBarChart, label: 'Relatório Completo' },
               { href: '/admin/seguranca', icon: ShieldCheck, label: 'Segurança' },
             ].map(({ href, icon: Icon, label }) => (
               <Link

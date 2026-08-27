@@ -3,5 +3,10 @@ import path from 'node:path';
 
 export default defineConfig({
   test: { environment: 'node', include: ['lib/**/*.test.ts', 'app/**/*.test.ts'] },
-  resolve: { alias: { '@': path.resolve(__dirname, '.') } },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, '.'),
+      'server-only': path.resolve(__dirname, 'tests/stubs/server-only.ts'),
+    },
+  },
 });

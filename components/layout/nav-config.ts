@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 import {
-  LayoutDashboard, Users, FileText, Settings, ShieldCheck, ClipboardList, History,
+  LayoutDashboard, Users, FileText, FileBarChart, Settings, ShieldCheck, ClipboardList, History,
   CalendarClock, Plus, BarChart3, UserCog, Target, BookOpen, Printer, ClipboardCheck,
   GalleryHorizontal, Cloud, Clock, AlertTriangle, Trophy, GraduationCap, CalendarOff,
   Network, Upload, IdCard, ListTree, UsersRound,
@@ -25,6 +25,7 @@ export const ADMIN_NAV: NavItem[] = [
   { href: '/admin',            label: 'Dashboard',    icon: LayoutDashboard },
   { href: '/admin/busca',      label: 'Busca global', icon: Users },
   { href: '/admin/relatorios', label: 'Relatórios',   icon: FileText },
+  { href: '/relatorio-completo', label: 'Relatório Completo', icon: FileBarChart },
   { href: '/admin/config',     label: 'Configuração', icon: Settings },
   { href: '/admin/seguranca',  label: 'Segurança',    icon: ShieldCheck },
 ];

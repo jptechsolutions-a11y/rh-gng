@@ -1,9 +1,10 @@
 'use client';
 
 import { Fragment, useEffect, useMemo, useState, useTransition } from 'react';
-import { Users, Search, ChevronDown, ChevronRight } from 'lucide-react';
+import { Users, Search, ChevronDown, ChevronRight, ListChecks } from 'lucide-react';
 import { ConectaCard, SectionHeader } from '@/components/ui/conecta-card';
 import { atualizarStatusVaga } from '@/actions/vagas/vagas';
+import { AtualizarStatusEmLoteModal } from './AtualizarStatusEmLoteModal';
 import type { VagaStatus } from '@/db/schema';
 
 export interface VagaRow {
@@ -52,6 +53,7 @@ export function VagasQuadroTable({
   const [pending, start] = useTransition();
   const [erroId, setErroId] = useState<string | null>(null);
   const [expandidas, setExpandidas] = useState<Set<string>>(new Set());
+  const [loteOpen, setLoteOpen] = useState(false);
 
   useEffect(() => {
     setLocalRows(rows);
@@ -99,6 +101,14 @@ export function VagasQuadroTable({
     });
   }
 
+  function onAplicadoEmLote(vagaIds: string[], statusId: string) {
+    const status = statusOptions.find((s) => s.id === statusId);
+    const idsSet = new Set(vagaIds);
+    setLocalRows((l) =>
+      l.map((r) => (idsSet.has(r.id) ? { ...r, statusId, statusNome: status?.nome ?? r.statusNome } : r)),
+    );
+  }
+
   function onMudarStatus(vagaId: string, statusId: string) {
     setErroId(null);
     const anterior = localRows;
@@ -123,9 +133,21 @@ export function VagasQuadroTable({
           label="Vagas em aberto"
           icon={Users}
           action={
-            <span className="text-[11px] font-display font-semibold tabular-nums text-conecta-muted">
-              {filtradas.length} / {localRows.length}
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-[11px] font-display font-semibold tabular-nums text-conecta-muted">
+                {filtradas.length} / {localRows.length}
+              </span>
+              {podeEditar && (
+                <button
+                  type="button"
+                  onClick={() => setLoteOpen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-conecta-accent text-white px-3 py-1.5 text-[11px] font-display font-semibold uppercase tracking-[0.14em] hover:brightness-110 transition"
+                >
+                  <ListChecks className="h-3.5 w-3.5" />
+                  Status em lote
+                </button>
+              )}
+            </div>
           }
         />
         <div className="flex flex-wrap gap-2">
@@ -244,6 +266,15 @@ export function VagasQuadroTable({
           </tbody>
         </table>
       </div>
+
+      {loteOpen && (
+        <AtualizarStatusEmLoteModal
+          vagas={filtradas}
+          statusOptions={statusOptions}
+          onClose={() => setLoteOpen(false)}
+          onAplicado={onAplicadoEmLote}
+        />
+      )}
     </ConectaCard>
   );
 }

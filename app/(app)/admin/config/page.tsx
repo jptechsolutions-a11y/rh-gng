@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   Bus,
   Route,
+  Layers,
 } from 'lucide-react';
 import { requireSession } from '@/lib/auth/session';
 
@@ -77,6 +78,12 @@ export default async function ConfigPage() {
       title: 'Transporte — Rotas',
       desc: 'Gerenciar rotas de van, passageiros e turnos.',
       href: '/admin/config/transporte',
+    },
+    {
+      icon: Layers,
+      title: 'Classificação de Seções',
+      desc: 'DE-PARA seção → classificação (Área de Apoio / Operação / Transporte) do Quadro de Vagas.',
+      href: '/admin/config/classificacao-secao',
     },
   ];
   return (

@@ -63,24 +63,26 @@ function dedupeResolvidas(resolvidas: ResolvidoLinha[]): ResolvidoLinha[] {
   return Array.from(map.values());
 }
 
-async function contarAbertasAtuais(linhaIds: string[]): Promise<Map<string, number>> {
+interface ContagemLinha {
+  /** Vagas ativas na combinação, em QUALQUER status — é contra isso que o target é comparado. */
+  total: number;
+  /** Dentre as ativas, quantas ainda estão literalmente "Em aberto" (únicas candidatas a fechamento automático). */
+  fechavel: number;
+}
+
+async function contarAtivasEFechaveis(linhaIds: string[]): Promise<Map<string, ContagemLinha>> {
   if (linhaIds.length === 0) return new Map();
   const rows = await db
     .select({
       linhaId: schema.vagas.linhaId,
       total: sql<number>`count(*)`.as('total'),
+      fechavel: sql<number>`count(*) filter (where ${schema.vagasStatus.sistema})`.as('fechavel'),
     })
     .from(schema.vagas)
     .innerJoin(schema.vagasStatus, eq(schema.vagasStatus.id, schema.vagas.statusId))
-    .where(
-      and(
-        eq(schema.vagas.ativa, true),
-        eq(schema.vagasStatus.sistema, true),
-        inArray(schema.vagas.linhaId, linhaIds),
-      ),
-    )
+    .where(and(eq(schema.vagas.ativa, true), inArray(schema.vagas.linhaId, linhaIds)))
     .groupBy(schema.vagas.linhaId);
-  return new Map(rows.map((r) => [r.linhaId, Number(r.total)]));
+  return new Map(rows.map((r) => [r.linhaId, { total: Number(r.total), fechavel: Number(r.fechavel) }]));
 }
 
 /**
@@ -117,28 +119,30 @@ export async function previewImportVagas(linhas: LinhaQuadroVagas[]): Promise<Im
     if (linhaId) linhaIdsExistentesNaPlanilha.push(linhaId);
   }
 
-  const contagens = await contarAbertasAtuais(linhaIdsExistentesNaPlanilha);
+  const contagens = await contarAtivasEFechaveis(linhaIdsExistentesNaPlanilha);
 
   for (const { linha, filialId } of resolvidas) {
     const chave = chaveLinha(filialId, linha.funcao, linha.secao);
     const linhaId = existentesMap.get(chave);
-    const atual = linhaId ? (contagens.get(linhaId) ?? 0) : 0;
+    const info = linhaId ? contagens.get(linhaId) : undefined;
+    const total = info?.total ?? 0;
+    const fechavel = info?.fechavel ?? 0;
     const target = Math.max(0, linha.emAberto);
-    const delta = target - atual;
+    const delta = target - total;
     if (delta > 0) vagasCriadas += delta;
-    else if (delta < 0) vagasFechadas += -delta;
+    else if (delta < 0) vagasFechadas += Math.min(-delta, fechavel);
   }
 
   // Linhas existentes cuja combinação não aparece mais na planilha → target 0.
   const linhasAusentes = existentes.filter(
     (e) => !chavesNaPlanilha.has(chaveLinha(e.filialId, e.funcao, e.secao)),
   );
-  const contagensAusentes = await contarAbertasAtuais(linhasAusentes.map((l) => l.id));
+  const contagensAusentes = await contarAtivasEFechaveis(linhasAusentes.map((l) => l.id));
   let linhasZeradas = 0;
   for (const l of linhasAusentes) {
-    const atual = contagensAusentes.get(l.id) ?? 0;
-    if (atual > 0) {
-      vagasFechadas += atual;
+    const fechavel = contagensAusentes.get(l.id)?.fechavel ?? 0;
+    if (fechavel > 0) {
+      vagasFechadas += fechavel;
       linhasZeradas += 1;
     }
   }
@@ -232,18 +236,21 @@ export async function aplicarImportVagas(
       return inserido[0]!.id;
     }
 
-    async function buscarAbertasDaLinha(linhaId: string) {
+    /**
+     * Todas as vagas ativas da linha (qualquer status) — usado para saber o
+     * total atual (comparado contra o target) e, dentre elas, quais ainda
+     * estão "Em aberto" (únicas candidatas a fechamento automático).
+     */
+    async function buscarAtivasDaLinha(linhaId: string) {
       return tx
-        .select({ id: schema.vagas.id, createdAt: schema.vagas.createdAt })
+        .select({
+          id: schema.vagas.id,
+          createdAt: schema.vagas.createdAt,
+          sistema: schema.vagasStatus.sistema,
+        })
         .from(schema.vagas)
         .innerJoin(schema.vagasStatus, eq(schema.vagasStatus.id, schema.vagas.statusId))
-        .where(
-          and(
-            eq(schema.vagas.linhaId, linhaId),
-            eq(schema.vagas.ativa, true),
-            eq(schema.vagasStatus.sistema, true),
-          ),
-        );
+        .where(and(eq(schema.vagas.linhaId, linhaId), eq(schema.vagas.ativa, true)));
     }
 
     const statusEmAberto = await tx.query.vagasStatus.findFirst({
@@ -273,8 +280,9 @@ export async function aplicarImportVagas(
       const linhaId = await upsertLinha(filialId, linha, target, importId);
       linhaIdsTocadas.add(linhaId);
 
-      const abertas = await buscarAbertasDaLinha(linhaId);
-      const plano = planejarReconciliacao(abertas, target);
+      const ativas = await buscarAtivasDaLinha(linhaId);
+      const fechaveis = ativas.filter((v) => v.sistema);
+      const plano = planejarReconciliacao(ativas.length, fechaveis, target);
 
       if (plano.criar > 0) {
         await tx.insert(schema.vagas).values(
@@ -309,9 +317,10 @@ export async function aplicarImportVagas(
           : sql`true`,
       );
     for (const l of linhasAusentes) {
-      const abertas = await buscarAbertasDaLinha(l.id);
-      if (abertas.length === 0) continue;
-      const plano = planejarReconciliacao(abertas, 0);
+      const ativas = await buscarAtivasDaLinha(l.id);
+      const fechaveis = ativas.filter((v) => v.sistema);
+      if (fechaveis.length === 0) continue;
+      const plano = planejarReconciliacao(ativas.length, fechaveis, 0);
       await tx
         .update(schema.vagas)
         .set({ ativa: false, motivoFechamento: 'ajuste_importacao' })

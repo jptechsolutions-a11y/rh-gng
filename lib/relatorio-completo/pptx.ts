@@ -142,22 +142,22 @@ function slideRankingTabela(pres: PptxGenJS, r: RankingIndicador, page: number, 
   footer(s, page, total);
 }
 
-const VAGAS_POR_SLIDE = 4; // grade 2 x 2
+const VAGAS_POR_SLIDE = 3; // 1 coluna, cards em largura total
 
 const cdTemVagas = (c: DadosConsolidado['vagasDetalhe'][number]): boolean => c.totalAbertas > 0;
 
 function cardVagas(s: PptxGenJS.Slide, x: number, y: number, w: number, h: number, c: DadosConsolidado['vagasDetalhe'][number], statusVagas: string[]) {
   s.addShape('roundRect', { x, y, w, h, fill: { color: WHITE }, line: { color: BORDER, width: 1 }, rectRadius: 0.05 });
-  s.addShape('rect', { x, y, w, h: 0.38, fill: { color: NAVY }, line: { color: NAVY } });
-  s.addText(`CD ${c.nome}  ·  ${c.codigo}`, { x: x + 0.18, y, w: w - 0.36, h: 0.38, valign: 'middle', fontFace: FONT, fontSize: 10, color: WHITE, bold: true });
+  s.addShape('rect', { x, y, w, h: 0.34, fill: { color: NAVY }, line: { color: NAVY } });
+  s.addText(`CD ${c.nome}  ·  ${c.codigo}`, { x: x + 0.18, y, w: w - 0.36, h: 0.34, valign: 'middle', fontFace: FONT, fontSize: 10, color: WHITE, bold: true });
 
   // só os status que têm alguma vaga em aberto neste CD (Em aberto sempre 1º)
   const cols = statusVagas.filter((n) => (c.porStatus[n] ?? 0) > 0);
-  const fs = cols.length > 4 ? 7.5 : 8.5;
+  const fs = 9;
 
   const th = ['CLASSIFICAÇÃO', ...cols.map((n) => n.toUpperCase()), 'TOTAL'];
   const rows: PptxGenJS.TableRow[] = [
-    th.map((t, i) => ({ text: t, options: { bold: true, color: WHITE, fill: { color: NAVY }, fontSize: fs - 1.5, align: (i === 0 ? 'left' : 'center') as HAlign, valign: 'middle' as VAlign } })),
+    th.map((t, i) => ({ text: t, options: { bold: true, color: WHITE, fill: { color: NAVY }, fontSize: 7.5, align: (i === 0 ? 'left' : 'center') as HAlign, valign: 'middle' as VAlign } })),
   ];
   const linhas = [...c.porClassificacao].sort((a, b) => b.abertas - a.abertas);
   for (const l of linhas) {
@@ -173,12 +173,13 @@ function cardVagas(s: PptxGenJS.Slide, x: number, y: number, w: number, h: numbe
     { text: String(c.totalAbertas), options: { align: 'center' as HAlign, bold: true, color: ORANGE, fontSize: fs, fill: { color: SOFT } } },
   ]);
 
-  const cCls = (w - 0.24) * 0.34;
-  const cTot = (w - 0.24) * 0.14;
-  const cSt = (w - 0.24 - cCls - cTot) / Math.max(1, cols.length);
-  const tableH = Math.min(h - 0.6, 0.3 * rows.length);
+  const inner = w - 0.24;
+  const cCls = Math.min(2.4, inner * 0.22);
+  const cTot = 0.9;
+  const cSt = (inner - cCls - cTot) / Math.max(1, cols.length);
+  const tableH = Math.min(h - 0.5, 0.3 * rows.length);
   s.addTable(rows, {
-    x: x + 0.12, y: y + 0.48, w: w - 0.24, h: tableH,
+    x: x + 0.12, y: y + 0.42, w: inner, h: tableH,
     fontFace: FONT, fontSize: fs,
     border: { type: 'solid', color: BORDER, pt: 0.5 },
     colW: [cCls, ...cols.map(() => cSt), cTot],
@@ -196,18 +197,16 @@ function slidesVagas(pres: PptxGenJS, d: DadosConsolidado, startPage: number, to
   }
 
   const nSlides = Math.ceil(det.length / VAGAS_POR_SLIDE);
-  const gap = 0.35;
-  const cw = (W - 0.8 - gap) / 2;
-  const ch = (H - 1.5 - gap) / 2;
+  const gap = 0.3;
+  const cw = W - 0.8;
+  const ch = (H - 1.5 - gap * 2) / 3;
 
   for (let i = 0; i < nSlides; i++) {
     const s = pres.addSlide();
     header(s, `INDICADOR ${nSlides > 1 ? `(${i + 1}/${nSlides})` : ''}`.trim(), 'Vagas em Aberto por CD — por status e classificação');
     const bloco = det.slice(i * VAGAS_POR_SLIDE, (i + 1) * VAGAS_POR_SLIDE);
     bloco.forEach((c, j) => {
-      const col = j % 2;
-      const row = Math.floor(j / 2);
-      cardVagas(s, 0.4 + col * (cw + gap), 1.1 + row * (ch + gap), cw, ch, c, d.statusVagas);
+      cardVagas(s, 0.4, 1.1 + j * (ch + gap), cw, ch, c, d.statusVagas);
     });
     footer(s, startPage + i, total);
   }

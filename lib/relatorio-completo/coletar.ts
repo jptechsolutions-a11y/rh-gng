@@ -197,11 +197,16 @@ export function coletarConsolidado(ctx: Contexto, cds: CDBasico[]): DadosConsoli
       const quadro = ctx.vagasQuadro.filter((q) => q.filialId === cd.filialId);
       const abertas = ctx.vagas.filter((v) => v.filialId === cd.filialId);
 
+      // status não cadastrado/inativo no sistema é contado como "Em aberto"
+      const statusAtivos = new Set(ctx.statusVagas);
+      const colStatus = (nome: string) => (statusAtivos.has(nome) ? nome : 'Em aberto');
+
       // agrega por classificação
-      const acc = new Map<Classificacao, { aprov: number; ativo: number; abertas: number; temLinha: boolean }>();
-      const get = (c: Classificacao) => {
+      type Acc = { aprov: number; ativo: number; abertas: number; temLinha: boolean; porStatus: Record<string, number> };
+      const acc = new Map<Classificacao, Acc>();
+      const get = (c: Classificacao): Acc => {
         let e = acc.get(c);
-        if (!e) { e = { aprov: 0, ativo: 0, abertas: 0, temLinha: false }; acc.set(c, e); }
+        if (!e) { e = { aprov: 0, ativo: 0, abertas: 0, temLinha: false, porStatus: {} }; acc.set(c, e); }
         return e;
       };
       for (const q of quadro) {
@@ -209,27 +214,31 @@ export function coletarConsolidado(ctx: Contexto, cds: CDBasico[]): DadosConsoli
         e.aprov += q.limite; e.ativo += q.alocados; e.temLinha = true;
       }
       for (const v of abertas) {
-        get(classificarSecao(v.secao, ctx.classifMapa)).abertas += 1;
+        const e = get(classificarSecao(v.secao, ctx.classifMapa));
+        e.abertas += 1;
+        const cn = colStatus(v.statusNome);
+        e.porStatus[cn] = (e.porStatus[cn] ?? 0) + 1;
       }
 
       const porClassificacao: VagasClassifLinha[] = CLASSIFICACOES
         .map((classificacao) => {
-          const e = acc.get(classificacao) ?? { aprov: 0, ativo: 0, abertas: 0, temLinha: false };
+          const e = acc.get(classificacao);
           return {
             classificacao,
-            aprov: e.aprov,
-            ativo: e.ativo,
-            contratar: Math.max(0, e.aprov - e.ativo),
-            abertas: e.abertas,
+            aprov: e?.aprov ?? 0,
+            ativo: e?.ativo ?? 0,
+            contratar: Math.max(0, (e?.aprov ?? 0) - (e?.ativo ?? 0)),
+            abertas: e?.abertas ?? 0,
+            abertasPorStatus: e?.porStatus ?? {},
           };
         })
-        .filter((l) => {
-          const e = acc.get(l.classificacao);
-          return (e?.temLinha ?? false) || l.abertas > 0;
-        });
+        .filter((l) => l.abertas > 0);
 
       const porStatus: Record<string, number> = {};
-      for (const v of abertas) porStatus[v.statusNome] = (porStatus[v.statusNome] ?? 0) + 1;
+      for (const v of abertas) {
+        const cn = colStatus(v.statusNome);
+        porStatus[cn] = (porStatus[cn] ?? 0) + 1;
+      }
 
       return {
         filialId: cd.filialId, codigo: cd.codigo, nome: cd.nome,
@@ -243,11 +252,16 @@ export function coletarConsolidado(ctx: Contexto, cds: CDBasico[]): DadosConsoli
     })
     .sort((a, b) => b.totalAbertas - a.totalAbertas || a.nome.localeCompare(b.nome));
 
+  // "Em aberto" é sempre a 1ª coluna (recebe também os status não cadastrados)
+  const statusVagas = ctx.statusVagas.includes('Em aberto')
+    ? ['Em aberto', ...ctx.statusVagas.filter((n) => n !== 'Em aberto')]
+    : ['Em aberto', ...ctx.statusVagas];
+
   return {
     geradoEm: new Date().toISOString(),
     totalCDs: cds.length,
     rankings,
     vagasDetalhe,
-    statusVagas: ctx.statusVagas,
+    statusVagas,
   };
 }

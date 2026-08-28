@@ -41,6 +41,7 @@ export type VagasClassifLinha = {
   ativo: number;    // Σ alocados
   contratar: number; // max(0, aprov - ativo)  — igual à imagem do quadro
   abertas: number;  // nº de vagas em aberto (registros na tabela `vagas`) dessa classificação
+  abertasPorStatus: Record<string, number>; // vagas em aberto dessa classificação por status do sistema
 };
 
 export type VagasDetalheCD = {

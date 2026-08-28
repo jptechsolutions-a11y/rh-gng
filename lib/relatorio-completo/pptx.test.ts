@@ -30,9 +30,9 @@ const base: DadosConsolidado = {
     {
       filialId: 'a', codigo: '001', nome: 'A',
       porClassificacao: [
-        { classificacao: 'Área de Apoio', aprov: 20, ativo: 18, contratar: 2, abertas: 2 },
-        { classificacao: 'Operação', aprov: 70, ativo: 65, contratar: 5, abertas: 5 },
-        { classificacao: 'Transporte', aprov: 10, ativo: 9, contratar: 1, abertas: 1 },
+        { classificacao: 'Área de Apoio', aprov: 20, ativo: 18, contratar: 2, abertas: 2, abertasPorStatus: { 'Em aberto': 1, 'Entrevista': 1 } },
+        { classificacao: 'Operação', aprov: 70, ativo: 65, contratar: 5, abertas: 5, abertasPorStatus: { 'Em aberto': 4, 'Entrevista': 1 } },
+        { classificacao: 'Transporte', aprov: 10, ativo: 9, contratar: 1, abertas: 1, abertasPorStatus: { 'Em aberto': 1 } },
       ],
       totalAprov: 100, totalAtivo: 92, totalContratar: 8, totalAbertas: 8,
       porStatus: { 'Em aberto': 6, 'Entrevista': 2 },
@@ -40,7 +40,7 @@ const base: DadosConsolidado = {
     {
       filialId: 'b', codigo: '002', nome: 'B',
       porClassificacao: [
-        { classificacao: 'Operação', aprov: 40, ativo: 39, contratar: 1, abertas: 1 },
+        { classificacao: 'Operação', aprov: 40, ativo: 39, contratar: 1, abertas: 1, abertasPorStatus: { 'Em aberto': 1 } },
       ],
       totalAprov: 40, totalAtivo: 39, totalContratar: 1, totalAbertas: 1,
       porStatus: { 'Em aberto': 1, 'Entrevista': 0 },

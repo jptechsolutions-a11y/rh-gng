@@ -144,46 +144,44 @@ function slideRankingTabela(pres: PptxGenJS, r: RankingIndicador, page: number, 
 
 const VAGAS_POR_SLIDE = 4; // grade 2 x 2
 
-const cdTemVagas = (c: DadosConsolidado['vagasDetalhe'][number]): boolean =>
-  c.porClassificacao.length > 0 || c.totalAbertas > 0 || c.totalAprov > 0;
+const cdTemVagas = (c: DadosConsolidado['vagasDetalhe'][number]): boolean => c.totalAbertas > 0;
 
 function cardVagas(s: PptxGenJS.Slide, x: number, y: number, w: number, h: number, c: DadosConsolidado['vagasDetalhe'][number], statusVagas: string[]) {
   s.addShape('roundRect', { x, y, w, h, fill: { color: WHITE }, line: { color: BORDER, width: 1 }, rectRadius: 0.05 });
   s.addShape('rect', { x, y, w, h: 0.38, fill: { color: NAVY }, line: { color: NAVY } });
   s.addText(`CD ${c.nome}  ·  ${c.codigo}`, { x: x + 0.18, y, w: w - 0.36, h: 0.38, valign: 'middle', fontFace: FONT, fontSize: 10, color: WHITE, bold: true });
 
-  const th = ['CLASSIFICAÇÃO', 'APROV.', 'ATIVO', 'CONTRATAR'];
+  // só os status que têm alguma vaga em aberto neste CD (Em aberto sempre 1º)
+  const cols = statusVagas.filter((n) => (c.porStatus[n] ?? 0) > 0);
+  const fs = cols.length > 4 ? 7.5 : 8.5;
+
+  const th = ['CLASSIFICAÇÃO', ...cols.map((n) => n.toUpperCase()), 'TOTAL'];
   const rows: PptxGenJS.TableRow[] = [
-    th.map((t, i) => ({ text: t, options: { bold: true, color: WHITE, fill: { color: NAVY }, fontSize: 8, align: (i === 0 ? 'left' : 'center') as HAlign, valign: 'middle' as VAlign } })),
+    th.map((t, i) => ({ text: t, options: { bold: true, color: WHITE, fill: { color: NAVY }, fontSize: fs - 1.5, align: (i === 0 ? 'left' : 'center') as HAlign, valign: 'middle' as VAlign } })),
   ];
-  // do pior (mais a contratar) para o melhor
-  const linhas = [...c.porClassificacao].sort((a, b) => b.contratar - a.contratar || b.aprov - a.aprov);
+  const linhas = [...c.porClassificacao].sort((a, b) => b.abertas - a.abertas);
   for (const l of linhas) {
     rows.push([
-      { text: l.classificacao.toUpperCase(), options: { color: SLATE, fontSize: 8 } },
-      { text: String(l.aprov), options: { align: 'center' as HAlign, color: NAVY, fontSize: 8 } },
-      { text: String(l.ativo), options: { align: 'center' as HAlign, color: NAVY, fontSize: 8 } },
-      { text: String(l.contratar), options: { align: 'center' as HAlign, bold: true, color: l.contratar > 0 ? BAD : SLATE, fontSize: 8 } },
+      { text: l.classificacao.toUpperCase(), options: { color: SLATE, fontSize: fs } },
+      ...cols.map((n) => ({ text: String(l.abertasPorStatus[n] ?? 0), options: { align: 'center' as HAlign, color: NAVY, fontSize: fs } })),
+      { text: String(l.abertas), options: { align: 'center' as HAlign, bold: true, color: NAVY, fontSize: fs } },
     ]);
   }
   rows.push([
-    { text: 'TOTAL', options: { bold: true, color: NAVY, fontSize: 8, fill: { color: SOFT } } },
-    { text: String(c.totalAprov), options: { align: 'center' as HAlign, bold: true, color: NAVY, fontSize: 8, fill: { color: SOFT } } },
-    { text: String(c.totalAtivo), options: { align: 'center' as HAlign, bold: true, color: NAVY, fontSize: 8, fill: { color: SOFT } } },
-    { text: String(c.totalContratar), options: { align: 'center' as HAlign, bold: true, color: NAVY, fontSize: 8, fill: { color: SOFT } } },
+    { text: 'TOTAL', options: { bold: true, color: NAVY, fontSize: fs, fill: { color: SOFT } } },
+    ...cols.map((n) => ({ text: String(c.porStatus[n] ?? 0), options: { align: 'center' as HAlign, bold: true, color: NAVY, fontSize: fs, fill: { color: SOFT } } })),
+    { text: String(c.totalAbertas), options: { align: 'center' as HAlign, bold: true, color: ORANGE, fontSize: fs, fill: { color: SOFT } } },
   ]);
 
-  const tableH = Math.min(h - 0.8, 0.28 * rows.length);
+  const cCls = (w - 0.24) * 0.34;
+  const cTot = (w - 0.24) * 0.14;
+  const cSt = (w - 0.24 - cCls - cTot) / Math.max(1, cols.length);
+  const tableH = Math.min(h - 0.6, 0.3 * rows.length);
   s.addTable(rows, {
-    x: x + 0.12, y: y + 0.46, w: w - 0.24, h: tableH,
-    fontFace: FONT, fontSize: 8,
+    x: x + 0.12, y: y + 0.48, w: w - 0.24, h: tableH,
+    fontFace: FONT, fontSize: fs,
     border: { type: 'solid', color: BORDER, pt: 0.5 },
-    colW: [(w - 0.24) * 0.4, (w - 0.24) * 0.22, (w - 0.24) * 0.16, (w - 0.24) * 0.22],
-  });
-
-  const st = statusVagas.filter((n) => (c.porStatus[n] ?? 0) > 0).map((n) => `${n}: ${c.porStatus[n]}`);
-  s.addText(`Vagas em aberto (${c.totalAbertas})${st.length ? ' — ' + st.join('  ·  ') : ''}`, {
-    x: x + 0.14, y: y + h - 0.3, w: w - 0.28, h: 0.24, fontFace: FONT, fontSize: 7.5, italic: true, color: SLATE,
+    colW: [cCls, ...cols.map(() => cSt), cTot],
   });
 }
 
@@ -204,7 +202,7 @@ function slidesVagas(pres: PptxGenJS, d: DadosConsolidado, startPage: number, to
 
   for (let i = 0; i < nSlides; i++) {
     const s = pres.addSlide();
-    header(s, `INDICADOR ${nSlides > 1 ? `(${i + 1}/${nSlides})` : ''}`.trim(), 'Vagas em Aberto — quadro por CD');
+    header(s, `INDICADOR ${nSlides > 1 ? `(${i + 1}/${nSlides})` : ''}`.trim(), 'Vagas em Aberto por CD — por status e classificação');
     const bloco = det.slice(i * VAGAS_POR_SLIDE, (i + 1) * VAGAS_POR_SLIDE);
     bloco.forEach((c, j) => {
       const col = j % 2;

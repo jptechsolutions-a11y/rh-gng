@@ -3,6 +3,7 @@ import { and, eq, inArray, isNull, notInArray, sql } from 'drizzle-orm';
 import { db, schema } from '@/db/client';
 import type { LinhaQuadroVagas } from './xls-parser';
 import { planejarReconciliacao } from './reconciliar';
+import { normalizarCodigoFilial } from './normalizar-codigo-filial';
 
 export interface ImportSummaryVagas {
   totalLinhas: number;
@@ -25,19 +26,15 @@ function chaveLinha(filialId: string, funcao: string, secao: string | null): str
 async function resolverFiliais(
   linhas: LinhaQuadroVagas[],
 ): Promise<{ resolvidas: ResolvidoLinha[]; filiaisDesconhecidas: string[] }> {
-  const codigos = Array.from(new Set(linhas.map((l) => l.filialCodigo)));
-  const encontradas = codigos.length
-    ? await db
-        .select({ id: schema.filiais.id, codigo: schema.filiais.codigo })
-        .from(schema.filiais)
-        .where(inArray(schema.filiais.codigo, codigos))
-    : [];
-  const mapa = new Map(encontradas.map((f) => [f.codigo, f.id]));
+  // Busca todo o cadastro (não dá pra filtrar por igualdade exata de string
+  // no SQL já que a comparação precisa ser normalizada) — tabela pequena.
+  const todas = await db.select({ id: schema.filiais.id, codigo: schema.filiais.codigo }).from(schema.filiais);
+  const mapa = new Map(todas.map((f) => [normalizarCodigoFilial(f.codigo), f.id]));
 
   const resolvidas: ResolvidoLinha[] = [];
   const desconhecidasSet = new Set<string>();
   for (const linha of linhas) {
-    const filialId = mapa.get(linha.filialCodigo);
+    const filialId = mapa.get(normalizarCodigoFilial(linha.filialCodigo));
     if (filialId) {
       resolvidas.push({ linha, filialId });
     } else {

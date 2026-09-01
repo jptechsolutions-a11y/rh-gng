@@ -8,9 +8,19 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/cn';
 
 type Filial = { id: string; codigo: string; nome: string };
+type ChaveIndicador = 'bh' | 'inconsist' | 'cursos' | 'feriados' | 'vagas';
+
+const INDICADORES: { chave: ChaveIndicador; label: string }[] = [
+  { chave: 'bh', label: 'Banco de Horas' },
+  { chave: 'inconsist', label: 'Inconsistências' },
+  { chave: 'cursos', label: 'Cursos Obrigatórios' },
+  { chave: 'feriados', label: 'Feriados Pendentes' },
+  { chave: 'vagas', label: 'Quadro de Vagas' },
+];
 
 export function RelatorioCompletoClient({ filiais }: { filiais: Filial[] }) {
   const [sel, setSel] = useState<Set<string>>(() => new Set(filiais.map((f) => f.id)));
+  const [indSel, setIndSel] = useState<Set<ChaveIndicador>>(() => new Set(INDICADORES.map((i) => i.chave)));
   const [gerando, setGerando] = useState(false);
 
   const toggle = (id: string) =>
@@ -23,9 +33,23 @@ export function RelatorioCompletoClient({ filiais }: { filiais: Filial[] }) {
   const todas = sel.size === filiais.length && filiais.length > 0;
   const toggleTodas = () => setSel(todas ? new Set() : new Set(filiais.map((f) => f.id)));
 
+  const toggleInd = (chave: ChaveIndicador) =>
+    setIndSel((prev) => {
+      const n = new Set(prev);
+      if (n.has(chave)) n.delete(chave);
+      else n.add(chave);
+      return n;
+    });
+  const todosInd = indSel.size === INDICADORES.length;
+  const toggleTodosInd = () => setIndSel(todosInd ? new Set() : new Set(INDICADORES.map((i) => i.chave)));
+
   const gerar = async () => {
     if (sel.size < 2) {
       toast.error('Selecione ao menos 2 CDs para comparar');
+      return;
+    }
+    if (indSel.size === 0) {
+      toast.error('Selecione ao menos 1 indicador');
       return;
     }
     setGerando(true);
@@ -33,7 +57,7 @@ export function RelatorioCompletoClient({ filiais }: { filiais: Filial[] }) {
       const res = await fetch('/api/relatorio-completo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ filialIds: [...sel] }),
+        body: JSON.stringify({ filialIds: [...sel], indicadores: [...indSel] }),
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
@@ -107,6 +131,44 @@ export function RelatorioCompletoClient({ filiais }: { filiais: Filial[] }) {
               />
               <span className="font-medium text-conecta-primary">{f.codigo}</span>
               <span className="text-conecta-muted truncate">{f.nome}</span>
+            </label>
+          );
+        })}
+      </div>
+
+      <div className="mt-6 flex items-center justify-between">
+        <span className="font-display text-[11px] uppercase tracking-[0.22em] text-conecta-primary font-semibold">
+          Indicadores
+        </span>
+        <button
+          type="button"
+          onClick={toggleTodosInd}
+          className="text-[13px] font-medium text-conecta-accent"
+        >
+          {todosInd ? 'Limpar seleção' : 'Selecionar todos'}
+        </button>
+      </div>
+
+      <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+        {INDICADORES.map((ind) => {
+          const on = indSel.has(ind.chave);
+          return (
+            <label
+              key={ind.chave}
+              className={cn(
+                'flex items-center gap-2 rounded-lg border px-3 py-2 text-[13px] cursor-pointer transition-colors',
+                on
+                  ? 'border-conecta-accent bg-conecta-accent/5'
+                  : 'border-conecta-primary/15',
+              )}
+            >
+              <input
+                type="checkbox"
+                checked={on}
+                onChange={() => toggleInd(ind.chave)}
+                className="accent-conecta-accent"
+              />
+              <span className="font-medium text-conecta-primary">{ind.label}</span>
             </label>
           );
         })}

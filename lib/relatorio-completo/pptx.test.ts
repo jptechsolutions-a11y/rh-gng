@@ -72,4 +72,40 @@ describe('gerarDeckConsolidado', () => {
     expect(bytes.byteLength).toBeGreaterThan(2000);
     expect(await contarSlides(bytes)).toBe(9);
   });
+
+  it('subconjunto de indicadores sem Vagas: sem páginas de quadro por CD, total de slides reduzido', async () => {
+    // Mesma filtragem que a rota faz: tira "vagas" de rankings e zera
+    // vagasDetalhe/statusVagas quando o indicador não foi selecionado.
+    const d: DadosConsolidado = {
+      ...base,
+      rankings: base.rankings.filter((r) => r.chave !== 'vagas'),
+      vagasDetalhe: [],
+      statusVagas: [],
+    };
+    const bytes = await gerarDeckConsolidado(d);
+    // capa + visão + 4 rankings (bh/inconsist/cursos/feriados) + pódio + encerramento = 8
+    expect(await contarSlides(bytes)).toBe(8);
+  });
+
+  it('só Vagas selecionado: sem slides de ranking-tabela, mantém o quadro por CD', async () => {
+    const d: DadosConsolidado = {
+      ...base,
+      rankings: base.rankings.filter((r) => r.chave === 'vagas'),
+    };
+    const bytes = await gerarDeckConsolidado(d);
+    // capa + visão + 0 rankings-tabela + 1 slide de vagas (2 CDs cabem num só) + pódio + encerramento = 5
+    expect(await contarSlides(bytes)).toBe(5);
+  });
+
+  it('só 1 indicador (bh) selecionado: 1 slide de ranking, sem quadro de vagas', async () => {
+    const d: DadosConsolidado = {
+      ...base,
+      rankings: base.rankings.filter((r) => r.chave === 'bh'),
+      vagasDetalhe: [],
+      statusVagas: [],
+    };
+    const bytes = await gerarDeckConsolidado(d);
+    // capa + visão + 1 ranking + pódio + encerramento = 5
+    expect(await contarSlides(bytes)).toBe(5);
+  });
 });

@@ -217,7 +217,8 @@ function slidePodio(pres: PptxGenJS, d: DadosConsolidado, page: number, total: n
   const s = pres.addSlide();
   header(s, 'DESTAQUES', 'Pódio por indicador');
   const gap = 0.2;
-  const cw = (W - 1 - gap * 4) / 5;
+  const n = Math.max(1, d.rankings.length);
+  const cw = (W - 1 - gap * (n - 1)) / n;
 
   const faixa = (
     y: number, titulo: string, accent: string,
@@ -253,9 +254,15 @@ export async function gerarDeckConsolidado(d: DadosConsolidado): Promise<Uint8Ar
   pres.company = 'Grupo Perlog';
   pres.author = 'Conecta G&G';
 
+  // "Vagas" nunca vira slide de ranking-tabela genérico — sempre tem seu
+  // próprio formato (quadro por CD com classificação/status). Os demais
+  // indicadores selecionados (bh/inconsist/cursos/feriados) usam a tabela.
+  const rankingsTabela = d.rankings.filter((r) => r.chave !== 'vagas');
+  const incluiVagas = d.rankings.some((r) => r.chave === 'vagas');
+
   const nVagasCds = d.vagasDetalhe.filter(cdTemVagas).length;
-  const vagasSlides = nVagasCds === 0 ? 1 : Math.ceil(nVagasCds / VAGAS_POR_SLIDE);
-  const TOTAL = 8 + vagasSlides;
+  const vagasSlides = !incluiVagas ? 0 : (nVagasCds === 0 ? 1 : Math.ceil(nVagasCds / VAGAS_POR_SLIDE));
+  const TOTAL = 4 + rankingsTabela.length + vagasSlides;
 
   // 1 — Capa
   {
@@ -279,14 +286,15 @@ export async function gerarDeckConsolidado(d: DadosConsolidado): Promise<Uint8Ar
     footer(s, 2, TOTAL);
   }
 
-  // 3..6 — Ranking (tabela) dos 4 primeiros indicadores
-  d.rankings.slice(0, 4).forEach((r, i) => slideRankingTabela(pres, r, 3 + i, TOTAL));
+  // 3.. — Ranking (tabela) de cada indicador selecionado, exceto Vagas
+  rankingsTabela.forEach((r, i) => slideRankingTabela(pres, r, 3 + i, TOTAL));
+  const proximaPagina = 3 + rankingsTabela.length;
 
-  // 7.. — Vagas (um quadro por CD, vários por slide)
-  const usados = slidesVagas(pres, d, 7, TOTAL);
+  // .. — Vagas (um quadro por CD, vários por slide) — só se selecionado
+  const usados = incluiVagas ? slidesVagas(pres, d, proximaPagina, TOTAL) : 0;
 
   // Pódio
-  slidePodio(pres, d, 7 + usados, TOTAL);
+  slidePodio(pres, d, proximaPagina + usados, TOTAL);
 
   // Encerramento
   {

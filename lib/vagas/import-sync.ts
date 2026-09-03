@@ -1,5 +1,5 @@
 import 'server-only';
-import { and, eq, inArray, isNull, notInArray, sql } from 'drizzle-orm';
+import { and, eq, inArray, sql } from 'drizzle-orm';
 import { db, schema } from '@/db/client';
 import type { LinhaQuadroVagas } from './xls-parser';
 import { planejarReconciliacao } from './reconciliar';
@@ -17,6 +17,17 @@ export interface ImportSummaryVagas {
 interface ResolvidoLinha {
   linha: LinhaQuadroVagas;
   filialId: string;
+}
+
+// Envia os writes em lotes deste tamanho (mesmo valor usado em
+// lib/qlp/import-sync.ts para o mesmo problema) — em vez de 1 round-trip por
+// linha, cada INSERT/UPDATE em massa cobre até CHUNK linhas de uma vez.
+const CHUNK = 500;
+
+function chunked<T>(arr: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
 }
 
 function chaveLinha(filialId: string, funcao: string, secao: string | null): string {
@@ -154,10 +165,59 @@ export async function previewImportVagas(linhas: LinhaQuadroVagas[]): Promise<Im
   };
 }
 
+interface AgregadosLinha {
+  regional: string | null;
+  bandeira: string | null;
+  limite: number;
+  potencial: number;
+  alocados: number;
+  afastados: number;
+  emAbertoImportado: number;
+}
+
 /**
- * Aplica o import em uma transação: upsert das linhas do quadro, cria/fecha
- * vagas conforme `planejarReconciliacao`, zera combinações ausentes da nova
- * planilha e grava o registro em `vagas_quadro_imports`.
+ * Atualiza os agregados de várias `vagas_quadro_linhas` já existentes numa
+ * única instrução (UPDATE ... FROM VALUES) — evita 1 round-trip por linha,
+ * que é o que estourava o timeout da rota com planilhas de 1000+ linhas.
+ */
+async function atualizarLinhasEmMassa(
+  linhas: { id: string; agregados: AgregadosLinha }[],
+  importId: string,
+): Promise<void> {
+  if (linhas.length === 0) return;
+  for (const batch of chunked(linhas, CHUNK)) {
+    const values = sql.join(
+      batch.map(
+        (l) => sql`(${l.id}::uuid, ${l.agregados.regional}::text, ${l.agregados.bandeira}::text, ${l.agregados.limite}::int, ${l.agregados.potencial}::int, ${l.agregados.alocados}::int, ${l.agregados.afastados}::int, ${l.agregados.emAbertoImportado}::int)`,
+      ),
+      sql`, `,
+    );
+    await db.execute(sql`
+      UPDATE vagas_quadro_linhas AS l SET
+        regional = v.regional,
+        bandeira = v.bandeira,
+        limite = v.limite,
+        potencial = v.potencial,
+        alocados = v.alocados,
+        afastados = v.afastados,
+        em_aberto_importado = v.em_aberto_importado,
+        ultima_import_id = ${importId}::uuid,
+        updated_at = now()
+      FROM (VALUES ${values}) AS v(id, regional, bandeira, limite, potencial, alocados, afastados, em_aberto_importado)
+      WHERE l.id = v.id
+    `);
+  }
+}
+
+/**
+ * Aplica o import: resolve tudo em memória a partir de leituras em lote
+ * (sem 1 round-trip por linha) e grava em poucos INSERT/UPDATE em massa —
+ * mesmo padrão de `lib/qlp/import-sync.ts` para o mesmo problema (uma
+ * transação envolvendo milhares de round-trips individuais estoura o
+ * statement_timeout do Supavisor e o maxDuration da rota). Não há uma
+ * transação envolvendo tudo: cada etapa é atômica em si; se algo falhar no
+ * meio, a linha do import fica sem `vagas_quadro_imports` — reaplicar a
+ * planilha é seguro (o diff é idempotente).
  */
 export async function aplicarImportVagas(
   linhas: LinhaQuadroVagas[],
@@ -167,177 +227,175 @@ export async function aplicarImportVagas(
   const resolvidas = dedupeResolvidas(resolucao.resolvidas);
   const { filiaisDesconhecidas } = resolucao;
 
-  return db.transaction(async (tx) => {
-    /**
-     * Encontra (por filial+função+seção, tratando seção nula corretamente) ou
-     * cria a linha do quadro correspondente, atualizando seus agregados.
-     * Implementado como SELECT explícito + branch (não `onConflictDoUpdate`) —
-     * a versão instalada do drizzle-orm tipa o `target` de `onConflictDoUpdate`
-     * como `IndexColumn | IndexColumn[]` apenas, então não aceita o índice único
-     * funcional; além disso o índice único em (filial_id, funcao, secao) não
-     * dedupe de forma confiável quando `secao` é NULL (Postgres trata NULL como
-     * distinto de NULL em índices únicos), caso real e frequente nesta planilha.
-     */
-    async function upsertLinha(
-      filialId: string,
-      linha: LinhaQuadroVagas,
-      target: number,
-      importId: string,
-    ): Promise<string> {
-      const condSecao =
-        linha.secao === null
-          ? isNull(schema.vagasQuadroLinhas.secao)
-          : eq(schema.vagasQuadroLinhas.secao, linha.secao);
-      const cond = and(
-        eq(schema.vagasQuadroLinhas.filialId, filialId),
-        eq(schema.vagasQuadroLinhas.funcao, linha.funcao),
-        condSecao,
-      );
-
-      const existente = await tx
-        .select({ id: schema.vagasQuadroLinhas.id })
-        .from(schema.vagasQuadroLinhas)
-        .where(cond)
-        .limit(1);
-
-      const valoresAgregados = {
-        regional: linha.regional || null,
-        bandeira: linha.bandeira || null,
-        limite: linha.limite,
-        potencial: linha.potencial,
-        alocados: linha.alocados,
-        afastados: linha.afastados,
-        emAbertoImportado: target,
-        ultimaImportId: importId,
-        updatedAt: new Date(),
-      };
-
-      if (existente.length > 0) {
-        const id = existente[0]!.id;
-        await tx
-          .update(schema.vagasQuadroLinhas)
-          .set(valoresAgregados)
-          .where(eq(schema.vagasQuadroLinhas.id, id));
-        return id;
-      }
-
-      const inserido = await tx
-        .insert(schema.vagasQuadroLinhas)
-        .values({
-          filialId,
-          funcao: linha.funcao,
-          secao: linha.secao,
-          ...valoresAgregados,
-        })
-        .returning({ id: schema.vagasQuadroLinhas.id });
-      return inserido[0]!.id;
-    }
-
-    /**
-     * Todas as vagas ativas da linha (qualquer status) — usado para saber o
-     * total atual (comparado contra o target) e, dentre elas, quais ainda
-     * estão "Em aberto" (únicas candidatas a fechamento automático).
-     */
-    async function buscarAtivasDaLinha(linhaId: string) {
-      return tx
-        .select({
-          id: schema.vagas.id,
-          createdAt: schema.vagas.createdAt,
-          sistema: schema.vagasStatus.sistema,
-        })
-        .from(schema.vagas)
-        .innerJoin(schema.vagasStatus, eq(schema.vagasStatus.id, schema.vagas.statusId))
-        .where(and(eq(schema.vagas.linhaId, linhaId), eq(schema.vagas.ativa, true)));
-    }
-
-    const statusEmAberto = await tx.query.vagasStatus.findFirst({
-      where: eq(schema.vagasStatus.sistema, true),
-    });
-    if (!statusEmAberto) {
-      throw new Error('catálogo de status sem o status "Em aberto" — rode a migration de seed');
-    }
-
-    const importRow = await tx
-      .insert(schema.vagasQuadroImports)
-      .values({
-        arquivoNome: opts.arquivoNome,
-        importadoPorNome: opts.importadoPorNome,
-        totalLinhas: linhas.length,
-        filiaisDesconhecidas,
-      })
-      .returning({ id: schema.vagasQuadroImports.id });
-    const importId = importRow[0]!.id;
-
-    let vagasCriadas = 0;
-    let vagasFechadas = 0;
-    const linhaIdsTocadas = new Set<string>();
-
-    for (const { linha, filialId } of resolvidas) {
-      const target = Math.max(0, linha.emAberto);
-      const linhaId = await upsertLinha(filialId, linha, target, importId);
-      linhaIdsTocadas.add(linhaId);
-
-      const ativas = await buscarAtivasDaLinha(linhaId);
-      const fechaveis = ativas.filter((v) => v.sistema);
-      const plano = planejarReconciliacao(ativas.length, fechaveis, target);
-
-      if (plano.criar > 0) {
-        await tx.insert(schema.vagas).values(
-          Array.from({ length: plano.criar }, () => ({
-            linhaId,
-            filialId,
-            funcao: linha.funcao,
-            secao: linha.secao,
-            statusId: statusEmAberto.id,
-            origemImportId: importId,
-          })),
-        );
-        vagasCriadas += plano.criar;
-      }
-      if (plano.fecharIds.length > 0) {
-        await tx
-          .update(schema.vagas)
-          .set({ ativa: false, motivoFechamento: 'ajuste_importacao' })
-          .where(inArray(schema.vagas.id, plano.fecharIds));
-        vagasFechadas += plano.fecharIds.length;
-      }
-    }
-
-    // Zera (fecha) combinações que existiam antes e não vieram nesta planilha.
-    let linhasZeradas = 0;
-    const linhasAusentes = await tx
-      .select({ id: schema.vagasQuadroLinhas.id })
-      .from(schema.vagasQuadroLinhas)
-      .where(
-        linhaIdsTocadas.size > 0
-          ? notInArray(schema.vagasQuadroLinhas.id, Array.from(linhaIdsTocadas))
-          : sql`true`,
-      );
-    for (const l of linhasAusentes) {
-      const ativas = await buscarAtivasDaLinha(l.id);
-      const fechaveis = ativas.filter((v) => v.sistema);
-      if (fechaveis.length === 0) continue;
-      const plano = planejarReconciliacao(ativas.length, fechaveis, 0);
-      await tx
-        .update(schema.vagas)
-        .set({ ativa: false, motivoFechamento: 'ajuste_importacao' })
-        .where(inArray(schema.vagas.id, plano.fecharIds));
-      vagasFechadas += plano.fecharIds.length;
-      linhasZeradas += 1;
-    }
-
-    await tx
-      .update(schema.vagasQuadroImports)
-      .set({ vagasCriadas, vagasFechadas })
-      .where(eq(schema.vagasQuadroImports.id, importId));
-
-    return {
-      totalLinhas: linhas.length,
-      linhasValidas: resolvidas.length,
-      filiaisDesconhecidas,
-      vagasCriadas,
-      vagasFechadas,
-      linhasZeradas,
-    };
+  const statusEmAberto = await db.query.vagasStatus.findFirst({
+    where: eq(schema.vagasStatus.sistema, true),
   });
+  if (!statusEmAberto) {
+    throw new Error('catálogo de status sem o status "Em aberto" — rode a migration de seed');
+  }
+
+  const importRow = await db
+    .insert(schema.vagasQuadroImports)
+    .values({
+      arquivoNome: opts.arquivoNome,
+      importadoPorNome: opts.importadoPorNome,
+      totalLinhas: linhas.length,
+      filiaisDesconhecidas,
+    })
+    .returning({ id: schema.vagasQuadroImports.id });
+  const importId = importRow[0]!.id;
+
+  // 1) leitura em lote de TODAS as linhas do quadro já existentes.
+  const existentes = await db
+    .select({
+      id: schema.vagasQuadroLinhas.id,
+      filialId: schema.vagasQuadroLinhas.filialId,
+      funcao: schema.vagasQuadroLinhas.funcao,
+      secao: schema.vagasQuadroLinhas.secao,
+    })
+    .from(schema.vagasQuadroLinhas);
+  const existentesMap = new Map(existentes.map((e) => [chaveLinha(e.filialId, e.funcao, e.secao), e.id]));
+
+  // 2) separa, em memória, quem precisa INSERT vs UPDATE.
+  const paraInserir: { filialId: string; funcao: string; secao: string | null; agregados: AgregadosLinha }[] = [];
+  const paraAtualizar: { id: string; agregados: AgregadosLinha }[] = [];
+  const linhaIdPorChave = new Map<string, string>();
+
+  for (const { linha, filialId } of resolvidas) {
+    const chave = chaveLinha(filialId, linha.funcao, linha.secao);
+    const agregados: AgregadosLinha = {
+      regional: linha.regional || null,
+      bandeira: linha.bandeira || null,
+      limite: linha.limite,
+      potencial: linha.potencial,
+      alocados: linha.alocados,
+      afastados: linha.afastados,
+      emAbertoImportado: Math.max(0, linha.emAberto),
+    };
+    const idExistente = existentesMap.get(chave);
+    if (idExistente) {
+      linhaIdPorChave.set(chave, idExistente);
+      paraAtualizar.push({ id: idExistente, agregados });
+    } else {
+      paraInserir.push({ filialId, funcao: linha.funcao, secao: linha.secao, agregados });
+    }
+  }
+
+  // 3) grava as novas linhas do quadro em lote, recuperando os ids gerados.
+  for (const batch of chunked(paraInserir, CHUNK)) {
+    const inseridos = await db
+      .insert(schema.vagasQuadroLinhas)
+      .values(
+        batch.map((l) => ({
+          filialId: l.filialId,
+          funcao: l.funcao,
+          secao: l.secao,
+          ...l.agregados,
+          ultimaImportId: importId,
+        })),
+      )
+      .returning({ id: schema.vagasQuadroLinhas.id, filialId: schema.vagasQuadroLinhas.filialId, funcao: schema.vagasQuadroLinhas.funcao, secao: schema.vagasQuadroLinhas.secao });
+    for (const r of inseridos) linhaIdPorChave.set(chaveLinha(r.filialId, r.funcao, r.secao), r.id);
+  }
+
+  // 4) atualiza as linhas existentes em lote (1 UPDATE por lote de CHUNK, não 1 por linha).
+  await atualizarLinhasEmMassa(paraAtualizar, importId);
+
+  // 5) 1 única leitura em lote de todas as vagas ativas de TODAS as linhas
+  // pré-existentes (tocadas nesta planilha ou não — as "ausentes" também
+  // precisam entrar na reconciliação, como target 0).
+  const todosLinhaIdsExistentes = existentes.map((e) => e.id);
+  const ativasPorLinha = new Map<string, { id: string; createdAt: Date; sistema: boolean }[]>();
+  for (const batch of chunked(todosLinhaIdsExistentes, CHUNK)) {
+    if (batch.length === 0) continue;
+    const rows = await db
+      .select({
+        id: schema.vagas.id,
+        linhaId: schema.vagas.linhaId,
+        createdAt: schema.vagas.createdAt,
+        sistema: schema.vagasStatus.sistema,
+      })
+      .from(schema.vagas)
+      .innerJoin(schema.vagasStatus, eq(schema.vagasStatus.id, schema.vagas.statusId))
+      .where(and(eq(schema.vagas.ativa, true), inArray(schema.vagas.linhaId, batch)));
+    for (const r of rows) {
+      const lista = ativasPorLinha.get(r.linhaId) ?? [];
+      lista.push({ id: r.id, createdAt: r.createdAt, sistema: r.sistema });
+      ativasPorLinha.set(r.linhaId, lista);
+    }
+  }
+
+  // 6) plano de criação/fechamento por linha, tudo em memória.
+  const paraCriar: { linhaId: string; filialId: string; funcao: string; secao: string | null }[] = [];
+  const idsParaFechar: string[] = [];
+  let vagasCriadas = 0;
+  let vagasFechadas = 0;
+
+  for (const { linha, filialId } of resolvidas) {
+    const chave = chaveLinha(filialId, linha.funcao, linha.secao);
+    const linhaId = linhaIdPorChave.get(chave)!;
+    const ativas = ativasPorLinha.get(linhaId) ?? [];
+    const fechaveis = ativas.filter((v) => v.sistema);
+    const target = Math.max(0, linha.emAberto);
+    const plano = planejarReconciliacao(ativas.length, fechaveis, target);
+
+    if (plano.criar > 0) {
+      for (let i = 0; i < plano.criar; i++) {
+        paraCriar.push({ linhaId, filialId, funcao: linha.funcao, secao: linha.secao });
+      }
+      vagasCriadas += plano.criar;
+    }
+    if (plano.fecharIds.length > 0) {
+      idsParaFechar.push(...plano.fecharIds);
+      vagasFechadas += plano.fecharIds.length;
+    }
+  }
+
+  // 7) zera (fecha) combinações que existiam antes e não vieram nesta planilha.
+  const linhaIdsTocadas = new Set(linhaIdPorChave.values());
+  let linhasZeradas = 0;
+  for (const l of existentes) {
+    if (linhaIdsTocadas.has(l.id)) continue;
+    const ativas = ativasPorLinha.get(l.id) ?? [];
+    const fechaveis = ativas.filter((v) => v.sistema);
+    if (fechaveis.length === 0) continue;
+    const plano = planejarReconciliacao(ativas.length, fechaveis, 0);
+    idsParaFechar.push(...plano.fecharIds);
+    vagasFechadas += plano.fecharIds.length;
+    linhasZeradas += 1;
+  }
+
+  // 8) grava tudo em lote.
+  for (const batch of chunked(paraCriar, CHUNK)) {
+    await db.insert(schema.vagas).values(
+      batch.map((v) => ({
+        linhaId: v.linhaId,
+        filialId: v.filialId,
+        funcao: v.funcao,
+        secao: v.secao,
+        statusId: statusEmAberto.id,
+        origemImportId: importId,
+      })),
+    );
+  }
+  for (const batch of chunked(idsParaFechar, CHUNK)) {
+    await db
+      .update(schema.vagas)
+      .set({ ativa: false, motivoFechamento: 'ajuste_importacao' })
+      .where(inArray(schema.vagas.id, batch));
+  }
+
+  await db
+    .update(schema.vagasQuadroImports)
+    .set({ vagasCriadas, vagasFechadas })
+    .where(eq(schema.vagasQuadroImports.id, importId));
+
+  return {
+    totalLinhas: linhas.length,
+    linhasValidas: resolvidas.length,
+    filiaisDesconhecidas,
+    vagasCriadas,
+    vagasFechadas,
+    linhasZeradas,
+  };
 }

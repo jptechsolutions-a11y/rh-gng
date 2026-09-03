@@ -3,6 +3,7 @@
   "regions": ["gru1"],
   "functions": {
     "app/**": { "maxDuration": 15 },
-    "app/(app)/indicadores/**": { "maxDuration": 60 }
+    "app/(app)/indicadores/**": { "maxDuration": 60 },
+    "app/(app)/vagas/importar/**": { "maxDuration": 60 }
   }
 }

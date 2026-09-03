@@ -1,53 +1,13 @@
-import { and, eq, inArray } from 'drizzle-orm';
-import { db, schema } from '@/db/client';
-import { requireSession, getFiliaisVisiveis } from '@/lib/auth/session';
+import { requireSession } from '@/lib/auth/session';
 import { TopBar } from '@/components/layout/TopBar';
 import { VagasView } from '@/components/vagas/VagasView';
-import type { VagaRow } from '@/components/vagas/VagasQuadroTable';
+import { buscarQuadroVagas } from '@/lib/vagas/buscar-quadro';
 
 export const dynamic = 'force-dynamic';
 
 export default async function VagasPage() {
   const s = await requireSession();
-  const escopo = getFiliaisVisiveis(s);
-
-  const condicoes = [eq(schema.vagas.ativa, true)];
-  if (escopo) condicoes.push(inArray(schema.vagas.filialId, escopo));
-
-  const rowsRaw = await db
-    .select({
-      id: schema.vagas.id,
-      filialCodigo: schema.filiais.codigo,
-      filialNome: schema.filiais.nome,
-      funcao: schema.vagas.funcao,
-      secao: schema.vagas.secao,
-      statusId: schema.vagas.statusId,
-      statusNome: schema.vagasStatus.nome,
-      statusAtualizadoEm: schema.vagas.statusAtualizadoEm,
-      statusAtualizadoPorNome: schema.vagas.statusAtualizadoPorNome,
-      limite: schema.vagasQuadroLinhas.limite,
-      potencial: schema.vagasQuadroLinhas.potencial,
-      alocados: schema.vagasQuadroLinhas.alocados,
-      afastados: schema.vagasQuadroLinhas.afastados,
-      emAbertoImportado: schema.vagasQuadroLinhas.emAbertoImportado,
-    })
-    .from(schema.vagas)
-    .innerJoin(schema.filiais, eq(schema.filiais.id, schema.vagas.filialId))
-    .innerJoin(schema.vagasStatus, eq(schema.vagasStatus.id, schema.vagas.statusId))
-    .innerJoin(schema.vagasQuadroLinhas, eq(schema.vagasQuadroLinhas.id, schema.vagas.linhaId))
-    .where(and(...condicoes))
-    .orderBy(schema.filiais.codigo, schema.vagas.funcao);
-
-  const rows: VagaRow[] = rowsRaw.map((r) => ({
-    ...r,
-    statusAtualizadoEm: r.statusAtualizadoEm.toISOString(),
-  }));
-
-  const statusOptions = await db
-    .select()
-    .from(schema.vagasStatus)
-    .where(eq(schema.vagasStatus.ativo, true))
-    .orderBy(schema.vagasStatus.ordem);
+  const { rows, statusOptions } = await buscarQuadroVagas(s);
 
   const porStatus = new Map<string, number>();
   for (const r of rows) porStatus.set(r.statusNome, (porStatus.get(r.statusNome) ?? 0) + 1);

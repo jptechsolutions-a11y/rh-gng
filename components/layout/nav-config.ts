@@ -101,7 +101,8 @@ export const TRANSPORTE_NAV_ADMIN_EXTRAS: NavItem[] = [
 ];
 
 export const VAGAS_NAV_BASE: NavItem[] = [
-  { href: '/vagas', label: 'Quadro de Vagas', icon: Briefcase },
+  { href: '/vagas',            label: 'Quadro de Vagas', icon: Briefcase },
+  { href: '/vagas/excedentes', label: 'Excedentes',      icon: AlertTriangle },
 ];
 export const VAGAS_NAV_ADMIN_EXTRAS: NavItem[] = [
   { href: '/vagas/importar', label: 'Importar planilha', icon: Upload },

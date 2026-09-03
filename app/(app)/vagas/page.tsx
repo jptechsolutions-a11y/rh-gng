@@ -54,10 +54,14 @@ export default async function VagasPage() {
     .map(([status, total]) => ({ status, total }))
     .sort((a, b) => b.total - a.total || a.status.localeCompare(b.status));
 
-  const statusSistema = statusOptions.find((st) => st.sistema);
+  // "Vagas em aberto" nos gráficos = todas as vagas ativas da coluna
+  // importada (EM ABERTO), não só as que ainda estão no status literal "Em
+  // aberto" — uma vaga em "Em Recrutamento"/"Entrevista"/etc. continua
+  // ocupando uma posição em aberto da planilha até virar "Preenchida" (ou
+  // ser fechada pela reconciliação do import). Mesmo critério usado em
+  // lib/vagas/reconciliar.ts para decidir o total contra o alvo do import.
   const porFilial = new Map<string, number>();
   for (const r of rows) {
-    if (statusSistema && r.statusId !== statusSistema.id) continue;
     porFilial.set(r.filialCodigo, (porFilial.get(r.filialCodigo) ?? 0) + 1);
   }
   const chartFilial = Array.from(porFilial.entries())
@@ -67,7 +71,6 @@ export default async function VagasPage() {
   const porSecao = new Map<string, number>();
   const porFuncao = new Map<string, number>();
   for (const r of rows) {
-    if (statusSistema && r.statusId !== statusSistema.id) continue;
     const secao = r.secao ?? 'Sem seção';
     porSecao.set(secao, (porSecao.get(secao) ?? 0) + 1);
     porFuncao.set(r.funcao, (porFuncao.get(r.funcao) ?? 0) + 1);

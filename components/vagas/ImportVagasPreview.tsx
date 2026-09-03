@@ -1,11 +1,8 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import {
-  previewImportVagasAction,
-  aplicarImportVagasAction,
-  type ImportSummaryVagas,
-} from '@/actions/vagas/importar';
+import { previewImportVagasAction, aplicarImportVagasAction } from '@/actions/vagas/importar';
+import type { ImportSummaryVagas } from '@/lib/vagas/import-sync';
 
 export function ImportVagasPreview() {
   const [file, setFile] = useState<File | null>(null);

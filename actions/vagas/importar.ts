@@ -5,8 +5,6 @@ import { requireSession } from '@/lib/auth/session';
 import { parseQuadroVagas } from '@/lib/vagas/xls-parser';
 import { previewImportVagas, aplicarImportVagas, type ImportSummaryVagas } from '@/lib/vagas/import-sync';
 
-export type { ImportSummaryVagas };
-
 export async function previewImportVagasAction(formData: FormData): Promise<ImportSummaryVagas> {
   await requireSession('admin');
   const file = formData.get('arquivo') as File | null;

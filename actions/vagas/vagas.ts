@@ -62,3 +62,40 @@ export async function atualizarStatusVagasEmLote(vagaIds: string[], statusId: st
   revalidatePath('/vagas');
   return { atualizadas: vagasAlvo.length };
 }
+
+/**
+ * Fecha manualmente uma vaga "excedente" — quando a última planilha
+ * importada reduziu o número de vagas em aberto de uma combinação, mas a(s)
+ * vaga(s) que sobraram já saíram do status "Em aberto" (estão em processo:
+ * Pendente Admissão, Entrega de Documentos, etc.), o import nunca as fecha
+ * sozinho — quem está na filial precisa confirmar manualmente qual vaga
+ * encerrar (normalmente porque a posição já foi preenchida).
+ *
+ * Mesma regra de permissão das outras ações de vaga: admin fecha qualquer
+ * filial, filial só fecha as próprias, visualizador é bloqueado.
+ */
+export async function fecharVagaExcedente(vagaId: string) {
+  const s = await requireSession();
+  if (s.perfil === 'visualizador') throw new Error('perfil somente leitura');
+
+  const vaga = await db.query.vagas.findFirst({ where: eq(schema.vagas.id, vagaId) });
+  if (!vaga) throw new Error('vaga não encontrada');
+  if (!vaga.ativa) throw new Error('vaga já está fechada');
+  if (s.perfil === 'filial' && vaga.filialId !== s.filialId) {
+    throw new Error('sem permissão para vagas de outra filial');
+  }
+
+  const nomeAtor = s.perfil === 'admin' ? (s.nome ?? s.usuario) : s.filialNome;
+
+  await db
+    .update(schema.vagas)
+    .set({
+      ativa: false,
+      motivoFechamento: 'excedente_manual',
+      statusAtualizadoEm: new Date(),
+      statusAtualizadoPorNome: nomeAtor,
+    })
+    .where(eq(schema.vagas.id, vagaId));
+
+  revalidatePath('/vagas');
+}

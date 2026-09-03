@@ -29,6 +29,7 @@ export default async function VagasPage() {
       potencial: schema.vagasQuadroLinhas.potencial,
       alocados: schema.vagasQuadroLinhas.alocados,
       afastados: schema.vagasQuadroLinhas.afastados,
+      emAbertoImportado: schema.vagasQuadroLinhas.emAbertoImportado,
     })
     .from(schema.vagas)
     .innerJoin(schema.filiais, eq(schema.filiais.id, schema.vagas.filialId))

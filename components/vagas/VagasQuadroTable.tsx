@@ -1,9 +1,9 @@
 'use client';
 
 import { Fragment, useEffect, useMemo, useState, useTransition } from 'react';
-import { Users, Search, ChevronDown, ChevronRight, ListChecks } from 'lucide-react';
+import { Users, Search, ChevronDown, ChevronRight, ListChecks, X, AlertTriangle } from 'lucide-react';
 import { ConectaCard, SectionHeader } from '@/components/ui/conecta-card';
-import { atualizarStatusVaga } from '@/actions/vagas/vagas';
+import { atualizarStatusVaga, fecharVagaExcedente } from '@/actions/vagas/vagas';
 import { AtualizarStatusEmLoteModal } from './AtualizarStatusEmLoteModal';
 import type { VagaStatus } from '@/db/schema';
 
@@ -21,6 +21,8 @@ export interface VagaRow {
   potencial: number;
   alocados: number;
   afastados: number;
+  /** Alvo "EM ABERTO" da última planilha importada para essa combinação — usado só para sinalizar excedente. */
+  emAbertoImportado: number;
 }
 
 interface GrupoLinha {
@@ -30,6 +32,7 @@ interface GrupoLinha {
   secao: string | null;
   limite: number;
   alocados: number;
+  emAbertoImportado: number;
   vagas: VagaRow[];
 }
 
@@ -41,10 +44,13 @@ export function VagasQuadroTable({
   rows,
   statusOptions,
   podeEditar,
+  apenasExcedentes = false,
 }: {
   rows: VagaRow[];
   statusOptions: VagaStatus[];
   podeEditar: boolean;
+  /** Mostra só os grupos onde sobram mais vagas ativas do que o alvo da última planilha (todas as vagas do grupo aparecem, para dar contexto de qual fechar). */
+  apenasExcedentes?: boolean;
 }) {
   const [busca, setBusca] = useState('');
   const [filialFiltro, setFilialFiltro] = useState('');
@@ -58,6 +64,17 @@ export function VagasQuadroTable({
   useEffect(() => {
     setLocalRows(rows);
   }, [rows]);
+
+  // Na aba de excedentes já abre tudo expandido — o ponto dela é mostrar
+  // direto quais vagas individuais precisam de decisão, sem clique extra.
+  useEffect(() => {
+    if (!apenasExcedentes) return;
+    setExpandidas((prev) => {
+      const next = new Set(prev);
+      for (const r of rows) next.add(chaveGrupo(r));
+      return next;
+    });
+  }, [apenasExcedentes, rows]);
 
   const filiaisList = useMemo(() => {
     const set = new Set(localRows.map((r) => r.filialCodigo));
@@ -83,15 +100,20 @@ export function VagasQuadroTable({
       const chave = chaveGrupo(r);
       let g = map.get(chave);
       if (!g) {
-        g = { chave, filialCodigo: r.filialCodigo, funcao: r.funcao, secao: r.secao, limite: r.limite, alocados: r.alocados, vagas: [] };
+        g = {
+          chave, filialCodigo: r.filialCodigo, funcao: r.funcao, secao: r.secao,
+          limite: r.limite, alocados: r.alocados, emAbertoImportado: r.emAbertoImportado,
+          vagas: [],
+        };
         map.set(chave, g);
       }
       g.vagas.push(r);
     }
-    return Array.from(map.values()).sort(
+    const todos = Array.from(map.values()).sort(
       (a, b) => a.filialCodigo.localeCompare(b.filialCodigo) || a.funcao.localeCompare(b.funcao),
     );
-  }, [filtradas]);
+    return apenasExcedentes ? todos.filter((g) => g.vagas.length > g.emAbertoImportado) : todos;
+  }, [filtradas, apenasExcedentes]);
 
   function toggle(chave: string) {
     setExpandidas((prev) => {
@@ -126,12 +148,27 @@ export function VagasQuadroTable({
     });
   }
 
+  function onFecharExcedente(vagaId: string, funcao: string) {
+    if (!confirm(`Fechar esta vaga de "${funcao}"? Ela sai da lista de vagas ativas — use quando a posição já foi preenchida ou não é mais necessária.`)) return;
+    setErroId(null);
+    const anterior = localRows;
+    setLocalRows((l) => l.filter((r) => r.id !== vagaId));
+    start(async () => {
+      try {
+        await fecharVagaExcedente(vagaId);
+      } catch (e) {
+        setLocalRows(anterior);
+        setErroId(e instanceof Error ? e.message : 'erro ao fechar vaga');
+      }
+    });
+  }
+
   return (
     <ConectaCard noPadding>
       <div className="p-5 pb-3 space-y-3">
         <SectionHeader
-          label="Vagas em aberto"
-          icon={Users}
+          label={apenasExcedentes ? 'Vagas excedentes' : 'Vagas em aberto'}
+          icon={apenasExcedentes ? AlertTriangle : Users}
           action={
             <div className="flex items-center gap-3">
               <span className="text-[11px] font-display font-semibold tabular-nums text-conecta-muted">
@@ -190,6 +227,7 @@ export function VagasQuadroTable({
           <tbody>
             {grupos.map((g) => {
               const aberto = expandidas.has(g.chave);
+              const excedente = Math.max(0, g.vagas.length - g.emAbertoImportado);
               return (
                 <Fragment key={g.chave}>
                   <tr className="border-t border-conecta-primary/6 hover:bg-slate-50/60">
@@ -208,9 +246,20 @@ export function VagasQuadroTable({
                     <td className="px-5 py-2.5 text-conecta-muted">{g.secao ?? '—'}</td>
                     <td className="px-5 py-2.5 tabular-nums text-conecta-muted">{g.limite} / {g.alocados}</td>
                     <td className="px-5 py-2.5">
-                      <span className="inline-flex items-center gap-1 font-display font-bold text-conecta-primary tabular-nums">
-                        {g.vagas.length}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1 font-display font-bold text-conecta-primary tabular-nums">
+                          {g.vagas.length}
+                        </span>
+                        {excedente > 0 && (
+                          <span
+                            title={`A última planilha pedia ${g.emAbertoImportado} vaga(s) em aberto, mas ${g.vagas.length} continuam ativas — ${excedente} já saíram de "Em aberto" e precisam ser fechadas manualmente se a posição foi preenchida.`}
+                            className="inline-flex items-center gap-1 rounded-full bg-amber-50 border border-amber-200 text-amber-800 px-2 py-0.5 text-[10px] font-display font-semibold uppercase tracking-wide"
+                          >
+                            <AlertTriangle className="h-3 w-3" />
+                            {excedente} excedente{excedente > 1 ? 's' : ''}
+                          </span>
+                        )}
+                      </div>
                     </td>
                   </tr>
                   {aberto && (
@@ -223,6 +272,11 @@ export function VagasQuadroTable({
                             <span className="font-display text-[10px] uppercase tracking-[0.22em] text-conecta-accent font-semibold">
                               Vagas ({g.vagas.length})
                             </span>
+                            {excedente > 0 && (
+                              <span className="text-[10px] text-amber-800">
+                                — alvo da planilha: {g.emAbertoImportado}. Feche a(s) vaga(s) já preenchida(s) abaixo.
+                              </span>
+                            )}
                           </div>
                           <ul className="divide-y divide-conecta-primary/8">
                             {g.vagas.map((r, i) => (
@@ -246,6 +300,18 @@ export function VagasQuadroTable({
                                   {new Date(r.statusAtualizadoEm).toLocaleDateString('pt-BR')}
                                   {r.statusAtualizadoPorNome ? ` · ${r.statusAtualizadoPorNome}` : ''}
                                 </span>
+                                {podeEditar && (
+                                  <button
+                                    type="button"
+                                    disabled={pending}
+                                    onClick={() => onFecharExcedente(r.id, r.funcao)}
+                                    title="Fechar esta vaga (posição preenchida ou não é mais necessária)"
+                                    className="inline-flex items-center gap-1 rounded-lg border border-rose-200 text-rose-700 px-2 py-1 text-[11px] font-display font-semibold hover:bg-rose-50 disabled:opacity-50 transition"
+                                  >
+                                    <X className="h-3.5 w-3.5" />
+                                    Fechar
+                                  </button>
+                                )}
                               </li>
                             ))}
                           </ul>
@@ -259,7 +325,9 @@ export function VagasQuadroTable({
             {grupos.length === 0 && (
               <tr>
                 <td colSpan={6} className="px-5 py-8 text-center text-conecta-muted text-sm">
-                  Nenhuma vaga encontrada.
+                  {apenasExcedentes
+                    ? 'Nenhuma vaga excedente — tudo bate com a última planilha importada.'
+                    : 'Nenhuma vaga encontrada.'}
                 </td>
               </tr>
             )}

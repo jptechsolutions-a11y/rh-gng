@@ -13,6 +13,8 @@ export interface VagaRow {
   filialNome: string;
   funcao: string;
   secao: string | null;
+  /** Classificação da seção (APOIO, OPERAÇÃO…) via DE-PARA — usada no agrupamento do Detalhado. */
+  area: string;
   statusId: string;
   statusNome: string;
   statusAtualizadoEm: string;

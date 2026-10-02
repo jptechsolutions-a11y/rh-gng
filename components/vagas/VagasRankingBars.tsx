@@ -20,6 +20,8 @@ export function VagasRankingBars({
   data,
   labelWidthClass = 'w-12',
   color = 'navy',
+  selected = null,
+  onSelect,
 }: {
   titulo: string;
   icon: LucideIcon;
@@ -28,6 +30,10 @@ export function VagasRankingBars({
   labelWidthClass?: string;
   /** Cor da barra — navy (padrão) ou orange. */
   color?: 'navy' | 'orange';
+  /** Rótulo atualmente filtrado (destaca a barra e esmaece as demais). */
+  selected?: string | null;
+  /** Clique numa barra — o pai alterna o filtro para esse rótulo. */
+  onSelect?: (label: string) => void;
 }) {
   const max = data.reduce((m, it) => Math.max(m, it.total), 0) || 1;
   const barBg = color === 'orange'
@@ -47,8 +53,18 @@ export function VagasRankingBars({
           {data.map((it) => {
             const pct = Math.max(1, Math.round((it.total / max) * 100));
             const valorInterno = pct >= 28;
+            const ativo = selected === it.label;
+            const esmaecido = selected != null && !ativo;
             return (
-              <div key={it.label} className="flex items-center gap-3">
+              <button
+                type="button"
+                key={it.label}
+                onClick={() => onSelect?.(it.label)}
+                disabled={!onSelect}
+                aria-pressed={ativo}
+                title={onSelect ? (ativo ? 'Clique para remover o filtro' : `Filtrar por ${it.label}`) : undefined}
+                className={`flex w-full items-center gap-3 rounded-md text-left transition-opacity ${onSelect ? 'cursor-pointer hover:opacity-90' : 'cursor-default'} ${esmaecido ? 'opacity-40' : ''} ${ativo ? 'ring-2 ring-conecta-accent/60 ring-offset-2' : ''}`}
+              >
                 <div
                   className={`${labelWidthClass} shrink-0 font-display text-[12px] font-semibold ${labelColor} truncate`}
                   title={it.label}
@@ -75,7 +91,7 @@ export function VagasRankingBars({
                     </span>
                   )}
                 </div>
-              </div>
+              </button>
             );
           })}
         </div>

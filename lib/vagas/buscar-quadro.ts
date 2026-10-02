@@ -3,6 +3,7 @@ import { and, eq, inArray } from 'drizzle-orm';
 import { db, schema } from '@/db/client';
 import type { Session } from '@/lib/auth/session';
 import { getFiliaisVisiveis } from '@/lib/auth/session';
+import { carregarMapaClassificacao, classificarSecao } from '@/lib/relatorio-completo/classificacao-secao';
 import type { VagaRow } from '@/components/vagas/VagasQuadroTable';
 
 /**
@@ -40,8 +41,10 @@ export async function buscarQuadroVagas(s: Session) {
     .where(and(...condicoes))
     .orderBy(schema.filiais.codigo, schema.vagas.funcao);
 
+  const mapaArea = await carregarMapaClassificacao();
   const rows: VagaRow[] = rowsRaw.map((r) => ({
     ...r,
+    area: classificarSecao(r.secao, mapaArea).replace(/^Área de /, '').toUpperCase(),
     statusAtualizadoEm: r.statusAtualizadoEm.toISOString(),
   }));
 

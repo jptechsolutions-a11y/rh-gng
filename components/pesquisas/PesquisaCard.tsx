@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { BarChart3, Copy, Check, ExternalLink, Lock, UserRound, Power, Trash2 } from 'lucide-react';
+import { BarChart3, Pencil, Copy, Check, ExternalLink, Lock, UserRound, Power, Trash2 } from 'lucide-react';
 import { ConectaCard } from '@/components/ui/conecta-card';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { alterarStatusPesquisa, excluirPesquisa } from '@/actions/pesquisas/admin';
@@ -134,6 +134,13 @@ export function PesquisaCard({ p }: { p: PesquisaCardData }) {
           {copiado ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
           {copiado ? 'Link copiado' : 'Copiar link'}
         </button>
+        <Link
+          href={`/pesquisas/${p.id}/editar`}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-conecta-primary/20 text-conecta-primary px-3 py-1.5 text-[11px] font-display font-semibold hover:bg-conecta-primary/5 transition"
+        >
+          <Pencil className="h-3.5 w-3.5" />
+          Editar
+        </Link>
         <span className="flex-1" />
         <button
           type="button"

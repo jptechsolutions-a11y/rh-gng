@@ -1,7 +1,8 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { BarChart3, Building2, Users, UserCheck, UserX, ListTree, MessageSquareText, Star, ExternalLink } from 'lucide-react';
+import Link from 'next/link';
+import { X, Pencil, BarChart3, Building2, Users, UserCheck, UserX, ListTree, MessageSquareText, Star, ExternalLink } from 'lucide-react';
 import { ConectaCard, SectionHeader } from '@/components/ui/conecta-card';
 import { SubTabs } from '@/components/ui/sub-tabs';
 import { VagasRankingBars } from '@/components/vagas/VagasRankingBars';
@@ -45,12 +46,30 @@ export function PesquisaIndicadores({
   const [cruzP, setCruzP] = useState<string>(perguntas.find((p) => p.tipo === 'unica' || p.tipo === 'multipla')?.id ?? '');
   const [cruzDim, setCruzDim] = useState<Dim>('filial');
   const [busca, setBusca] = useState('');
+  // Filtros por resposta: clicar numa opção de um gráfico filtra os respondentes que a escolheram.
+  const [fResp, setFResp] = useState<Record<string, string>>({});
 
-  const passa = (r: { filialCodigo: string | null; funcao: string | null; secao: string | null }) =>
-    (Object.keys(filtro) as Dim[]).every((d) => !filtro[d] || dimDe(r, d) === filtro[d]);
+  const passa = (r: { filialCodigo: string | null; funcao: string | null; secao: string | null }, ignorar?: Dim) =>
+    (Object.keys(filtro) as Dim[]).every((d) => d === ignorar || !filtro[d] || dimDe(r, d) === filtro[d]);
+  const casaResp = (r: RespostaRow, ignorarP?: string) =>
+    Object.entries(fResp).every(([pid, op]) => pid === ignorarP || opcoesDaResposta(r.valores[pid]).includes(op));
 
-  const respF = useMemo(() => respostas.filter(passa), [respostas, filtro]); // eslint-disable-line react-hooks/exhaustive-deps
-  const alvoF = useMemo(() => alvo.filter(passa), [alvo, filtro]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Filtro cruzado (estilo Power BI): cada gráfico considera todos os filtros, menos o próprio.
+  const respF = useMemo(() => respostas.filter((r) => passa(r) && casaResp(r)), [respostas, filtro, fResp]); // eslint-disable-line react-hooks/exhaustive-deps
+  const alternarResp = (pid: string, op: string) =>
+    setFResp((f) => {
+      const n = { ...f };
+      if (n[pid] === op) delete n[pid]; else n[pid] = op;
+      return n;
+    });
+  const alternarDim = (d: Dim, v: string) => setFiltro((f) => ({ ...f, [d]: f[d] === v ? undefined : v }));
+  const rankingDim = (d: Dim) => {
+    const m = new Map<string, number>();
+    for (const r of respostas) if (passa(r, d) && casaResp(r)) m.set(dimDe(r, d), (m.get(dimDe(r, d)) ?? 0) + 1);
+    return Array.from(m.entries()).map(([label, total]) => ({ label, total }))
+      .sort((a, b) => b.total - a.total || a.label.localeCompare(b.label)).slice(0, 10);
+  };
+  const alvoF = useMemo(() => alvo.filter((a) => passa(a)), [alvo, filtro]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const anonima = pesquisa.anonima;
   const cotasF = useMemo(
@@ -94,7 +113,7 @@ export function PesquisaIndicadores({
 
   const link = typeof window !== 'undefined' ? `${window.location.origin}/p/${pesquisa.slug}` : `/p/${pesquisa.slug}`;
 
-  const temFiltro = (Object.keys(filtro) as Dim[]).some((d) => filtro[d]);
+  const temFiltro = (Object.keys(filtro) as Dim[]).some((d) => filtro[d]) || Object.keys(fResp).length > 0;
   const dimsDisponiveis: Dim[] = anonima ? ['filial'] : ['filial', 'funcao', 'secao'];
 
   const cruzPergunta = perguntas.find((p) => p.id === cruzP);
@@ -130,6 +149,12 @@ export function PesquisaIndicadores({
           ]}
         />
         <span className="flex-1" />
+        <Link
+          href={`/pesquisas/${pesquisa.id}/editar`}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-conecta-primary/20 text-conecta-primary px-3 py-1.5 text-[11px] font-display font-semibold hover:bg-conecta-primary/5"
+        >
+          <Pencil className="h-3.5 w-3.5" /> Editar perguntas
+        </Link>
         <a
           href={link}
           target="_blank"
@@ -155,8 +180,20 @@ export function PesquisaIndicadores({
             </select>
           </label>
         ))}
+        {Object.entries(fResp).map(([pid, op]) => (
+          <button
+            key={pid}
+            type="button"
+            onClick={() => alternarResp(pid, op)}
+            title="Remover filtro"
+            className="inline-flex items-center gap-1.5 rounded-full bg-conecta-accent/10 border border-conecta-accent/30 text-conecta-accent px-2.5 py-1 text-[11px] font-display font-semibold hover:bg-conecta-accent/20"
+          >
+            {perguntas.findIndex((q) => q.id === pid) + 1}. {op}
+            <X className="h-3 w-3" />
+          </button>
+        ))}
         {temFiltro && (
-          <button type="button" onClick={() => setFiltro({})} className="text-[11px] font-display font-semibold text-conecta-muted hover:text-conecta-accent underline underline-offset-2">
+          <button type="button" onClick={() => { setFiltro({}); setFResp({}); }} className="text-[11px] font-display font-semibold text-conecta-muted hover:text-conecta-accent underline underline-offset-2">
             Limpar filtros
           </button>
         )}
@@ -201,7 +238,8 @@ export function PesquisaIndicadores({
               }
               const cont = new Map<string, number>();
               let soma = 0, n = 0;
-              for (const r of respF) {
+              for (const r of respostas) {
+                if (!passa(r) || !casaResp(r, p.id)) continue;
                 const v = r.valores[p.id];
                 if (v == null) continue;
                 for (const o of opcoesDaResposta(v)) cont.set(o, (cont.get(o) ?? 0) + 1);
@@ -217,10 +255,33 @@ export function PesquisaIndicadores({
                   color={i % 2 === 0 ? 'orange' : 'navy'}
                   labelWidthClass="w-40"
                   data={data}
+                  selected={fResp[p.id] ?? null}
+                  onSelect={(o) => alternarResp(p.id, o)}
                 />
               );
             })}
           </div>
+
+          {!anonima && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              <VagasRankingBars
+                titulo="Respostas por função (top 10)"
+                icon={Users}
+                labelWidthClass="w-40"
+                data={rankingDim('funcao')}
+                selected={filtro.funcao ?? null}
+                onSelect={(v) => alternarDim('funcao', v)}
+              />
+              <VagasRankingBars
+                titulo="Respostas por seção (top 10)"
+                icon={ListTree}
+                labelWidthClass="w-40"
+                data={rankingDim('secao')}
+                selected={filtro.secao ?? null}
+                onSelect={(v) => alternarDim('secao', v)}
+              />
+            </div>
+          )}
 
           {/* Adesão por filial */}
           <ConectaCard noPadding>

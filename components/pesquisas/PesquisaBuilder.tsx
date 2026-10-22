@@ -4,17 +4,32 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowDown, ArrowUp, Check, Copy, ExternalLink, ListPlus, Plus, Trash2, ClipboardPen } from 'lucide-react';
 import { ConectaCard, SectionHeader } from '@/components/ui/conecta-card';
-import { criarPesquisa } from '@/actions/pesquisas/admin';
+import { criarPesquisa, editarPesquisa } from '@/actions/pesquisas/admin';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { TIPO_LABEL, type PerguntaInput, type TipoPergunta } from '@/lib/pesquisas/tipos';
 
-const nova = (): PerguntaInput => ({ texto: '', tipo: 'unica', obrigatoria: true, opcoes: ['', ''] });
+type Item = PerguntaInput & { id?: string };
 
-export function PesquisaBuilder() {
+export interface PesquisaInicial {
+  id: string;
+  titulo: string;
+  descricao: string;
+  anonima: boolean;
+  temRespostas: boolean;
+  perguntas: Item[];
+}
+
+const nova = (): Item => ({ texto: '', tipo: 'unica', obrigatoria: true, opcoes: ['', ''] });
+
+export function PesquisaBuilder({ inicial }: { inicial?: PesquisaInicial }) {
   const router = useRouter();
-  const [titulo, setTitulo] = useState('');
-  const [descricao, setDescricao] = useState('');
-  const [anonima, setAnonima] = useState(false);
-  const [perguntas, setPerguntas] = useState<PerguntaInput[]>([nova()]);
+  const confirmar = useConfirm();
+  const editando = !!inicial;
+  const travaModo = !!inicial?.temRespostas;
+  const [titulo, setTitulo] = useState(inicial?.titulo ?? '');
+  const [descricao, setDescricao] = useState(inicial?.descricao ?? '');
+  const [anonima, setAnonima] = useState(inicial?.anonima ?? false);
+  const [perguntas, setPerguntas] = useState<Item[]>(inicial?.perguntas ?? [nova()]);
   const [erro, setErro] = useState<string | null>(null);
   const [criada, setCriada] = useState<{ id: string; slug: string } | null>(null);
   const [copiado, setCopiado] = useState(false);
@@ -22,7 +37,7 @@ export function PesquisaBuilder() {
 
   const link = criada && typeof window !== 'undefined' ? `${window.location.origin}/p/${criada.slug}` : '';
 
-  function set(i: number, patch: Partial<PerguntaInput>) {
+  function set(i: number, patch: Partial<Item>) {
     setPerguntas((l) => l.map((p, idx) => (idx === i ? { ...p, ...patch } : p)));
   }
   function mover(i: number, d: -1 | 1) {
@@ -34,6 +49,18 @@ export function PesquisaBuilder() {
       return n;
     });
   }
+  async function removerPergunta(i: number) {
+    const q = perguntas[i]!;
+    if (q.id && inicial?.temRespostas) {
+      const ok = await confirmar({
+        titulo: 'Remover pergunta',
+        descricao: `Remover "${q.texto}" apaga também as respostas já dadas a ela. Continuar?`,
+        confirmLabel: 'Remover',
+      });
+      if (!ok) return;
+    }
+    setPerguntas((l) => l.filter((_, idx) => idx !== i));
+  }
   function setOpcao(i: number, k: number, v: string) {
     set(i, { opcoes: perguntas[i]!.opcoes.map((o, idx) => (idx === k ? v : o)) });
   }
@@ -42,6 +69,12 @@ export function PesquisaBuilder() {
     setErro(null);
     start(async () => {
       try {
+        if (inicial) {
+          await editarPesquisa(inicial.id, { titulo, descricao, anonima, perguntas });
+          router.push(`/pesquisas/${inicial.id}`);
+          router.refresh();
+          return;
+        }
         const r = await criarPesquisa({ titulo, descricao, anonima, perguntas });
         setCriada(r);
       } catch (e) {
@@ -127,6 +160,9 @@ export function PesquisaBuilder() {
             <span className="text-[11px] font-display font-semibold uppercase tracking-wide text-conecta-muted">Descrição (opcional)</span>
             <textarea value={descricao} onChange={(e) => setDescricao(e.target.value)} rows={2} className={inputCls} />
           </label>
+          {travaModo && (
+            <p className="text-[11px] text-amber-800">Já existem respostas: o modo (anônima/identificada) e o tipo das perguntas existentes não podem mudar. Renomear uma opção não altera as respostas antigas.</p>
+          )}
           <div className="grid sm:grid-cols-2 gap-2">
             {[
               { v: false, t: 'Identificada', d: 'Pede a matrícula e puxa nome, função, seção e filial. Cada matrícula responde uma vez e dá pra ver quem falta.' },
@@ -136,7 +172,8 @@ export function PesquisaBuilder() {
                 key={o.t}
                 type="button"
                 onClick={() => setAnonima(o.v)}
-                className={`text-left rounded-lg border p-3 transition ${
+                disabled={travaModo}
+                className={`disabled:opacity-60 disabled:cursor-not-allowed text-left rounded-lg border p-3 transition ${
                   anonima === o.v
                     ? 'border-conecta-accent bg-conecta-accent/8 ring-1 ring-conecta-accent/40'
                     : 'border-conecta-primary/15 hover:bg-slate-50'
@@ -161,13 +198,14 @@ export function PesquisaBuilder() {
               <span className="flex-1" />
               <button type="button" onClick={() => mover(i, -1)} disabled={i === 0} className="p-1 text-conecta-muted hover:text-conecta-accent disabled:opacity-30" aria-label="Subir"><ArrowUp className="h-4 w-4" /></button>
               <button type="button" onClick={() => mover(i, 1)} disabled={i === perguntas.length - 1} className="p-1 text-conecta-muted hover:text-conecta-accent disabled:opacity-30" aria-label="Descer"><ArrowDown className="h-4 w-4" /></button>
-              <button type="button" onClick={() => setPerguntas((l) => l.filter((_, idx) => idx !== i))} disabled={perguntas.length === 1} className="p-1 text-rose-600 hover:bg-rose-50 rounded disabled:opacity-30" aria-label="Remover"><Trash2 className="h-4 w-4" /></button>
+              <button type="button" onClick={() => removerPergunta(i)} disabled={perguntas.length === 1} className="p-1 text-rose-600 hover:bg-rose-50 rounded disabled:opacity-30" aria-label="Remover"><Trash2 className="h-4 w-4" /></button>
             </div>
             <div className="mt-3 space-y-3">
               <input value={p.texto} onChange={(e) => set(i, { texto: e.target.value })} className={inputCls} placeholder="Texto da pergunta" />
               <div className="flex flex-wrap items-center gap-3">
                 <select
                   value={p.tipo}
+                  disabled={!!p.id && travaModo}
                   onChange={(e) => {
                     const tipo = e.target.value as TipoPergunta;
                     set(i, { tipo, opcoes: tipo === 'unica' || tipo === 'multipla' ? (p.opcoes.length >= 2 ? p.opcoes : ['', '']) : [] });
@@ -231,7 +269,7 @@ export function PesquisaBuilder() {
           onClick={salvar}
           className="rounded-lg bg-conecta-accent text-white px-5 py-2.5 text-[12px] font-display font-semibold uppercase tracking-[0.14em] hover:brightness-110 disabled:opacity-60"
         >
-          {pending ? 'Criando…' : 'Criar pesquisa e gerar link'}
+          {pending ? 'Salvando…' : editando ? 'Salvar alterações' : 'Criar pesquisa e gerar link'}
         </button>
       </div>
     </div>

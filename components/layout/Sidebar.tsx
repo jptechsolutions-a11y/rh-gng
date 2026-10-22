@@ -16,6 +16,7 @@ import {
   QLP_NAV_BASE, QLP_NAV_ADMIN_EXTRAS,
   TRANSPORTE_NAV_BASE, TRANSPORTE_NAV_ADMIN_EXTRAS,
   VAGAS_NAV_BASE, VAGAS_NAV_ADMIN_EXTRAS,
+  PESQUISAS_NAV,
 } from './nav-config';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 
@@ -49,6 +50,9 @@ export function Sidebar({
   const inVagas =
     pathname === '/vagas' ||
     pathname.startsWith('/vagas/');
+  const inPesquisas =
+    pathname === '/pesquisas' ||
+    pathname.startsWith('/pesquisas/');
   // Visualizador dentro do módulo de entrevistas (histórico/entrevista/candidato)
   // recebe um menu contextual sem "Indicadores", que apontaria para outro módulo.
   const inEntrevistasVisualizador =
@@ -58,7 +62,9 @@ export function Sidebar({
       pathname.startsWith('/entrevista/') ||
       pathname.startsWith('/candidato/')
     );
-  const nav = inTransporte
+  const nav = inPesquisas
+    ? PESQUISAS_NAV
+    : inTransporte
     ? perfil === 'admin'
       ? [...TRANSPORTE_NAV_BASE, ...TRANSPORTE_NAV_ADMIN_EXTRAS]
       : TRANSPORTE_NAV_BASE
@@ -87,7 +93,9 @@ export function Sidebar({
               : perfil === 'visualizador'
                 ? VISUALIZADOR_NAV
                 : FILIAL_NAV;
-  const moduleLabel = inTransporte
+  const moduleLabel = inPesquisas
+    ? 'Pesquisas'
+    : inTransporte
     ? 'Transporte'
     : inVagas
     ? 'Quadro de Vagas'
@@ -208,7 +216,8 @@ export function Sidebar({
             href === '/avaliacao' ||
             href === '/qlp' ||
             href === '/transporte' ||
-            href === '/vagas';
+            href === '/vagas' ||
+            href === '/pesquisas';
           const [hrefPath, hrefQuery] = href.split('?');
           const defaultTab = hrefPath === '/indicadores' ? 'inicio' : 'roteiro';
           let active: boolean;

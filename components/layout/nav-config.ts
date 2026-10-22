@@ -4,7 +4,7 @@ import {
   CalendarClock, Plus, BarChart3, UserCog, Target, BookOpen, Printer, ClipboardCheck,
   GalleryHorizontal, Cloud, Clock, AlertTriangle, Trophy, GraduationCap, CalendarOff,
   Network, Upload, IdCard, ListTree, UsersRound,
-  Bus, Route, Briefcase, ListChecks,
+  Bus, Route, Briefcase, ListChecks, ClipboardPen,
 } from 'lucide-react';
 
 // Fonte ÚNICA de navegação — consumida pela Sidebar (desktop) e pela MobileNav.
@@ -107,4 +107,10 @@ export const VAGAS_NAV_BASE: NavItem[] = [
 export const VAGAS_NAV_ADMIN_EXTRAS: NavItem[] = [
   { href: '/vagas/importar', label: 'Importar planilha', icon: Upload },
   { href: '/vagas/status',   label: 'Status',            icon: ListChecks },
+];
+
+// Pesquisas: só admin acessa o módulo (os colaboradores respondem pelo link público /p/[slug]).
+export const PESQUISAS_NAV: NavItem[] = [
+  { href: '/pesquisas',      label: 'Pesquisas',     icon: ClipboardPen },
+  { href: '/pesquisas/nova', label: 'Nova pesquisa', icon: Plus },
 ];

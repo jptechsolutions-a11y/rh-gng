@@ -697,3 +697,60 @@ export type VagaStatus = typeof vagasStatus.$inferSelect;
 export type VagaQuadroLinha = typeof vagasQuadroLinhas.$inferSelect;
 export type Vaga = typeof vagas.$inferSelect;
 export type VagaSecaoClassificacao = typeof vagasSecaoClassificacao.$inferSelect;
+
+// =====================================================
+// Pesquisas (admin cria; colaborador responde por link público /p/[slug])
+// =====================================================
+
+export const pesquisas = pgTable('pesquisas', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  slug: text('slug').notNull().unique(),
+  titulo: text('titulo').notNull(),
+  descricao: text('descricao'),
+  anonima: boolean('anonima').notNull().default(false),
+  status: text('status').notNull().default('aberta'), // 'aberta' | 'encerrada'
+  criadaPorNome: text('criada_por_nome').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  encerradaEm: timestamp('encerrada_em', { withTimezone: true }),
+});
+
+export const pesquisaPerguntas = pgTable('pesquisa_perguntas', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  pesquisaId: uuid('pesquisa_id').notNull().references(() => pesquisas.id, { onDelete: 'cascade' }),
+  ordem: integer('ordem').notNull(),
+  texto: text('texto').notNull(),
+  tipo: text('tipo').notNull(), // 'unica' | 'multipla' | 'texto' | 'nota'
+  obrigatoria: boolean('obrigatoria').notNull().default(true),
+  opcoes: jsonb('opcoes').$type<string[]>().notNull().default([]),
+}, (t) => ({
+  pesquisaIdx: index('pesquisa_perguntas_pesquisa_idx').on(t.pesquisaId),
+}));
+
+export const pesquisaRespostas = pgTable('pesquisa_respostas', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  pesquisaId: uuid('pesquisa_id').notNull().references(() => pesquisas.id, { onDelete: 'cascade' }),
+  chapa: text('chapa'), // null em pesquisa anônima
+  nome: text('nome'),
+  funcao: text('funcao'),
+  secao: text('secao'),
+  filialId: uuid('filial_id').references(() => filiais.id, { onDelete: 'set null' }),
+  filialCodigo: text('filial_codigo'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  pesquisaIdx: index('pesquisa_respostas_pesquisa_idx').on(t.pesquisaId),
+  // várias linhas com chapa NULL (anônimas) são permitidas; chapa repetida não.
+  chapaUnq: uniqueIndex('pesquisa_respostas_chapa_unq').on(t.pesquisaId, t.chapa),
+}));
+
+export const pesquisaRespostaItens = pgTable('pesquisa_resposta_itens', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  respostaId: uuid('resposta_id').notNull().references(() => pesquisaRespostas.id, { onDelete: 'cascade' }),
+  perguntaId: uuid('pergunta_id').notNull().references(() => pesquisaPerguntas.id, { onDelete: 'cascade' }),
+  valor: jsonb('valor').$type<string | string[] | number>().notNull(),
+}, (t) => ({
+  respostaIdx: index('pesquisa_itens_resposta_idx').on(t.respostaId),
+  perguntaIdx: index('pesquisa_itens_pergunta_idx').on(t.perguntaId),
+}));
+
+export type Pesquisa = typeof pesquisas.$inferSelect;
+export type PesquisaPergunta = typeof pesquisaPerguntas.$inferSelect;

@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { SESSION_COOKIE } from '@/lib/auth/constants';
 
-const PUBLIC_PATHS = ['/login', '/_next', '/favicon.ico', '/api/health'];
+const PUBLIC_PATHS = ['/login', '/p/', '/_next', '/favicon.ico', '/api/health'];
 
 // Middleware faz APENAS um gate barato (presença do cookie) — validação real do
 // token contra o banco é responsabilidade de `requireSession()` em cada page/action.

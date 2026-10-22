@@ -12,6 +12,7 @@ import {
   Network,
   Bus,
   Briefcase,
+  ClipboardPen,
 } from 'lucide-react';
 import { ConectaLogo } from '@/components/brand/ConectaLogo';
 import { ConectaSymbol } from '@/components/brand/ConectaSymbol';
@@ -270,23 +271,54 @@ export default async function InicioPage() {
             </div>
           </Link>
 
+          {/* Pesquisas (admin) */}
+          {s.perfil === 'admin' && (
+            <Link
+              href="/pesquisas"
+              className="cg-module-card group relative rounded-2xl bg-white text-conecta-text p-5 overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-[0_20px_44px_-12px_rgba(13,43,107,0.45)]"
+            >
+              <span aria-hidden className="absolute top-0 left-0 right-0 h-1 w-full" style={{ background: '#0D2B6B' }} />
+              <div className="absolute top-4 right-4 h-24 w-24 bg-conecta-primary/10 rounded-full blur-3xl group-hover:bg-conecta-primary/20 transition-colors" />
+              <div className="relative flex items-start gap-4">
+                <div
+                  className="grid place-items-center h-12 w-12 rounded-xl text-white shrink-0"
+                  style={{ background: '#0D2B6B', boxShadow: '0 10px 22px -8px rgba(13,43,107,0.5)' }}
+                >
+                  <ClipboardPen className="h-6 w-6" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h2 className="font-display text-[18px] font-extrabold text-conecta-primary tracking-tight leading-tight">
+                    Pesquisas
+                  </h2>
+                  <p className="text-[12px] text-conecta-muted mt-1 leading-snug">
+                    Crie pesquisas com link público e acompanhe quem respondeu e os indicadores.
+                  </p>
+                  <div className="inline-flex items-center gap-2 text-[13px] font-display font-semibold text-conecta-primary group-hover:gap-3 transition-all mt-3">
+                    Acessar
+                    <ArrowRight className="h-4 w-4" />
+                  </div>
+                </div>
+              </div>
+            </Link>
+          )}
+
           {/* Quadro de Vagas */}
           <Link
             href="/vagas"
-            className="cg-module-card group relative rounded-2xl bg-white text-conecta-text p-5 overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-[0_20px_44px_-12px_rgba(13,43,107,0.45)]"
+            className="cg-module-card group relative rounded-2xl bg-white text-conecta-text p-5 overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-[0_20px_44px_-12px_rgba(232,98,26,0.45)]"
           >
             <span
               aria-hidden
               className="absolute top-0 left-0 right-0 h-1 w-full"
-              style={{ background: '#0D2B6B' }}
+              style={{ background: '#E8621A' }}
             />
-            <div className="absolute top-4 right-4 h-24 w-24 bg-conecta-primary/10 rounded-full blur-3xl group-hover:bg-conecta-primary/20 transition-colors" />
+            <div className="absolute top-4 right-4 h-24 w-24 bg-conecta-accent/10 rounded-full blur-3xl group-hover:bg-conecta-accent/20 transition-colors" />
             <div className="relative flex items-start gap-4">
               <div
                 className="grid place-items-center h-12 w-12 rounded-xl text-white shrink-0"
                 style={{
-                  background: '#0D2B6B',
-                  boxShadow: '0 10px 22px -8px rgba(13,43,107,0.5)',
+                  background: '#E8621A',
+                  boxShadow: '0 10px 22px -8px rgba(232,98,26,0.5)',
                 }}
               >
                 <Briefcase className="h-6 w-6" />
@@ -298,7 +330,7 @@ export default async function InicioPage() {
                 <p className="text-[12px] text-conecta-muted mt-1 leading-snug">
                   Vagas em aberto por filial, status de admissão e importação do quadro.
                 </p>
-                <div className="inline-flex items-center gap-2 text-[13px] font-display font-semibold text-conecta-primary group-hover:gap-3 transition-all mt-3">
+                <div className="inline-flex items-center gap-2 text-[13px] font-display font-semibold text-conecta-accent group-hover:gap-3 transition-all mt-3">
                   Acessar
                   <ArrowRight className="h-4 w-4" />
                 </div>

@@ -754,3 +754,44 @@ export const pesquisaRespostaItens = pgTable('pesquisa_resposta_itens', {
 
 export type Pesquisa = typeof pesquisas.$inferSelect;
 export type PesquisaPergunta = typeof pesquisaPerguntas.$inferSelect;
+
+// =====================================================
+// EPI — empréstimo de EPI (bandeira PERLOG), vindo do painel do TOTVS
+// Cada import grava um lote novo; só vale o último lote concluído (troca atômica).
+// =====================================================
+
+export const epiImports = pgTable('epi_imports', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  arquivoNome: text('arquivo_nome').notNull(),
+  importadoPorNome: text('importado_por_nome').notNull(),
+  totalLinhas: integer('total_linhas').notNull().default(0),
+  concluida: boolean('concluida').notNull().default(false),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const epiLinhas = pgTable('epi_linhas', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  importId: uuid('import_id').notNull().references(() => epiImports.id, { onDelete: 'cascade' }),
+  filialId: uuid('filial_id').references(() => filiais.id, { onDelete: 'set null' }),
+  filialCodigo: text('filial_codigo').notNull(),
+  regional: text('regional'),
+  bandeira: text('bandeira'),
+  secao: text('secao'),
+  chapa: text('chapa').notNull(),
+  nome: text('nome').notNull(),
+  funcao: text('funcao'),
+  dataAdmissao: date('data_admissao'),
+  codsituacao: text('codsituacao'),
+  itemRisco: text('item_risco'),
+  codEpi: text('cod_epi'),
+  epi: text('epi').notNull(),
+  durabilidade: integer('durabilidade'),
+  diasAVencer: integer('dias_a_vencer'),
+  dataEmprestimo: date('data_emprestimo'),
+  status: text('status').notNull(), // 'REGULAR' | 'TROCAR' | 'SEM_EMPRESTIMO'
+  tst: text('tst'),
+}, (t) => ({
+  importIdx: index('epi_linhas_import_idx').on(t.importId),
+  filialIdx: index('epi_linhas_filial_idx').on(t.filialId),
+  chapaIdx: index('epi_linhas_chapa_idx').on(t.chapa),
+}));

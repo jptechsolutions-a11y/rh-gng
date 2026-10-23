@@ -16,6 +16,7 @@ import {
   TRANSPORTE_NAV_BASE, TRANSPORTE_NAV_ADMIN_EXTRAS,
   VAGAS_NAV_BASE, VAGAS_NAV_ADMIN_EXTRAS,
   PESQUISAS_NAV,
+  EPI_NAV_BASE, EPI_NAV_ADMIN_EXTRAS,
 } from './nav-config';
 
 export function MobileNav({ perfil, nome, subtitulo }: { perfil: 'filial' | 'admin' | 'visualizador'; nome: string; subtitulo: string }) {
@@ -44,6 +45,9 @@ export function MobileNav({ perfil, nome, subtitulo }: { perfil: 'filial' | 'adm
   const inVagas =
     pathname === '/vagas' ||
     pathname.startsWith('/vagas/');
+  const inEpi =
+    pathname === '/epi' ||
+    pathname.startsWith('/epi/');
   const inPesquisas =
     pathname === '/pesquisas' ||
     pathname.startsWith('/pesquisas/');
@@ -56,7 +60,11 @@ export function MobileNav({ perfil, nome, subtitulo }: { perfil: 'filial' | 'adm
       pathname.startsWith('/candidato/')
     );
 
-  const nav = inPesquisas
+  const nav = inEpi
+    ? perfil === 'admin'
+      ? [...EPI_NAV_BASE, ...EPI_NAV_ADMIN_EXTRAS]
+      : EPI_NAV_BASE
+    : inPesquisas
     ? PESQUISAS_NAV
     : inTransporte
     ? perfil === 'admin'
@@ -171,7 +179,8 @@ export function MobileNav({ perfil, nome, subtitulo }: { perfil: 'filial' | 'adm
                   href === '/qlp' ||
                   href === '/transporte' ||
                   href === '/vagas' ||
-                  href === '/pesquisas';
+                  href === '/pesquisas' ||
+                  href === '/epi';
                 const active = isRoot ? pathname === href : (pathname === href || pathname.startsWith(href + '/'));
                 return (
                   <Link

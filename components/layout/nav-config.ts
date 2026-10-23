@@ -4,7 +4,7 @@ import {
   CalendarClock, Plus, BarChart3, UserCog, Target, BookOpen, Printer, ClipboardCheck,
   GalleryHorizontal, Cloud, Clock, AlertTriangle, Trophy, GraduationCap, CalendarOff,
   Network, Upload, IdCard, ListTree, UsersRound,
-  Bus, Route, Briefcase, ListChecks, ClipboardPen,
+  Bus, Route, Briefcase, ListChecks, ClipboardPen, HardHat,
 } from 'lucide-react';
 
 // Fonte ÚNICA de navegação — consumida pela Sidebar (desktop) e pela MobileNav.
@@ -113,4 +113,11 @@ export const VAGAS_NAV_ADMIN_EXTRAS: NavItem[] = [
 export const PESQUISAS_NAV: NavItem[] = [
   { href: '/pesquisas',      label: 'Pesquisas',     icon: ClipboardPen },
   { href: '/pesquisas/nova', label: 'Nova pesquisa', icon: Plus },
+];
+
+export const EPI_NAV_BASE: NavItem[] = [
+  { href: '/epi', label: 'Dashboard EPI', icon: HardHat },
+];
+export const EPI_NAV_ADMIN_EXTRAS: NavItem[] = [
+  { href: '/epi/importar', label: 'Importar planilha', icon: Upload },
 ];

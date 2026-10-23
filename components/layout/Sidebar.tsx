@@ -17,6 +17,7 @@ import {
   TRANSPORTE_NAV_BASE, TRANSPORTE_NAV_ADMIN_EXTRAS,
   VAGAS_NAV_BASE, VAGAS_NAV_ADMIN_EXTRAS,
   PESQUISAS_NAV,
+  EPI_NAV_BASE, EPI_NAV_ADMIN_EXTRAS,
 } from './nav-config';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 
@@ -50,6 +51,9 @@ export function Sidebar({
   const inVagas =
     pathname === '/vagas' ||
     pathname.startsWith('/vagas/');
+  const inEpi =
+    pathname === '/epi' ||
+    pathname.startsWith('/epi/');
   const inPesquisas =
     pathname === '/pesquisas' ||
     pathname.startsWith('/pesquisas/');
@@ -62,7 +66,11 @@ export function Sidebar({
       pathname.startsWith('/entrevista/') ||
       pathname.startsWith('/candidato/')
     );
-  const nav = inPesquisas
+  const nav = inEpi
+    ? perfil === 'admin'
+      ? [...EPI_NAV_BASE, ...EPI_NAV_ADMIN_EXTRAS]
+      : EPI_NAV_BASE
+    : inPesquisas
     ? PESQUISAS_NAV
     : inTransporte
     ? perfil === 'admin'
@@ -93,7 +101,9 @@ export function Sidebar({
               : perfil === 'visualizador'
                 ? VISUALIZADOR_NAV
                 : FILIAL_NAV;
-  const moduleLabel = inPesquisas
+  const moduleLabel = inEpi
+    ? 'EPI'
+    : inPesquisas
     ? 'Pesquisas'
     : inTransporte
     ? 'Transporte'
@@ -217,7 +227,8 @@ export function Sidebar({
             href === '/qlp' ||
             href === '/transporte' ||
             href === '/vagas' ||
-            href === '/pesquisas';
+            href === '/pesquisas' ||
+            href === '/epi';
           const [hrefPath, hrefQuery] = href.split('?');
           const defaultTab = hrefPath === '/indicadores' ? 'inicio' : 'roteiro';
           let active: boolean;

@@ -51,9 +51,9 @@ const valorFiltro: Record<FiltroKey, (r: VagaRow) => string> = {
 };
 
 /**
- * Detalhado em formato de tabela dinâmica: ÁREA › SEÇÃO nas linhas, um status
+ * Detalhado em formato de tabela dinâmica: ÁREA › FUNÇÃO nas linhas, um status
  * por coluna. Clicar numa contagem abre as vagas individuais daquela
- * seção/status logo abaixo — dali dá pra mudar o status ou fechar cada vaga.
+ * função/status logo abaixo — dali dá pra mudar o status ou fechar cada vaga.
  */
 export function VagasPivotTable({
   rows,
@@ -69,7 +69,7 @@ export function VagasPivotTable({
   const [localRows, setLocalRows] = useState(rows);
   const [pending, start] = useTransition();
   const [erro, setErro] = useState<string | null>(null);
-  const [aberta, setAberta] = useState<string | null>(null); // `${area}::${secao}::${statusId|*}`
+  const [aberta, setAberta] = useState<string | null>(null); // `${area}::${funcao}::${statusId|*}`
   const [loteOpen, setLoteOpen] = useState(false);
 
   useEffect(() => { setLocalRows(rows); }, [rows]);
@@ -147,7 +147,7 @@ export function VagasPivotTable({
     const areas = new Map<string, AreaBloco>();
     const geral = new Map<string, number>();
     for (const r of filtradas) {
-      const secaoNome = r.secao ?? 'Sem seção';
+      const secaoNome = r.funcao; // linha do pivô = FUNÇÃO (o campo mantém o nome 'secao' por histórico)
       let a = areas.get(r.area);
       if (!a) { a = { area: r.area, total: 0, porStatus: new Map(), secoes: [] }; areas.set(r.area, a); }
       let s = a.secoes.find((x) => x.secao === secaoNome);
@@ -166,8 +166,8 @@ export function VagasPivotTable({
 
   function vagasDa(area: string, secao: string, statusId: string) {
     return filtradas
-      .filter((r) => r.area === area && (r.secao ?? 'Sem seção') === secao && (statusId === TOTAL_KEY || r.statusId === statusId))
-      .sort((a, b) => a.filialCodigo.localeCompare(b.filialCodigo) || a.funcao.localeCompare(b.funcao));
+      .filter((r) => r.area === area && r.funcao === secao && (statusId === TOTAL_KEY || r.statusId === statusId))
+      .sort((a, b) => a.filialCodigo.localeCompare(b.filialCodigo) || (a.secao ?? '').localeCompare(b.secao ?? ''));
   }
 
   function toggleCelula(chave: string) {
@@ -314,7 +314,7 @@ export function VagasPivotTable({
           <thead>
             <tr style={{ background: '#0D2B6B' }}>
               <th className={`${thBase} text-left border-l-0`}>Área</th>
-              <th className={`${thBase} text-left`}>Seção</th>
+              <th className={`${thBase} text-left`}>Função</th>
               <th className={thBase}>Total</th>
               {colunas.map((c) => (
                 <th key={c.id} className={`${thBase} min-w-[96px]`}>{c.nome}</th>
@@ -369,7 +369,7 @@ export function VagasPivotTable({
                                 {vagasDa(b.area, s.secao, statusSel).map((r) => (
                                   <li key={r.id} className="py-2 flex items-center gap-3 flex-wrap">
                                     <span className="font-mono text-xs text-conecta-muted w-10 shrink-0">{r.filialCodigo}</span>
-                                    <span className="font-display font-semibold text-conecta-primary text-[13px] flex-1 min-w-[160px]">{r.funcao}</span>
+                                    <span className="font-display font-semibold text-conecta-primary text-[13px] flex-1 min-w-[160px]">{r.secao ?? 'Sem seção'}</span>
                                     {podeEditar ? (
                                       <select
                                         value={r.statusId}

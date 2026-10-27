@@ -6,7 +6,7 @@ import { ConectaCard, SectionHeader } from '@/components/ui/conecta-card';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { atualizarStatusVaga, fecharVagaExcedente } from '@/actions/vagas/vagas';
 import { AtualizarStatusEmLoteModal } from './AtualizarStatusEmLoteModal';
-import type { VagaRow } from './VagasQuadroTable';
+import type { QuadroLinha, VagaRow } from './VagasQuadroTable';
 import type { VagaStatus } from '@/db/schema';
 
 const ORDEM_AREA = ['APOIO', 'EXPANSÃO', 'OPERAÇÃO', 'TRANSPORTE'];
@@ -16,11 +16,13 @@ interface Coluna { id: string; nome: string }
 interface SecaoLinha {
   secao: string;
   total: number;
+  limite: number;
   porStatus: Map<string, number>;
 }
 interface AreaBloco {
   area: string;
   total: number;
+  limite: number;
   porStatus: Map<string, number>;
   secoes: SecaoLinha[];
 }
@@ -50,6 +52,31 @@ const valorFiltro: Record<FiltroKey, (r: VagaRow) => string> = {
   unidade: (r) => r.filialCodigo,
 };
 
+const valorFiltroQ: Record<FiltroKey, (q: QuadroLinha) => string> = {
+  area: (q) => q.area,
+  secao: (q) => q.secao ?? 'Sem seção',
+  funcao: (q) => q.funcao,
+  unidade: (q) => q.filialCodigo,
+};
+
+/** % de preenchimento do quadro = 1 − vagas em aberto ÷ limite (nunca negativo). null quando não há limite. */
+function pctPreench(limite: number, abertas: number): number | null {
+  if (limite <= 0) return null;
+  return Math.max(0, Math.round((1 - abertas / limite) * 100));
+}
+
+function CelulaPct({ limite, abertas, claro = false }: { limite: number; abertas: number; claro?: boolean }) {
+  const p = pctPreench(limite, abertas);
+  const borda = claro ? 'border-white/15' : 'border-conecta-primary/8';
+  if (p == null) return <td className={`px-3 py-2 text-center border-l ${borda}`} />;
+  const cor = claro ? '#FFFFFF' : p >= 95 ? '#0D2B6B' : p >= 85 ? '#C98A0E' : '#E8621A';
+  return (
+    <td className={`px-3 py-2 text-center border-l ${borda}`}>
+      <span className="font-display font-bold tabular-nums" style={{ color: cor }}>{p}%</span>
+    </td>
+  );
+}
+
 /**
  * Detalhado em formato de tabela dinâmica: ÁREA › FUNÇÃO nas linhas, um status
  * por coluna. Clicar numa contagem abre as vagas individuais daquela
@@ -59,8 +86,10 @@ export function VagasPivotTable({
   rows,
   statusOptions,
   podeEditar,
+  quadro,
 }: {
   rows: VagaRow[];
+  quadro: QuadroLinha[];
   statusOptions: VagaStatus[];
   podeEditar: boolean;
 }) {
@@ -71,6 +100,7 @@ export function VagasPivotTable({
   const [erro, setErro] = useState<string | null>(null);
   const [aberta, setAberta] = useState<string | null>(null); // `${area}::${funcao}::${statusId|*}`
   const [loteOpen, setLoteOpen] = useState(false);
+  const [mostrarCheias, setMostrarCheias] = useState(false);
 
   useEffect(() => { setLocalRows(rows); }, [rows]);
 
@@ -143,26 +173,56 @@ export function VagasPivotTable({
     return cols;
   }, [filtradas, statusOptions]);
 
+  const quadroF = useMemo(() => {
+    const q = busca.trim().toLowerCase();
+    return quadro.filter(
+      (l) =>
+        FILTROS.every((k) => !filtros[k] || valorFiltroQ[k](l) === filtros[k]) &&
+        (!q || `${l.funcao} ${l.secao ?? ''} ${l.filialCodigo}`.toLowerCase().includes(q)),
+    );
+  }, [quadro, filtros, busca]);
+
   const { blocos, totalGeral } = useMemo(() => {
     const areas = new Map<string, AreaBloco>();
     const geral = new Map<string, number>();
+    const limFuncao = new Map<string, number>(); // `${area}::${funcao}`
+    const limArea = new Map<string, number>();
+    let limGeral = 0;
+    for (const l of quadroF) {
+      limFuncao.set(`${l.area}::${l.funcao}`, (limFuncao.get(`${l.area}::${l.funcao}`) ?? 0) + l.limite);
+      limArea.set(l.area, (limArea.get(l.area) ?? 0) + l.limite);
+      limGeral += l.limite;
+    }
+    const bloco = (area: string) => {
+      let a = areas.get(area);
+      if (!a) { a = { area, total: 0, limite: limArea.get(area) ?? 0, porStatus: new Map(), secoes: [] }; areas.set(area, a); }
+      return a;
+    };
     for (const r of filtradas) {
       const secaoNome = r.funcao; // linha do pivô = FUNÇÃO (o campo mantém o nome 'secao' por histórico)
-      let a = areas.get(r.area);
-      if (!a) { a = { area: r.area, total: 0, porStatus: new Map(), secoes: [] }; areas.set(r.area, a); }
+      const a = bloco(r.area);
       let s = a.secoes.find((x) => x.secao === secaoNome);
-      if (!s) { s = { secao: secaoNome, total: 0, porStatus: new Map() }; a.secoes.push(s); }
+      if (!s) { s = { secao: secaoNome, total: 0, limite: limFuncao.get(`${r.area}::${secaoNome}`) ?? 0, porStatus: new Map() }; a.secoes.push(s); }
       s.total++; somar(s.porStatus, r.statusId);
       a.total++; somar(a.porStatus, r.statusId);
       somar(geral, r.statusId);
+    }
+    // Funções com limite mas sem nenhuma vaga em aberto (100% preenchidas) — só quando o usuário pede.
+    if (mostrarCheias) {
+      for (const [chave, lim] of limFuncao) {
+        if (lim <= 0) continue;
+        const [area, funcao] = chave.split('::') as [string, string];
+        const a = bloco(area);
+        if (!a.secoes.some((x) => x.secao === funcao)) a.secoes.push({ secao: funcao, total: 0, limite: lim, porStatus: new Map() });
+      }
     }
     const lista = Array.from(areas.values()).sort((x, y) => {
       const ix = ORDEM_AREA.indexOf(x.area); const iy = ORDEM_AREA.indexOf(y.area);
       return (ix < 0 ? 99 : ix) - (iy < 0 ? 99 : iy) || x.area.localeCompare(y.area);
     });
     for (const a of lista) a.secoes.sort((x, y) => y.total - x.total || x.secao.localeCompare(y.secao));
-    return { blocos: lista, totalGeral: { total: filtradas.length, porStatus: geral } };
-  }, [filtradas]);
+    return { blocos: lista, totalGeral: { total: filtradas.length, limite: limGeral, porStatus: geral } };
+  }, [filtradas, quadroF, mostrarCheias]);
 
   function vagasDa(area: string, secao: string, statusId: string) {
     return filtradas
@@ -210,7 +270,7 @@ export function VagasPivotTable({
     setLocalRows((l) => l.map((r) => (ids.has(r.id) ? { ...r, statusId, statusNome: status?.nome ?? r.statusNome } : r)));
   }
 
-  const nCols = 3 + colunas.length;
+  const nCols = 5 + colunas.length;
   const thBase = 'px-3 py-2.5 text-center font-display text-[10px] uppercase tracking-[0.14em] font-semibold text-white border-l border-white/15';
 
   function celula(n: number, chave: string, key?: string) {
@@ -269,6 +329,10 @@ export function VagasPivotTable({
             />
           </div>
           <p className="text-[11px] text-conecta-muted">Clique num número para ver as vagas e alterar o status ou fechar.</p>
+          <label className="inline-flex items-center gap-2 text-[11px] text-conecta-muted">
+            <input type="checkbox" checked={mostrarCheias} onChange={(e) => setMostrarCheias(e.target.checked)} />
+            Incluir funções sem vaga em aberto
+          </label>
         </div>
         <div className="flex flex-wrap items-end gap-3">
           {FILTROS.map((k) => (
@@ -315,7 +379,9 @@ export function VagasPivotTable({
             <tr style={{ background: '#0D2B6B' }}>
               <th className={`${thBase} text-left border-l-0`}>Área</th>
               <th className={`${thBase} text-left`}>Função</th>
-              <th className={thBase}>Total</th>
+              <th className={thBase}>Em aberto</th>
+              <th className={thBase}>Limite</th>
+              <th className={thBase} title="1 − vagas em aberto ÷ limite do quadro">% Preench.</th>
               {colunas.map((c) => (
                 <th key={c.id} className={`${thBase} min-w-[96px]`}>{c.nome}</th>
               ))}
@@ -342,6 +408,8 @@ export function VagasPivotTable({
                         )}
                         <td className="px-3 py-2 font-display font-semibold text-conecta-primary">{s.secao}</td>
                         {celula(s.total, chaveTotal)}
+                        <td className="px-3 py-2 text-center tabular-nums text-conecta-muted border-l border-conecta-primary/8">{s.limite || ''}</td>
+                        <CelulaPct limite={s.limite} abertas={s.total} />
                         {colunas.map((c) => (
                           celula(s.porStatus.get(c.id) ?? 0, `${b.area}::${s.secao}::${c.id}`, c.id)
                         ))}
@@ -411,6 +479,8 @@ export function VagasPivotTable({
                 <tr className="border-t border-conecta-primary/15 bg-conecta-primary/[0.06]">
                   <td colSpan={2} className="px-3 py-2 font-display font-bold text-conecta-primary">{b.area} Total</td>
                   <td className="px-3 py-2 text-center font-display font-bold tabular-nums text-conecta-primary border-l border-conecta-primary/8">{b.total}</td>
+                  <td className="px-3 py-2 text-center font-display font-bold tabular-nums text-conecta-primary border-l border-conecta-primary/8">{b.limite || ''}</td>
+                  <CelulaPct limite={b.limite} abertas={b.total} />
                   {colunas.map((c) => (
                     <td key={c.id} className="px-3 py-2 text-center font-display font-bold tabular-nums text-conecta-primary border-l border-conecta-primary/8">
                       {b.porStatus.get(c.id) ?? ''}
@@ -423,6 +493,8 @@ export function VagasPivotTable({
               <tr style={{ background: '#0D2B6B' }} className="text-white">
                 <td colSpan={2} className="px-3 py-2.5 font-display font-bold uppercase tracking-[0.14em] text-[12px]">Total geral</td>
                 <td className="px-3 py-2.5 text-center font-display font-bold tabular-nums border-l border-white/15">{totalGeral.total}</td>
+                <td className="px-3 py-2.5 text-center font-display font-bold tabular-nums border-l border-white/15">{totalGeral.limite || ''}</td>
+                <CelulaPct limite={totalGeral.limite} abertas={totalGeral.total} claro />
                 {colunas.map((c) => (
                   <td key={c.id} className="px-3 py-2.5 text-center font-display font-bold tabular-nums border-l border-white/15">
                     {totalGeral.porStatus.get(c.id) ?? ''}

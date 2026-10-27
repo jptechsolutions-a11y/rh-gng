@@ -27,6 +27,16 @@ export interface VagaRow {
   emAbertoImportado: number;
 }
 
+/** Linha do quadro (limite/alocados) — inclui as combinações sem nenhuma vaga em aberto, base do % de preenchimento. */
+export interface QuadroLinha {
+  filialCodigo: string;
+  funcao: string;
+  secao: string | null;
+  area: string;
+  limite: number;
+  alocados: number;
+}
+
 interface GrupoLinha {
   chave: string;
   filialCodigo: string;

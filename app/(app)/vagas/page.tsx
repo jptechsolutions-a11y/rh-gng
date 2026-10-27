@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function VagasPage() {
   const s = await requireSession();
-  const { rows, statusOptions } = await buscarQuadroVagas(s);
+  const { rows, statusOptions, quadro } = await buscarQuadroVagas(s);
 
   const podeEditar = s.perfil === 'admin' || s.perfil === 'filial';
   const badge =
@@ -22,6 +22,7 @@ export default async function VagasPage() {
         <VagasView
           rows={rows}
           statusOptions={statusOptions}
+          quadro={quadro}
           podeEditar={podeEditar}
         />
       </div>

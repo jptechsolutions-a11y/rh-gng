@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { BarChart3, Users, ClipboardList, Building2, LayoutGrid, Briefcase, X } from 'lucide-react';
 import { SubTabs } from '@/components/ui/sub-tabs';
-import type { VagaRow } from './VagasQuadroTable';
+import type { QuadroLinha, VagaRow } from './VagasQuadroTable';
 import { VagasPivotTable } from './VagasPivotTable';
 import { VagasRankingBars } from './VagasRankingBars';
 import type { VagaStatus } from '@/db/schema';
@@ -43,9 +43,11 @@ export function VagasView({
   rows,
   statusOptions,
   podeEditar,
+  quadro,
 }: {
   rows: VagaRow[];
   statusOptions: VagaStatus[];
+  quadro: QuadroLinha[];
   podeEditar: boolean;
 }) {
   const [subTab, setSubTab] = useState<SubTab>('indicadores');
@@ -82,6 +84,18 @@ export function VagasView({
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [rows, filtros],
+  );
+
+  // O quadro (limite) acompanha os filtros de filial/seção/função dos gráficos; status não se aplica a ele.
+  const quadroFiltrado = useMemo(
+    () =>
+      quadro.filter(
+        (q) =>
+          (!filtros.filial || q.filialCodigo === filtros.filial) &&
+          (!filtros.secao || (q.secao ?? 'Sem seção') === filtros.secao) &&
+          (!filtros.funcao || q.funcao === filtros.funcao),
+      ),
+    [quadro, filtros],
   );
 
   const rowsFiltradas = useMemo(
@@ -185,7 +199,7 @@ export function VagasView({
           />
         </div>
       ) : (
-        <VagasPivotTable rows={rowsFiltradas} statusOptions={statusOptions} podeEditar={podeEditar} />
+        <VagasPivotTable rows={rowsFiltradas} quadro={quadroFiltrado} statusOptions={statusOptions} podeEditar={podeEditar} />
       )}
     </div>
   );

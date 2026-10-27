@@ -4,7 +4,7 @@ import { db, schema } from '@/db/client';
 import type { Session } from '@/lib/auth/session';
 import { getFiliaisVisiveis } from '@/lib/auth/session';
 import { carregarMapaClassificacao, classificarSecao } from '@/lib/relatorio-completo/classificacao-secao';
-import type { VagaRow } from '@/components/vagas/VagasQuadroTable';
+import type { QuadroLinha, VagaRow } from '@/components/vagas/VagasQuadroTable';
 
 /**
  * Busca as vagas ativas visíveis pra sessão (escopo por filial) + o catálogo
@@ -48,11 +48,28 @@ export async function buscarQuadroVagas(s: Session) {
     statusAtualizadoEm: r.statusAtualizadoEm.toISOString(),
   }));
 
+  // Quadro completo (limite/alocados) das filiais visíveis — inclui linhas sem vaga em aberto.
+  const quadroRaw = await db
+    .select({
+      filialCodigo: schema.filiais.codigo,
+      funcao: schema.vagasQuadroLinhas.funcao,
+      secao: schema.vagasQuadroLinhas.secao,
+      limite: schema.vagasQuadroLinhas.limite,
+      alocados: schema.vagasQuadroLinhas.alocados,
+    })
+    .from(schema.vagasQuadroLinhas)
+    .innerJoin(schema.filiais, eq(schema.filiais.id, schema.vagasQuadroLinhas.filialId))
+    .where(escopo ? inArray(schema.vagasQuadroLinhas.filialId, escopo) : undefined);
+  const quadro: QuadroLinha[] = quadroRaw.map((q) => ({
+    ...q,
+    area: classificarSecao(q.secao, mapaArea).replace(/^Área de /, '').toUpperCase(),
+  }));
+
   const statusOptions = await db
     .select()
     .from(schema.vagasStatus)
     .where(eq(schema.vagasStatus.ativo, true))
     .orderBy(schema.vagasStatus.ordem);
 
-  return { rows, statusOptions };
+  return { rows, statusOptions, quadro };
 }

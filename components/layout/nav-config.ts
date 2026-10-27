@@ -121,3 +121,11 @@ export const EPI_NAV_BASE: NavItem[] = [
 export const EPI_NAV_ADMIN_EXTRAS: NavItem[] = [
   { href: '/epi/importar', label: 'Importar planilha', icon: Upload },
 ];
+
+export const IC_NAV_BASE: NavItem[] = [
+  { href: '/ic', label: 'Corrida IC', icon: Trophy },
+];
+export const IC_NAV_ADMIN_EXTRAS: NavItem[] = [
+  { href: '/ic/importar',      label: 'Importar semana', icon: Upload },
+  { href: '/ic/responsaveis',  label: 'Responsáveis',    icon: UsersRound },
+];

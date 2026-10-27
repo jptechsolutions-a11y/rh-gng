@@ -795,3 +795,58 @@ export const epiLinhas = pgTable('epi_linhas', {
   filialIdx: index('epi_linhas_filial_idx').on(t.filialId),
   chapaIdx: index('epi_linhas_chapa_idx').on(t.chapa),
 }));
+
+// =====================================================
+// IC — documentos/regularizações pendentes (semanal, bandeira PERLOG)
+// Cada semana importada vira uma foto (ic_imports); reimportar a mesma semana substitui.
+// =====================================================
+
+export const icImports = pgTable('ic_imports', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  semanaRef: date('semana_ref').notNull(),
+  arquivoNome: text('arquivo_nome').notNull(),
+  importadoPorNome: text('importado_por_nome').notNull(),
+  totalPendencias: integer('total_pendencias').notNull().default(0),
+  concluida: boolean('concluida').notNull().default(false),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const icPendencias = pgTable('ic_pendencias', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  importId: uuid('import_id').notNull().references(() => icImports.id, { onDelete: 'cascade' }),
+  filialCodigo: text('filial_codigo').notNull(),
+  regional: text('regional'),
+  chapa: text('chapa').notNull(),
+  nome: text('nome').notNull(),
+  funcao: text('funcao'),
+  secao: text('secao'),
+  codsituacao: text('codsituacao'),
+  categoria: text('categoria').notNull(), // coluna PENDENCIA (ex.: CURSOS OBRIGATÓRIOS PENDENTES)
+  tipo: text('tipo'),                     // coluna TIPO (detalhe)
+  dataPend: date('data_pend'),
+}, (t) => ({
+  importIdx: index('ic_pendencias_import_idx').on(t.importId),
+  filialIdx: index('ic_pendencias_filial_idx').on(t.filialCodigo),
+}));
+
+// Funcionários cadastrados por filial na semana (denominador do % — "cadastro não é pendência").
+export const icHeadcount = pgTable('ic_headcount', {
+  importId: uuid('import_id').notNull().references(() => icImports.id, { onDelete: 'cascade' }),
+  filialCodigo: text('filial_codigo').notNull(),
+  qtd: integer('qtd').notNull(),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.importId, t.filialCodigo] }),
+}));
+
+// Responsáveis (cada um é um "cavalo" da corrida) e as filiais sob a responsabilidade dele.
+export const icResponsaveis = pgTable('ic_responsaveis', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  nome: text('nome').notNull(),
+  ordem: integer('ordem').notNull().default(0),
+  cor: text('cor').notNull().default('#0D2B6B'),
+  imagem: text('imagem'), // caminho em /public (ex.: /ic/personagens/amanda.png)
+  filiais: jsonb('filiais').$type<string[]>().notNull().default([]),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type IcResponsavel = typeof icResponsaveis.$inferSelect;

@@ -276,7 +276,7 @@ export function IcDashboard({
         ))}
               <span className="mx-2 h-4 w-px bg-conecta-primary/20" aria-hidden />
         <span className="font-display text-[10px] uppercase tracking-[0.22em] text-conecta-muted font-semibold">Ranking por</span>
-        {([['total', 'Total de pendências'], ['pct', '% do quadro']] as const).map(([k, l]) => (
+        {([['total', 'Total de pendências'], ['pct', '% (pendências ÷ quadro)']] as const).map(([k, l]) => (
           <button
             key={k}
             type="button"

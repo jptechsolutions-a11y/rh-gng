@@ -79,7 +79,9 @@ export function IcCorrida({
 
   const max = Math.max(1e-6, ...ordenadas.map((r) => r.valor));
   // "Desanimado" = muito atrás do pelotão: pelo menos o dobro da mediana do % das raias (e ao menos 10% do quadro).
-  const limiteCansado = Math.max(metrica === 'pct' ? 10 : 30, 2 * mediana(ordenadas.map((r) => r.valor)));
+  const relativo = Math.max(metrica === 'pct' ? 10 : 30, 2 * mediana(ordenadas.map((r) => r.valor)));
+  // No % do quadro, 100% ou mais (uma ou mais pendências por funcionário) sempre é "desanimado".
+  const limiteCansado = metrica === 'pct' ? Math.min(100, relativo) : relativo;
   // 0 pendência = linha de chegada (100%); a pior raia fica perto da largada (6%).
   const progresso = (valor: number) => 6 + (1 - valor / max) * 88;
 
@@ -145,7 +147,7 @@ export function IcCorrida({
                   <div className="flex items-center gap-1.5">
                     <span className="font-display text-lg font-extrabold tabular-nums" style={{ color: cor }}>{metrica === 'pct' ? fmtPct(r.pct) : r.pend}</span>
                     <span className="text-[10px] text-conecta-muted tabular-nums">
-                      {metrica === 'pct' ? `${r.pend} pend. · quadro ${r.quadro}` : `pendências · ${fmtPct(r.pct)} do quadro`}
+                      {metrica === 'pct' ? `${r.pend} pend. · quadro ${r.quadro}` : `pendências · ${fmtPct(r.pct)} (pend. ÷ quadro)`}
                     </span>
                     {zerou && (
                       <span className="rounded-full bg-emerald-100 border border-emerald-300 text-emerald-700 px-1.5 py-px text-[9px] font-display font-bold uppercase tracking-wide">

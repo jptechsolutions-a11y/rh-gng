@@ -1,5 +1,6 @@
 import 'server-only';
-import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
+import { createHash } from 'node:crypto';
+import { and, asc, desc, eq, sql } from 'drizzle-orm';
 import { db, schema } from '@/db/client';
 import type { Session } from '@/lib/auth/session';
 import { getFiliaisCodigosVisiveis } from '@/lib/auth/session';
@@ -29,15 +30,16 @@ export async function buscarIc(s: Session, semanaId?: string | null) {
   const ufPorFilial: IcUfPorFilial = {};
   if (!atual) return { responsaveis, semanas, semanaAtual: null, rows: [] as IcRow[], headcount: {} as Record<string, number>, evolucao: [] as IcEvolucaoPonto[], ufPorFilial };
 
+  // Todas as filiais entram no ranking/corrida para qualquer usuário; o DETALHE (nome, matrícula)
+  // só vale para as filiais do escopo da sessão — as demais viram contagem anônima (restrito).
   const escopoRaw = getFiliaisCodigosVisiveis(s);
-  const escopo = escopoRaw ? escopoRaw.map(normalizarCodigoFilial) : null;
-  if (escopo && escopo.length === 0) return { responsaveis, semanas, semanaAtual: atual.id, rows: [] as IcRow[], headcount: {} as Record<string, number>, evolucao: [] as IcEvolucaoPonto[], ufPorFilial };
+  const escopoDetalhe = escopoRaw ? new Set(escopoRaw.map(normalizarCodigoFilial)) : null;
+  const anonimizar = (chapa: string) => 'x' + createHash('sha256').update(`${atual.id}:${chapa}`).digest('hex').slice(0, 12);
 
   const respDaFilial = new Map<string, string>();
   for (const r of responsaveis) for (const f of r.filiais) respDaFilial.set(normalizarCodigoFilial(f), r.nome);
 
   const conds = [eq(schema.icPendencias.importId, atual.id)];
-  if (escopo) conds.push(inArray(schema.icPendencias.filialCodigo, escopo));
   const [raw, hc] = await Promise.all([
     db
       .select({
@@ -56,10 +58,13 @@ export async function buscarIc(s: Session, semanaId?: string | null) {
     db.select().from(schema.icHeadcount).where(eq(schema.icHeadcount.importId, atual.id)),
   ]);
 
-  const rows: IcRow[] = raw.map((r) => ({
+  const rows: IcRow[] = raw.map((r) => {
+    const restrito = !!escopoDetalhe && !escopoDetalhe.has(r.filial);
+    return {
     filial: r.filial,
-    chapa: r.chapa,
-    nome: r.nome,
+    chapa: restrito ? anonimizar(r.chapa) : r.chapa,
+    nome: restrito ? '' : r.nome,
+    restrito,
     funcao: r.funcao ?? 'Sem função',
     secao: r.secao ?? 'Sem seção',
     sit: r.sit ?? '—',
@@ -67,9 +72,10 @@ export async function buscarIc(s: Session, semanaId?: string | null) {
     tipo: r.tipo ?? r.categoria,
     data: r.data,
     resp: respDaFilial.get(r.filial) ?? SEM_RESP,
-  }));
+    };
+  });
   const headcount: Record<string, number> = {};
-  for (const h of hc) if (!escopo || escopo.includes(h.filialCodigo)) headcount[h.filialCodigo] = h.qtd;
+  for (const h of hc) headcount[h.filialCodigo] = h.qtd;
 
   // Evolução: pendências por filial em cada semana → agregadas por responsável.
   const porSemanaFilial = await db
@@ -80,7 +86,7 @@ export async function buscarIc(s: Session, semanaId?: string | null) {
     })
     .from(schema.icPendencias)
     .innerJoin(schema.icImports, eq(schema.icImports.id, schema.icPendencias.importId))
-    .where(and(eq(schema.icImports.concluida, true), escopo ? inArray(schema.icPendencias.filialCodigo, escopo) : undefined))
+    .where(eq(schema.icImports.concluida, true))
     .groupBy(schema.icPendencias.importId, schema.icPendencias.filialCodigo);
   const refDe = new Map(semanasRaw.map((w) => [w.id, w.semanaRef]));
   const pontos = new Map<string, Record<string, number>>();

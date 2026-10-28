@@ -29,6 +29,8 @@ export interface IcRow {
   tipo: string;
   data: string | null;
   resp: string; // nome do responsável (grupo) ou 'Sem responsável'
+  /** true = filial fora do escopo da sessão: só entra nas contagens/ranking, sem nome nem matrícula reais. */
+  restrito: boolean;
 }
 
 export interface IcResponsavelView {

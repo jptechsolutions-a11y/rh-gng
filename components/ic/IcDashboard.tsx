@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { ConectaCard, SectionHeader } from '@/components/ui/conecta-card';
 import { VagasRankingBars } from '@/components/vagas/VagasRankingBars';
-import { IcCorrida, type Raia } from './IcCorrida';
+import { IcCorrida, pctQuadro, type MetricaIc, type Raia } from './IcCorrida';
 import { SEM_RESP, type IcUfPorFilial, type IcEvolucaoPonto, type IcResponsavelView, type IcRow, type IcSemana } from '@/lib/ic/tipos';
 
 type Dim = 'resp' | 'filial' | 'categoria' | 'tipo' | 'funcao' | 'secao';
@@ -32,7 +32,7 @@ function ranking(rows: IcRow[], dim: Dim, limite = 10) {
 }
 
 export function IcDashboard({
-  rows, headcount, responsaveis, semanas, semanaAtual, evolucao, ufPorFilial, restrito,
+  rows, headcount, responsaveis, semanas, semanaAtual, evolucao, ufPorFilial,
 }: {
   rows: IcRow[];
   headcount: Record<string, number>;
@@ -41,14 +41,12 @@ export function IcDashboard({
   semanaAtual: string | null;
   evolucao: IcEvolucaoPonto[];
   ufPorFilial: IcUfPorFilial;
-  /** Sessão que só enxerga parte das filiais (filial / visualizador por lista): total por responsável seria parcial. */
-  restrito: boolean;
 }) {
   const router = useRouter();
   const [filtros, setFiltros] = useState<Partial<Record<Dim, string>>>({});
   const [busca, setBusca] = useState('');
-  const [modoEscolhido, setModo] = useState<'filial' | 'resp'>('filial');
-  const modo = restrito ? 'filial' : modoEscolhido;
+  const [modo, setModo] = useState<'filial' | 'resp'>('filial');
+  const [metrica, setMetrica] = useState<MetricaIc>('pct');
   const [limite, setLimite] = useState(40);
   const [aberto, setAberto] = useState<Set<string>>(new Set());
 
@@ -89,13 +87,13 @@ export function IcDashboard({
         (!filtros.resp || respDe.get(f)?.nome === filtros.resp) && (!filtros.filial || f === filtros.filial);
       for (const f of Object.keys(headcount)) if (respDe.has(f) && permitida(f)) filiais.add(f);
       for (const f of cont.keys()) if (respDe.has(f) && permitida(f)) filiais.add(f);
-      const ant = pontoAnterior ? posicoes(Array.from(filiais).map((f) => ({ chave: f, p: pontoAnterior.porFilial[f] ?? 0 }))) : null;
+      const ant = pontoAnterior ? posicoes(Array.from(filiais).map((f) => ({ chave: f, p: metrica === 'pct' ? pctQuadro(pontoAnterior.porFilial[f] ?? 0, headcount[f] ?? 0) : pontoAnterior.porFilial[f] ?? 0 }))) : null;
       const semFiltroAnterior = !filtros.categoria && !filtros.funcao && !filtros.resp;
       return Array.from(filiais).map((f) => {
         const r = respDe.get(f)!;
         return {
           chave: f, titulo: `Filial ${f}`, sub: r.nome, cor: r.cor, imagem: r.imagem, uf: ufPorFilial[f] ?? null,
-          pend: cont.get(f) ?? 0, posAnterior: ant && semFiltroAnterior ? ant.get(f) ?? null : null,
+          pend: cont.get(f) ?? 0, quadro: headcount[f] ?? 0, posAnterior: ant && semFiltroAnterior ? ant.get(f) ?? null : null,
         };
       });
     }
@@ -103,7 +101,8 @@ export function IcDashboard({
     const base = para('resp');
     const cont = new Map<string, number>();
     for (const r of base) cont.set(r.resp, (cont.get(r.resp) ?? 0) + 1);
-    const ant = pontoAnterior ? posicoes(responsaveis.map((r) => ({ chave: r.nome, p: pontoAnterior.porResp[r.nome] ?? 0 }))) : null;
+    const quadroDe = (r: IcResponsavelView) => r.filiais.reduce((t, f) => t + (headcount[f] ?? 0), 0);
+    const ant = pontoAnterior ? posicoes(responsaveis.map((r) => ({ chave: r.nome, p: metrica === 'pct' ? pctQuadro(pontoAnterior.porResp[r.nome] ?? 0, quadroDe(r)) : pontoAnterior.porResp[r.nome] ?? 0 }))) : null;
     const semFiltroAnterior = !filtros.categoria && !filtros.filial && !filtros.funcao;
     return responsaveis
       .filter((r) => (!filtros.resp || r.nome === filtros.resp) && (!filtros.filial || r.filiais.includes(filtros.filial)))
@@ -111,9 +110,9 @@ export function IcDashboard({
       .map((r) => ({
         chave: r.nome, titulo: r.nome, sub: `filiais ${r.filiais.join(' · ') || '—'}`, cor: r.cor, imagem: r.imagem,
         uf: r.filiais.map((f) => ufPorFilial[f]).find(Boolean) ?? null,
-        pend: cont.get(r.nome) ?? 0, posAnterior: ant && semFiltroAnterior ? ant.get(r.nome) ?? null : null,
+        pend: cont.get(r.nome) ?? 0, quadro: quadroDe(r), posAnterior: ant && semFiltroAnterior ? ant.get(r.nome) ?? null : null,
       }));
-  }, [rows, filtros, responsaveis, headcount, pontoAnterior, modo, ufPorFilial]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [rows, filtros, responsaveis, headcount, pontoAnterior, modo, ufPorFilial, metrica]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const semResp = useMemo(() => para('resp').filter((r) => r.resp === SEM_RESP), [rows, filtros]); // eslint-disable-line react-hooks/exhaustive-deps
   const semRespFiliais = Array.from(new Set(semResp.map((r) => r.filial))).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
@@ -145,6 +144,7 @@ export function IcDashboard({
   const colabs = useMemo(() => {
     const m = new Map<string, { chapa: string; nome: string; filial: string; funcao: string; resp: string; itens: IcRow[] }>();
     for (const r of filtradas) {
+      if (r.restrito) continue; // detalhe de pessoas só nas filiais do escopo da sessão
       const c = m.get(r.chapa) ?? { chapa: r.chapa, nome: r.nome, filial: r.filial, funcao: r.funcao, resp: r.resp, itens: [] };
       c.itens.push(r);
       m.set(r.chapa, c);
@@ -155,6 +155,7 @@ export function IcDashboard({
       .sort((a, b) => b.itens.length - a.itens.length || a.nome.localeCompare(b.nome));
   }, [filtradas, busca]);
 
+  const restritasNoFiltro = filtradas.filter((r) => r.restrito).length;
   const filtrosAtivos = (Object.keys(filtros) as Dim[]).filter((d) => filtros[d]);
   const selCls = 'rounded-lg border border-conecta-primary/15 bg-white px-3 py-1.5 text-sm font-display font-semibold text-conecta-primary max-w-[240px]';
 
@@ -258,7 +259,6 @@ export function IcDashboard({
       </div>
 
       {/* Corrida */}
-      {!restrito && (
       <div className="flex items-center gap-2">
         <span className="font-display text-[10px] uppercase tracking-[0.22em] text-conecta-muted font-semibold">Corrida por</span>
         {([['filial', 'Filial'], ['resp', 'Responsável']] as const).map(([k, l]) => (
@@ -274,9 +274,24 @@ export function IcDashboard({
             {l}
           </button>
         ))}
+              <span className="mx-2 h-4 w-px bg-conecta-primary/20" aria-hidden />
+        <span className="font-display text-[10px] uppercase tracking-[0.22em] text-conecta-muted font-semibold">Ranking por</span>
+        {([['total', 'Total de pendências'], ['pct', '% do quadro']] as const).map(([k, l]) => (
+          <button
+            key={k}
+            type="button"
+            onClick={() => setMetrica(k)}
+            aria-pressed={metrica === k}
+            className={`rounded-full border px-3 py-1 text-[11px] font-display font-semibold transition ${
+              metrica === k ? 'bg-conecta-accent text-white border-conecta-accent' : 'border-conecta-primary/20 text-conecta-primary hover:bg-conecta-primary/5'
+            }`}
+          >
+            {l}
+          </button>
+        ))}
       </div>
-      )}
       <IcCorrida
+        metrica={metrica}
         raias={raias}
         selecionado={modo === 'filial' ? filtros.filial ?? null : filtros.resp ?? null}
         onSelect={(chave) => alternar(modo === 'filial' ? 'filial' : 'resp', chave)}
@@ -319,6 +334,11 @@ export function IcDashboard({
       <ConectaCard noPadding>
         <div className="p-5 pb-3 space-y-3">
           <SectionHeader label={`Colaboradores com pendências (${colabs.length})`} icon={Users} />
+          {restritasNoFiltro > 0 && (
+            <p className="text-[11px] text-conecta-muted">
+              {restritasNoFiltro} pendência(s) de outras filiais entram nos números e no ranking, mas os nomes só aparecem para as filiais do seu acesso.
+            </p>
+          )}
           <div className="relative max-w-sm">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-conecta-muted" />
             <input value={busca} onChange={(e) => { setBusca(e.target.value); setLimite(40); }} placeholder="Buscar nome, matrícula ou função…"

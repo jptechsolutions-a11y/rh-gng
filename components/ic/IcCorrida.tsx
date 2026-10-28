@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Flag, Trophy } from 'lucide-react';
 import { ConectaCard, SectionHeader } from '@/components/ui/conecta-card';
 
+export type MetricaIc = 'total' | 'pct';
+
 export interface Raia {
   chave: string;   // identifica a raia (filial ou responsável)
   titulo: string;  // texto principal (ex.: "Filial 264")
@@ -12,6 +14,7 @@ export interface Raia {
   imagem: string | null; // imagem própria do responsável (opcional)
   uf: string | null;     // UF da filial → escolhe o cavalo com a bandeira do estado
   pend: number;
+  quadro: number;             // funcionários cadastrados (denominador do %)
   posAnterior: number | null; // posição na semana anterior
 }
 
@@ -27,6 +30,14 @@ function spriteDe(uf: string | null, estado: Estado, imagem: string | null): str
   if (UFS.has(k)) return `/ic/cavalos/${k}-${estado}.png`;
   return imagem;
 }
+
+/** % de pendências sobre o quadro: é isso (e não o total bruto) que decide a posição na corrida. */
+export function pctQuadro(pend: number, quadro: number) {
+  if (quadro > 0) return (pend / quadro) * 100;
+  return pend > 0 ? 100 : 0;
+}
+
+const fmtPct = (p: number) => `${p < 10 && p > 0 ? p.toFixed(1).replace('.', ',') : Math.round(p)}%`;
 
 function mediana(v: number[]) {
   if (v.length === 0) return 0;
@@ -45,7 +56,9 @@ export function IcCorrida({
   selecionado,
   onSelect,
   semanaLabel,
+  metrica,
 }: {
+  metrica: MetricaIc;
   raias: Raia[];
   selecionado: string | null;
   onSelect: (nome: string) => void;
@@ -53,22 +66,25 @@ export function IcCorrida({
 }) {
   // Ordena por pendências (menos = melhor); empate divide a posição.
   const ordenadas = useMemo(() => {
-    const arr = [...raias].sort((a, b) => a.pend - b.pend || a.titulo.localeCompare(b.titulo, undefined, { numeric: true }));
+    // Posição pela métrica escolhida: total de pendências ou % sobre o quadro (menor = melhor).
+    const arr = raias
+      .map((r) => { const pct = pctQuadro(r.pend, r.quadro); return { ...r, pct, valor: metrica === 'pct' ? pct : r.pend }; })
+      .sort((a, b) => a.valor - b.valor || a.pend - b.pend || a.titulo.localeCompare(b.titulo, undefined, { numeric: true }));
     let pos = 0;
     return arr.map((r, i) => {
-      if (i === 0 || r.pend !== arr[i - 1]!.pend) pos = i + 1;
+      if (i === 0 || Math.abs(r.valor - arr[i - 1]!.valor) > 1e-9) pos = i + 1;
       return { ...r, pos };
     });
-  }, [raias]);
+  }, [raias, metrica]);
 
-  const max = Math.max(1, ...ordenadas.map((r) => r.pend));
-  // "Desanimado" = muito atrás do pelotão: pelo menos o dobro da mediana das raias (e ao menos 30 pendências).
-  const limiteCansado = Math.max(30, 2 * mediana(ordenadas.map((r) => r.pend)));
+  const max = Math.max(1e-6, ...ordenadas.map((r) => r.valor));
+  // "Desanimado" = muito atrás do pelotão: pelo menos o dobro da mediana do % das raias (e ao menos 10% do quadro).
+  const limiteCansado = Math.max(metrica === 'pct' ? 10 : 30, 2 * mediana(ordenadas.map((r) => r.valor)));
   // 0 pendência = linha de chegada (100%); a pior raia fica perto da largada (6%).
-  const progresso = (pend: number) => 6 + (1 - pend / max) * 88;
+  const progresso = (valor: number) => 6 + (1 - valor / max) * 88;
 
   // Anima da largada até a posição: renderiza em 0 e, no frame seguinte, vai para o alvo.
-  const chave = ordenadas.map((r) => `${r.chave}:${r.pend}`).join('|');
+  const chave = metrica + '|' + ordenadas.map((r) => `${r.chave}:${r.pend}:${r.quadro}`).join('|');
   const [largou, setLargou] = useState(false);
   useEffect(() => {
     setLargou(false);
@@ -97,7 +113,7 @@ export function IcCorrida({
         <SectionHeader
           label={`Corrida de regularização · ${semanaLabel}`}
           icon={Trophy}
-          action={<span className="hidden sm:inline text-[11px] text-conecta-muted">Menos pendências = mais perto da chegada · clique numa raia para filtrar</span>}
+          action={<span className="hidden sm:inline text-[11px] text-conecta-muted">Menos pendências (no total ou no % do quadro) = mais perto da chegada · clique numa raia para filtrar</span>}
         />
       </div>
 
@@ -105,10 +121,10 @@ export function IcCorrida({
         {ordenadas.map((r, i) => {
           const ativo = selecionado === r.chave;
           const zerou = r.pend === 0; // regularizou tudo: chegou!
-          const estado: Estado = zerou ? 'comemorando' : r.pend >= limiteCansado ? 'desanimado' : 'correndo';
+          const estado: Estado = zerou ? 'comemorando' : r.valor >= limiteCansado ? 'desanimado' : 'correndo';
           const sprite = spriteDe(r.uf, estado, r.imagem);
           const dim = selecionado != null && !ativo;
-          const left = largou ? (zerou ? 97 : progresso(r.pend)) : 2;
+          const left = largou ? (zerou ? 97 : progresso(r.valor)) : 2;
           const delta = r.posAnterior != null ? r.posAnterior - r.pos : 0; // positivo = subiu
           const cor = zerou ? '#16A34A' : r.cor;
           return (
@@ -117,7 +133,7 @@ export function IcCorrida({
               type="button"
               onClick={() => onSelect(r.chave)}
               aria-pressed={ativo}
-              title={`${r.titulo} — ${r.sub} · ${r.pend} pendências · ${ESTADO_LABEL[estado]}`}
+              title={`${r.titulo} — ${r.sub} · ${r.pend} pendências ÷ quadro ${r.quadro} = ${fmtPct(r.pct)} · ${ESTADO_LABEL[estado]}`}
               className={`group flex w-full items-stretch gap-3 rounded-xl text-left transition ${dim ? 'opacity-45' : ''} ${ativo ? 'ring-2 ring-conecta-accent/70 ring-offset-2' : ''}`}
             >
               {/* Placar */}
@@ -127,8 +143,10 @@ export function IcCorrida({
                   <div className="font-display text-[13px] font-bold leading-tight text-conecta-primary truncate">{r.titulo}</div>
                   <div className="text-[10px] text-conecta-muted truncate">{r.sub}</div>
                   <div className="flex items-center gap-1.5">
-                    <span className="font-display text-lg font-extrabold tabular-nums" style={{ color: cor }}>{r.pend}</span>
-                    <span className="text-[10px] text-conecta-muted">pendências</span>
+                    <span className="font-display text-lg font-extrabold tabular-nums" style={{ color: cor }}>{metrica === 'pct' ? fmtPct(r.pct) : r.pend}</span>
+                    <span className="text-[10px] text-conecta-muted tabular-nums">
+                      {metrica === 'pct' ? `${r.pend} pend. · quadro ${r.quadro}` : `pendências · ${fmtPct(r.pct)} do quadro`}
+                    </span>
                     {zerou && (
                       <span className="rounded-full bg-emerald-100 border border-emerald-300 text-emerald-700 px-1.5 py-px text-[9px] font-display font-bold uppercase tracking-wide">
                         ✔ Chegou!

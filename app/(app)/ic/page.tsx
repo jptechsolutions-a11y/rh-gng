@@ -26,7 +26,6 @@ export default async function IcPage({ searchParams }: { searchParams: Promise<{
           semanaAtual={d.semanaAtual}
           evolucao={d.evolucao}
           ufPorFilial={d.ufPorFilial}
-          restrito={s.perfil === 'filial' || (s.perfil === 'visualizador' && s.escopo !== 'nacional')}
         />
       </div>
     </>

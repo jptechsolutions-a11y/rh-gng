@@ -9,12 +9,31 @@ export interface Raia {
   titulo: string;  // texto principal (ex.: "Filial 264")
   sub: string;     // texto secundário (ex.: responsável / filiais)
   cor: string;
-  imagem: string | null;
+  imagem: string | null; // imagem própria do responsável (opcional)
+  uf: string | null;     // UF da filial → escolhe o cavalo com a bandeira do estado
   pend: number;
   posAnterior: number | null; // posição na semana anterior
 }
 
 const MEDALHA = ['🥇', '🥈', '🥉'];
+const UFS = new Set(['sc', 'sp', 'rs', 'mt', 'ms', 'df']);
+
+type Estado = 'correndo' | 'comemorando' | 'desanimado';
+const ESTADO_LABEL: Record<Estado, string> = { correndo: 'correndo', comemorando: 'chegou!', desanimado: 'desanimado — muitas pendências' };
+
+/** Cavalo da bandeira do estado no pose certo; sem UF conhecida cai na imagem do responsável ou no emoji. */
+function spriteDe(uf: string | null, estado: Estado, imagem: string | null): string | null {
+  const k = uf?.toLowerCase() ?? '';
+  if (UFS.has(k)) return `/ic/cavalos/${k}-${estado}.png`;
+  return imagem;
+}
+
+function mediana(v: number[]) {
+  if (v.length === 0) return 0;
+  const s = [...v].sort((a, b) => a - b);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m]! : (s[m - 1]! + s[m]!) / 2;
+}
 
 /**
  * Corrida dos responsáveis: quem tem MENOS pendências está mais perto da linha de
@@ -43,6 +62,8 @@ export function IcCorrida({
   }, [raias]);
 
   const max = Math.max(1, ...ordenadas.map((r) => r.pend));
+  // "Desanimado" = muito atrás do pelotão: pelo menos o dobro da mediana das raias (e ao menos 30 pendências).
+  const limiteCansado = Math.max(30, 2 * mediana(ordenadas.map((r) => r.pend)));
   // 0 pendência = linha de chegada (100%); a pior raia fica perto da largada (6%).
   const progresso = (pend: number) => 6 + (1 - pend / max) * 88;
 
@@ -63,12 +84,14 @@ export function IcCorrida({
         @keyframes ic-chegou { 0%,100% { transform: translateY(0) scale(1); } 40% { transform: translateY(-9px) scale(1.12); } 60% { transform: translateY(0) scale(.96); } }
         @keyframes ic-brilho { 0%,100% { box-shadow: 0 0 0 0 rgba(22,163,74,.55); } 50% { box-shadow: 0 0 0 10px rgba(22,163,74,0); } }
         @keyframes ic-confete { 0% { opacity: 0; transform: translate(0,0) rotate(0deg) scale(.4); } 15% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--dx), var(--dy)) rotate(260deg) scale(1); } }
+        @keyframes ic-cansado { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(2px) rotate(1.2deg); } }
+        .ic-cansado { animation: ic-cansado 1.8s ease-in-out infinite; }
         .ic-cavalo { animation: ic-galope .45s ease-in-out infinite; }
         .ic-chegou { animation: ic-chegou 1.1s ease-in-out infinite; }
         .ic-brilho { animation: ic-brilho 1.4s ease-out infinite; }
         .ic-confete { animation: ic-confete 1.6s ease-out infinite; }
         .ic-poeira { animation: ic-poeira .7s ease-out infinite; }
-        @media (prefers-reduced-motion: reduce) { .ic-cavalo, .ic-poeira, .ic-chegou, .ic-brilho, .ic-confete { animation: none; } }
+        @media (prefers-reduced-motion: reduce) { .ic-cavalo, .ic-poeira, .ic-chegou, .ic-brilho, .ic-confete, .ic-cansado { animation: none; } }
       `}</style>
       <div className="p-5 pb-3">
         <SectionHeader
@@ -82,6 +105,8 @@ export function IcCorrida({
         {ordenadas.map((r, i) => {
           const ativo = selecionado === r.chave;
           const zerou = r.pend === 0; // regularizou tudo: chegou!
+          const estado: Estado = zerou ? 'comemorando' : r.pend >= limiteCansado ? 'desanimado' : 'correndo';
+          const sprite = spriteDe(r.uf, estado, r.imagem);
           const dim = selecionado != null && !ativo;
           const left = largou ? (zerou ? 97 : progresso(r.pend)) : 2;
           const delta = r.posAnterior != null ? r.posAnterior - r.pos : 0; // positivo = subiu
@@ -92,7 +117,7 @@ export function IcCorrida({
               type="button"
               onClick={() => onSelect(r.chave)}
               aria-pressed={ativo}
-              title={`${r.titulo} — ${r.sub} · ${r.pend} pendências`}
+              title={`${r.titulo} — ${r.sub} · ${r.pend} pendências · ${ESTADO_LABEL[estado]}`}
               className={`group flex w-full items-stretch gap-3 rounded-xl text-left transition ${dim ? 'opacity-45' : ''} ${ativo ? 'ring-2 ring-conecta-accent/70 ring-offset-2' : ''}`}
             >
               {/* Placar */}
@@ -120,7 +145,7 @@ export function IcCorrida({
 
               {/* Pista */}
               <div
-                className="relative flex-1 min-h-[64px] rounded-xl overflow-hidden"
+                className="relative flex-1 min-h-[92px] rounded-xl overflow-hidden"
                 style={{
                   background: zerou
                     ? 'linear-gradient(180deg,#E9F9EF,#CDF0DA)'
@@ -140,7 +165,7 @@ export function IcCorrida({
                 {/* rastro do cavalo */}
                 <span
                   aria-hidden
-                  className="absolute inset-y-[22px] left-0 rounded-r-full"
+                  className="absolute inset-y-[34px] left-0 rounded-r-full"
                   style={{
                     width: `${left}%`,
                     background: `linear-gradient(90deg, transparent, ${cor}${zerou ? '55' : '33'})`,
@@ -156,27 +181,18 @@ export function IcCorrida({
                     transition: `left 1.6s cubic-bezier(.2,.8,.2,1) ${i * 90}ms`,
                   }}
                 >
-                  <div className={`relative ${zerou ? 'ic-chegou' : 'ic-cavalo'}`} style={{ animationDelay: `${i * 70}ms` }}>
-                    {zerou ? (
-                      <>
-                        {[
-                          ['-26px', '-34px', '#F2B134'], ['6px', '-40px', '#E8621A'], ['-14px', '-44px', '#16A34A'],
-                          ['20px', '-30px', '#0D2B6B'], ['-38px', '-20px', '#E8621A'], ['30px', '-16px', '#F2B134'],
-                        ].map(([dx, dy, c], k) => (
-                          <span
-                            key={k}
-                            aria-hidden
-                            className="ic-confete absolute left-1/2 top-1/2 h-1.5 w-2 rounded-[1px]"
-                            style={{ background: c, ['--dx' as string]: dx, ['--dy' as string]: dy, animationDelay: `${k * 180}ms` }}
-                          />
-                        ))}
-                      </>
-                    ) : (
-                      <span aria-hidden className="ic-poeira absolute -left-1 bottom-1 h-3 w-3 rounded-full bg-slate-400/60" />
-                    )}
-                    {r.imagem ? (
+                  <div
+                    className={`relative ${estado === 'comemorando' ? 'ic-chegou' : estado === 'desanimado' ? 'ic-cansado' : 'ic-cavalo'}`}
+                    style={{ animationDelay: `${i * 70}ms` }}
+                  >
+                    {sprite ? (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img src={r.imagem} alt={r.titulo} className={`h-14 w-auto max-w-[96px] object-contain drop-shadow ${zerou ? 'ic-brilho rounded-full' : ''}`} />
+                      <img
+                        src={sprite}
+                        alt={`${r.titulo} — ${ESTADO_LABEL[estado]}`}
+                        draggable={false}
+                        className="h-[78px] w-auto max-w-[140px] object-contain drop-shadow-md select-none"
+                      />
                     ) : (
                       <span
                         className={`grid h-12 w-12 place-items-center rounded-full text-[28px] leading-none text-white shadow ${zerou ? 'ic-brilho' : ''}`}

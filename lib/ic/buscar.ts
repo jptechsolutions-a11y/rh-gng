@@ -4,7 +4,7 @@ import { db, schema } from '@/db/client';
 import type { Session } from '@/lib/auth/session';
 import { getFiliaisCodigosVisiveis } from '@/lib/auth/session';
 import { normalizarCodigoFilial } from '@/lib/vagas/normalizar-codigo-filial';
-import { SEM_RESP, type IcEvolucaoPonto, type IcResponsavelView, type IcRow, type IcSemana } from './tipos';
+import { SEM_RESP, type IcUfPorFilial, type IcEvolucaoPonto, type IcResponsavelView, type IcRow, type IcSemana } from './tipos';
 
 /** Responsável (grupo) de cada filial, na ordem configurada. */
 export async function carregarResponsaveis(): Promise<IcResponsavelView[]> {
@@ -26,11 +26,12 @@ export async function buscarIc(s: Session, semanaId?: string | null) {
     .orderBy(desc(schema.icImports.semanaRef));
   const semanas: IcSemana[] = semanasRaw.map((w) => ({ id: w.id, semanaRef: w.semanaRef, total: w.totalPendencias }));
   const atual = semanasRaw.find((w) => w.id === semanaId) ?? semanasRaw[0] ?? null;
-  if (!atual) return { responsaveis, semanas, semanaAtual: null, rows: [] as IcRow[], headcount: {} as Record<string, number>, evolucao: [] as IcEvolucaoPonto[] };
+  const ufPorFilial: IcUfPorFilial = {};
+  if (!atual) return { responsaveis, semanas, semanaAtual: null, rows: [] as IcRow[], headcount: {} as Record<string, number>, evolucao: [] as IcEvolucaoPonto[], ufPorFilial };
 
   const escopoRaw = getFiliaisCodigosVisiveis(s);
   const escopo = escopoRaw ? escopoRaw.map(normalizarCodigoFilial) : null;
-  if (escopo && escopo.length === 0) return { responsaveis, semanas, semanaAtual: atual.id, rows: [] as IcRow[], headcount: {} as Record<string, number>, evolucao: [] as IcEvolucaoPonto[] };
+  if (escopo && escopo.length === 0) return { responsaveis, semanas, semanaAtual: atual.id, rows: [] as IcRow[], headcount: {} as Record<string, number>, evolucao: [] as IcEvolucaoPonto[], ufPorFilial };
 
   const respDaFilial = new Map<string, string>();
   for (const r of responsaveis) for (const f of r.filiais) respDaFilial.set(normalizarCodigoFilial(f), r.nome);
@@ -98,5 +99,21 @@ export async function buscarIc(s: Session, semanaId?: string | null) {
     .sort((a, b) => a[0].localeCompare(b[0]))
     .map(([semanaRef, porResp]) => ({ semanaRef, porResp, porFilial: pontosFilial.get(semanaRef) ?? {} }));
 
-  return { responsaveis, semanas, semanaAtual: atual.id, rows, headcount, evolucao };
+  // UF: primeiro pelo cadastro da filial (regional "SC", "SP-230"…), depois pela regional da própria planilha.
+  const UFS = new Set(['SC', 'SP', 'RS', 'MT', 'MS', 'DF']);
+  const ufDe = (txt: string | null | undefined) => {
+    const m = (txt ?? '').toUpperCase().match(/^[A-Z]{2}/);
+    return m && UFS.has(m[0]) ? m[0] : null;
+  };
+  const [cadFiliais, regPlanilha] = await Promise.all([
+    db.select({ codigo: schema.filiais.codigo, regional: schema.filiais.regional }).from(schema.filiais),
+    db
+      .selectDistinct({ filial: schema.icPendencias.filialCodigo, regional: schema.icPendencias.regional })
+      .from(schema.icPendencias)
+      .where(eq(schema.icPendencias.importId, atual.id)),
+  ]);
+  for (const f of regPlanilha) { const u = ufDe(f.regional); if (u) ufPorFilial[f.filial] = u; }
+  for (const f of cadFiliais) { const u = ufDe(f.regional); if (u) ufPorFilial[normalizarCodigoFilial(f.codigo)] = u; }
+
+  return { responsaveis, semanas, semanaAtual: atual.id, rows, headcount, evolucao, ufPorFilial };
 }

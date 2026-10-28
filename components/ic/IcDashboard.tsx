@@ -9,7 +9,7 @@ import {
 import { ConectaCard, SectionHeader } from '@/components/ui/conecta-card';
 import { VagasRankingBars } from '@/components/vagas/VagasRankingBars';
 import { IcCorrida, type Raia } from './IcCorrida';
-import { SEM_RESP, type IcEvolucaoPonto, type IcResponsavelView, type IcRow, type IcSemana } from '@/lib/ic/tipos';
+import { SEM_RESP, type IcUfPorFilial, type IcEvolucaoPonto, type IcResponsavelView, type IcRow, type IcSemana } from '@/lib/ic/tipos';
 
 type Dim = 'resp' | 'filial' | 'categoria' | 'tipo' | 'funcao' | 'secao';
 const DIM_LABEL: Record<Dim, string> = {
@@ -32,7 +32,7 @@ function ranking(rows: IcRow[], dim: Dim, limite = 10) {
 }
 
 export function IcDashboard({
-  rows, headcount, responsaveis, semanas, semanaAtual, evolucao,
+  rows, headcount, responsaveis, semanas, semanaAtual, evolucao, ufPorFilial,
 }: {
   rows: IcRow[];
   headcount: Record<string, number>;
@@ -40,6 +40,7 @@ export function IcDashboard({
   semanas: IcSemana[];
   semanaAtual: string | null;
   evolucao: IcEvolucaoPonto[];
+  ufPorFilial: IcUfPorFilial;
 }) {
   const router = useRouter();
   const [filtros, setFiltros] = useState<Partial<Record<Dim, string>>>({});
@@ -88,7 +89,7 @@ export function IcDashboard({
       return Array.from(filiais).map((f) => {
         const r = respDe.get(f)!;
         return {
-          chave: f, titulo: `Filial ${f}`, sub: r.nome, cor: r.cor, imagem: r.imagem,
+          chave: f, titulo: `Filial ${f}`, sub: r.nome, cor: r.cor, imagem: r.imagem, uf: ufPorFilial[f] ?? null,
           pend: cont.get(f) ?? 0, posAnterior: ant && semFiltroAnterior ? ant.get(f) ?? null : null,
         };
       });
@@ -103,9 +104,10 @@ export function IcDashboard({
       .filter((r) => r.filiais.some((f) => f in headcount) || (cont.get(r.nome) ?? 0) > 0)
       .map((r) => ({
         chave: r.nome, titulo: r.nome, sub: `filiais ${r.filiais.join(' · ') || '—'}`, cor: r.cor, imagem: r.imagem,
+        uf: r.filiais.map((f) => ufPorFilial[f]).find(Boolean) ?? null,
         pend: cont.get(r.nome) ?? 0, posAnterior: ant && semFiltroAnterior ? ant.get(r.nome) ?? null : null,
       }));
-  }, [rows, filtros, responsaveis, headcount, pontoAnterior, modo]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [rows, filtros, responsaveis, headcount, pontoAnterior, modo, ufPorFilial]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const semResp = useMemo(() => para('resp').filter((r) => r.resp === SEM_RESP), [rows, filtros]); // eslint-disable-line react-hooks/exhaustive-deps
   const semRespFiliais = Array.from(new Set(semResp.map((r) => r.filial))).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));

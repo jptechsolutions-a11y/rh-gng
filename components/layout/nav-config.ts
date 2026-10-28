@@ -123,7 +123,7 @@ export const EPI_NAV_ADMIN_EXTRAS: NavItem[] = [
 ];
 
 export const IC_NAV_BASE: NavItem[] = [
-  { href: '/ic', label: 'Corrida IC', icon: Trophy },
+  { href: '/ic', label: 'Ranking IC', icon: Trophy },
 ];
 export const IC_NAV_ADMIN_EXTRAS: NavItem[] = [
   { href: '/ic/importar',      label: 'Importar semana', icon: Upload },

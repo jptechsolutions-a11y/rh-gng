@@ -13,7 +13,7 @@ export default async function IcPage({ searchParams }: { searchParams: Promise<{
 
   return (
     <>
-      <TopBar titulo="IC — Regularizações pendentes" subtitulo="Corrida dos responsáveis · bandeira PERLOG" badge={badge} />
+      <TopBar titulo="Ranking IC Gente & Gestão" subtitulo="Regularizações pendentes · corrida dos responsáveis · bandeira PERLOG" badge={badge} />
       <div className="p-4 lg:p-6">
         <IcDashboard
           rows={d.rows}
@@ -22,6 +22,7 @@ export default async function IcPage({ searchParams }: { searchParams: Promise<{
           semanas={d.semanas}
           semanaAtual={d.semanaAtual}
           evolucao={d.evolucao}
+          ufPorFilial={d.ufPorFilial}
         />
       </div>
     </>

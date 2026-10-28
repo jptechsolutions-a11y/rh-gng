@@ -54,6 +54,9 @@ export interface IcEvolucaoPonto {
 
 export const SEM_RESP = 'Sem responsável';
 
+/** UF (SC, SP, RS, MT, MS, DF…) de cada filial — escolhe o cavalo com a bandeira do estado. */
+export type IcUfPorFilial = Record<string, string>;
+
 export interface IcResponsavelInput {
   id?: string;
   nome: string;

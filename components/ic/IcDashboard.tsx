@@ -32,7 +32,7 @@ function ranking(rows: IcRow[], dim: Dim, limite = 10) {
 }
 
 export function IcDashboard({
-  rows, headcount, responsaveis, semanas, semanaAtual, evolucao, ufPorFilial,
+  rows, headcount, responsaveis, semanas, semanaAtual, evolucao, ufPorFilial, restrito,
 }: {
   rows: IcRow[];
   headcount: Record<string, number>;
@@ -41,11 +41,14 @@ export function IcDashboard({
   semanaAtual: string | null;
   evolucao: IcEvolucaoPonto[];
   ufPorFilial: IcUfPorFilial;
+  /** Sessão que só enxerga parte das filiais (filial / visualizador por lista): total por responsável seria parcial. */
+  restrito: boolean;
 }) {
   const router = useRouter();
   const [filtros, setFiltros] = useState<Partial<Record<Dim, string>>>({});
   const [busca, setBusca] = useState('');
-  const [modo, setModo] = useState<'filial' | 'resp'>('filial');
+  const [modoEscolhido, setModo] = useState<'filial' | 'resp'>('filial');
+  const modo = restrito ? 'filial' : modoEscolhido;
   const [limite, setLimite] = useState(40);
   const [aberto, setAberto] = useState<Set<string>>(new Set());
 
@@ -82,8 +85,10 @@ export function IcDashboard({
       for (const r of base) cont.set(r.filial, (cont.get(r.filial) ?? 0) + 1);
       // Todas as filiais que têm responsável cadastrado e estão no escopo (mesmo com 0 pendências) correm.
       const filiais = new Set<string>();
-      for (const f of Object.keys(headcount)) if (respDe.has(f)) filiais.add(f);
-      for (const f of cont.keys()) if (respDe.has(f)) filiais.add(f);
+      const permitida = (f: string) =>
+        (!filtros.resp || respDe.get(f)?.nome === filtros.resp) && (!filtros.filial || f === filtros.filial);
+      for (const f of Object.keys(headcount)) if (respDe.has(f) && permitida(f)) filiais.add(f);
+      for (const f of cont.keys()) if (respDe.has(f) && permitida(f)) filiais.add(f);
       const ant = pontoAnterior ? posicoes(Array.from(filiais).map((f) => ({ chave: f, p: pontoAnterior.porFilial[f] ?? 0 }))) : null;
       const semFiltroAnterior = !filtros.categoria && !filtros.funcao && !filtros.resp;
       return Array.from(filiais).map((f) => {
@@ -101,6 +106,7 @@ export function IcDashboard({
     const ant = pontoAnterior ? posicoes(responsaveis.map((r) => ({ chave: r.nome, p: pontoAnterior.porResp[r.nome] ?? 0 }))) : null;
     const semFiltroAnterior = !filtros.categoria && !filtros.filial && !filtros.funcao;
     return responsaveis
+      .filter((r) => (!filtros.resp || r.nome === filtros.resp) && (!filtros.filial || r.filiais.includes(filtros.filial)))
       .filter((r) => r.filiais.some((f) => f in headcount) || (cont.get(r.nome) ?? 0) > 0)
       .map((r) => ({
         chave: r.nome, titulo: r.nome, sub: `filiais ${r.filiais.join(' · ') || '—'}`, cor: r.cor, imagem: r.imagem,
@@ -122,7 +128,7 @@ export function IcDashboard({
     const func = filiaisNoFiltro.reduce((s, f) => s + (headcount[f] ?? 0), 0);
     return {
       pend: filtradas.length, colabs: chapas.size, func,
-      pct: func ? Math.round((chapas.size / func) * 100) : null,
+      pct: func ? Math.round((filtradas.length / func) * 100) : null,
       media: chapas.size ? (filtradas.length / chapas.size).toFixed(1) : '0',
     };
   }, [filtradas, filtros, headcount, responsaveis]);
@@ -244,14 +250,15 @@ export function IcDashboard({
         </ConectaCard>
         <ConectaCard>
           <div className="flex items-center gap-2 text-[10px] font-display uppercase tracking-[0.22em] text-conecta-muted font-semibold">
-            <Users className="h-3.5 w-3.5 text-conecta-accent" /> % com pendência
+            <Users className="h-3.5 w-3.5 text-conecta-accent" /> % pendências do quadro
           </div>
           <div className="mt-1 font-display text-3xl font-extrabold tabular-nums text-conecta-accent">{kpi.pct == null ? '—' : `${kpi.pct}%`}</div>
-          <div className="text-[11px] text-conecta-muted">colaboradores com pendência ÷ funcionários</div>
+          <div className="text-[11px] text-conecta-muted">pendências ÷ funcionários cadastrados (quadro)</div>
         </ConectaCard>
       </div>
 
       {/* Corrida */}
+      {!restrito && (
       <div className="flex items-center gap-2">
         <span className="font-display text-[10px] uppercase tracking-[0.22em] text-conecta-muted font-semibold">Corrida por</span>
         {([['filial', 'Filial'], ['resp', 'Responsável']] as const).map(([k, l]) => (
@@ -268,6 +275,7 @@ export function IcDashboard({
           </button>
         ))}
       </div>
+      )}
       <IcCorrida
         raias={raias}
         selecionado={modo === 'filial' ? filtros.filial ?? null : filtros.resp ?? null}

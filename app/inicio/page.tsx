@@ -370,7 +370,7 @@ export default async function InicioPage() {
           </Link>
 
           {/* IC */}
-          {s.perfil !== 'filial' && (
+          {(
             <Link
               href="/ic"
               className="cg-module-card group relative rounded-2xl bg-white text-conecta-text p-5 overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-[0_20px_44px_-12px_rgba(232,98,26,0.45)]"

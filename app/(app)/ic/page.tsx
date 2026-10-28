@@ -9,7 +9,10 @@ export default async function IcPage({ searchParams }: { searchParams: Promise<{
   const s = await requireSession();
   const { semana } = await searchParams;
   const d = await buscarIc(s, semana);
-  const badge = s.perfil === 'admin' ? 'ADMIN' : s.perfil === 'visualizador' ? (s.escopo === 'nacional' ? 'NACIONAL' : 'REGIONAL') : '';
+  const badge =
+    s.perfil === 'admin' ? 'ADMIN' :
+    s.perfil === 'filial' ? `Filial ${s.filialCodigo}` :
+    s.escopo === 'nacional' ? 'NACIONAL' : 'REGIONAL';
 
   return (
     <>
@@ -23,6 +26,7 @@ export default async function IcPage({ searchParams }: { searchParams: Promise<{
           semanaAtual={d.semanaAtual}
           evolucao={d.evolucao}
           ufPorFilial={d.ufPorFilial}
+          restrito={s.perfil === 'filial' || (s.perfil === 'visualizador' && s.escopo !== 'nacional')}
         />
       </div>
     </>

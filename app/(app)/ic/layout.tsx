@@ -1,9 +1,7 @@
-import { redirect } from 'next/navigation';
 import { requireSession } from '@/lib/auth/session';
 
-// O IC compara responsáveis entre filiais: acesso para admin e visualizadores (cada um no seu escopo).
+// Admin, visualizadores e filiais: cada um vê só o escopo de filiais dele (ver buscarIc).
 export default async function IcLayout({ children }: { children: React.ReactNode }) {
-  const s = await requireSession();
-  if (s.perfil === 'filial') redirect('/inicio');
+  await requireSession();
   return children;
 }

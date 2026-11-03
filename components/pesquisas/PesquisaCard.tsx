@@ -17,6 +17,7 @@ export interface PesquisaCardData {
   status: string;
   respondidas: number;
   alvo: number;
+  filiaisAlvo: string[] | null;
   criadaPorNome: string;
   createdAt: string;
 }
@@ -78,6 +79,8 @@ export function PesquisaCard({ p }: { p: PesquisaCardData }) {
           {p.descricao && <p className="text-[12px] text-conecta-muted mt-1">{p.descricao}</p>}
           <p className="text-[11px] text-conecta-muted mt-1">
             por {p.criadaPorNome} · {new Date(p.createdAt).toLocaleDateString('pt-BR')}
+            {' · '}
+            {p.filiaisAlvo ? `${p.filiaisAlvo.length} filiais (${p.filiaisAlvo.join(', ')})` : 'todas as filiais'}
           </p>
         </div>
         <span

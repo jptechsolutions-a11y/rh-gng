@@ -4,6 +4,7 @@ import { db, schema } from '@/db/client';
 import { requireSession } from '@/lib/auth/session';
 import { TopBar } from '@/components/layout/TopBar';
 import { PesquisaBuilder } from '@/components/pesquisas/PesquisaBuilder';
+import { filiaisDisponiveisPesquisa } from '@/lib/pesquisas/filiais';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,6 +13,7 @@ export default async function EditarPesquisaPage({ params }: { params: Promise<{
   const { id } = await params;
   const p = await db.query.pesquisas.findFirst({ where: eq(schema.pesquisas.id, id) });
   if (!p) notFound();
+  const filiaisDisponiveis = await filiaisDisponiveisPesquisa();
   const [perguntas, resp] = await Promise.all([
     db.select().from(schema.pesquisaPerguntas).where(eq(schema.pesquisaPerguntas.pesquisaId, id)).orderBy(schema.pesquisaPerguntas.ordem),
     db.select({ total: count() }).from(schema.pesquisaRespostas).where(eq(schema.pesquisaRespostas.pesquisaId, id)),
@@ -22,12 +24,14 @@ export default async function EditarPesquisaPage({ params }: { params: Promise<{
       <TopBar titulo={`Pesquisas — Editar`} subtitulo={p.titulo} badge="ADMIN" />
       <div className="p-4 lg:p-6">
         <PesquisaBuilder
+          filiaisDisponiveis={filiaisDisponiveis}
           inicial={{
             id: p.id,
             titulo: p.titulo,
             descricao: p.descricao ?? '',
             anonima: p.anonima,
             temRespostas: (resp[0]?.total ?? 0) > 0,
+            filiaisAlvo: p.filiaisAlvo ?? null,
             perguntas: perguntas.map((q) => ({
               id: q.id,
               texto: q.texto,

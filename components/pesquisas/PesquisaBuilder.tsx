@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowDown, ArrowUp, Check, Copy, ExternalLink, ListPlus, Plus, Trash2, ClipboardPen } from 'lucide-react';
+import { ArrowDown, ArrowUp, Building2, Check, Copy, ExternalLink, ListPlus, Plus, Trash2, ClipboardPen } from 'lucide-react';
 import { ConectaCard, SectionHeader } from '@/components/ui/conecta-card';
 import { criarPesquisa, editarPesquisa } from '@/actions/pesquisas/admin';
 import { useConfirm } from '@/components/ui/confirm-dialog';
@@ -16,12 +16,19 @@ export interface PesquisaInicial {
   descricao: string;
   anonima: boolean;
   temRespostas: boolean;
+  filiaisAlvo: string[] | null; // null = todas
   perguntas: Item[];
+}
+
+export interface FilialOpcao {
+  codigo: string;
+  nome: string;
+  colaboradores: number;
 }
 
 const nova = (): Item => ({ texto: '', tipo: 'unica', obrigatoria: true, opcoes: ['', ''] });
 
-export function PesquisaBuilder({ inicial }: { inicial?: PesquisaInicial }) {
+export function PesquisaBuilder({ inicial, filiaisDisponiveis }: { inicial?: PesquisaInicial; filiaisDisponiveis: FilialOpcao[] }) {
   const router = useRouter();
   const confirmar = useConfirm();
   const editando = !!inicial;
@@ -30,6 +37,12 @@ export function PesquisaBuilder({ inicial }: { inicial?: PesquisaInicial }) {
   const [descricao, setDescricao] = useState(inicial?.descricao ?? '');
   const [anonima, setAnonima] = useState(inicial?.anonima ?? false);
   const [perguntas, setPerguntas] = useState<Item[]>(inicial?.perguntas ?? [nova()]);
+  const todasCodigos = filiaisDisponiveis.map((f) => f.codigo);
+  const [filiaisSel, setFiliaisSel] = useState<Set<string>>(
+    () => new Set(inicial?.filiaisAlvo ?? todasCodigos),
+  );
+  const alternarFilial = (c: string) =>
+    setFiliaisSel((s) => { const n = new Set(s); if (n.has(c)) n.delete(c); else n.add(c); return n; });
   const [erro, setErro] = useState<string | null>(null);
   const [criada, setCriada] = useState<{ id: string; slug: string } | null>(null);
   const [copiado, setCopiado] = useState(false);
@@ -67,15 +80,18 @@ export function PesquisaBuilder({ inicial }: { inicial?: PesquisaInicial }) {
 
   function salvar() {
     setErro(null);
+    if (filiaisSel.size === 0) { setErro('selecione pelo menos uma filial para a pesquisa'); return; }
+    // Todas marcadas = sem restrição (vale também para filiais novas que surgirem depois).
+    const filiaisAlvo = filiaisSel.size === todasCodigos.length ? null : Array.from(filiaisSel);
     start(async () => {
       try {
         if (inicial) {
-          await editarPesquisa(inicial.id, { titulo, descricao, anonima, perguntas });
+          await editarPesquisa(inicial.id, { titulo, descricao, anonima, filiaisAlvo, perguntas });
           router.push(`/pesquisas/${inicial.id}`);
           router.refresh();
           return;
         }
-        const r = await criarPesquisa({ titulo, descricao, anonima, perguntas });
+        const r = await criarPesquisa({ titulo, descricao, anonima, filiaisAlvo, perguntas });
         setCriada(r);
       } catch (e) {
         setErro(e instanceof Error ? e.message : 'erro ao criar pesquisa');
@@ -184,6 +200,39 @@ export function PesquisaBuilder({ inicial }: { inicial?: PesquisaInicial }) {
               </button>
             ))}
           </div>
+        </div>
+      </ConectaCard>
+
+      <ConectaCard>
+        <SectionHeader label="Filiais da pesquisa" icon={Building2} />
+        <p className="mt-3 text-sm text-conecta-muted">
+          A pesquisa só pode ser respondida por colaboradores das filiais marcadas, e só elas entram nos indicadores.
+        </p>
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] font-display font-semibold">
+          <button type="button" onClick={() => setFiliaisSel(new Set(todasCodigos))}
+            className="rounded-full border border-conecta-primary/20 px-3 py-1 text-conecta-primary hover:bg-conecta-primary/5">Marcar todas</button>
+          <button type="button" onClick={() => setFiliaisSel(new Set())}
+            className="rounded-full border border-conecta-primary/20 px-3 py-1 text-conecta-primary hover:bg-conecta-primary/5">Limpar</button>
+          <span className="ml-auto text-conecta-muted tabular-nums">
+            {filiaisSel.size} de {todasCodigos.length} filiais ·{' '}
+            {filiaisDisponiveis.filter((f) => filiaisSel.has(f.codigo)).reduce((t, f) => t + f.colaboradores, 0)} colaboradores
+          </span>
+        </div>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {filiaisDisponiveis.map((f) => {
+            const on = filiaisSel.has(f.codigo);
+            return (
+              <label key={f.codigo}
+                className={`flex items-center gap-3 rounded-lg border px-3 py-2 cursor-pointer text-sm transition ${on ? 'border-conecta-accent bg-conecta-accent/8' : 'border-conecta-primary/15 opacity-70 hover:opacity-100'}`}>
+                <input type="checkbox" checked={on} onChange={() => alternarFilial(f.codigo)} className="h-4 w-4 accent-[#E8621A]" />
+                <span className="min-w-0 flex-1">
+                  <span className="font-display font-bold text-conecta-primary">{f.codigo}</span>
+                  <span className="ml-1.5 text-conecta-muted truncate">{f.nome}</span>
+                </span>
+                <span className="text-[11px] tabular-nums text-conecta-muted">{f.colaboradores}</span>
+              </label>
+            );
+          })}
         </div>
       </ConectaCard>
 

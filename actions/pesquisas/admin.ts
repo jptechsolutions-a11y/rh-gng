@@ -6,17 +6,28 @@ import { db, schema } from '@/db/client';
 import { requireSession } from '@/lib/auth/session';
 import { gerarSlug, type PerguntaInput } from '@/lib/pesquisas/tipos';
 import { validarPerguntas } from '@/lib/pesquisas/validar';
+import { normalizarCodigoFilial } from '@/lib/vagas/normalizar-codigo-filial';
+
+/** null = todas as filiais; lista vazia não é permitida (a pesquisa ficaria sem público). */
+function normalizarFiliaisAlvo(lista: string[] | null | undefined): string[] | null {
+  if (lista == null) return null;
+  const norm = Array.from(new Set(lista.map((f) => normalizarCodigoFilial(String(f).trim())).filter(Boolean)));
+  if (norm.length === 0) throw new Error('selecione pelo menos uma filial para a pesquisa');
+  return norm;
+}
 
 export async function criarPesquisa(input: {
   titulo: string;
   descricao: string;
   anonima: boolean;
+  filiaisAlvo: string[] | null;
   perguntas: PerguntaInput[];
 }): Promise<{ id: string; slug: string }> {
   const s = await requireSession('admin');
   const titulo = input.titulo.trim();
   if (!titulo) throw new Error('informe o título da pesquisa');
   const perguntas = validarPerguntas(input.perguntas);
+  const filiaisAlvo = normalizarFiliaisAlvo(input.filiaisAlvo);
 
   const [p] = await db
     .insert(schema.pesquisas)
@@ -25,6 +36,7 @@ export async function criarPesquisa(input: {
       titulo,
       descricao: input.descricao.trim() || null,
       anonima: !!input.anonima,
+      filiaisAlvo,
       criadaPorNome: s.nome ?? s.usuario,
     })
     .returning();
@@ -62,6 +74,7 @@ export async function editarPesquisa(
     titulo: string;
     descricao: string;
     anonima: boolean;
+    filiaisAlvo: string[] | null;
     perguntas: (PerguntaInput & { id?: string })[];
   },
 ): Promise<void> {
@@ -71,6 +84,7 @@ export async function editarPesquisa(
   const titulo = input.titulo.trim();
   if (!titulo) throw new Error('informe o título da pesquisa');
   const validas = validarPerguntas(input.perguntas);
+  const filiaisAlvo = normalizarFiliaisAlvo(input.filiaisAlvo);
 
   const [{ total }] = (await db
     .select({ total: count() })
@@ -121,7 +135,7 @@ export async function editarPesquisa(
 
   await db
     .update(schema.pesquisas)
-    .set({ titulo, descricao: input.descricao.trim() || null, anonima: !!input.anonima })
+    .set({ titulo, descricao: input.descricao.trim() || null, anonima: !!input.anonima, filiaisAlvo })
     .where(eq(schema.pesquisas.id, id));
   revalidatePath('/pesquisas');
   revalidatePath(`/pesquisas/${id}`);

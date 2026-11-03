@@ -7,6 +7,14 @@ import { and, count, eq, inArray } from 'drizzle-orm';
 import { db, schema } from '@/db/client';
 import { candidatosChapa, type Valor } from '@/lib/pesquisas/tipos';
 import { validarRespostas } from '@/lib/pesquisas/validar';
+import { normalizarCodigoFilial } from '@/lib/vagas/normalizar-codigo-filial';
+
+/** A pesquisa vale para esta filial? (filiaisAlvo null = todas) */
+function filialPermitida(filiaisAlvo: string[] | null, codigo: string): boolean {
+  return !filiaisAlvo || filiaisAlvo.includes(normalizarCodigoFilial(String(codigo)));
+}
+
+const MSG_FILIAL = 'Esta pesquisa não está disponível para a sua filial.';
 
 export interface ColaboradorPesquisa {
   chapa: string;
@@ -51,6 +59,7 @@ export async function buscarColaboradorPesquisa(
     if (p.anonima) return { ok: false, erro: 'esta pesquisa é anônima' };
     const c = await acharColaborador(chapaDigitada);
     if (!c) return { ok: false, erro: 'Matrícula não encontrada. Confira o número e tente de novo.' };
+    if (!filialPermitida(p.filiaisAlvo, String(c.codfilial))) return { ok: false, erro: MSG_FILIAL };
     const ja = await db.query.pesquisaRespostas.findFirst({
       where: and(eq(schema.pesquisaRespostas.pesquisaId, p.id), eq(schema.pesquisaRespostas.chapa, c.chapa)),
     });
@@ -72,11 +81,15 @@ export async function buscarColaboradorPesquisa(
 
 /** Colaboradores ativos (cota) e respostas já enviadas por filial, para pesquisa anônima. */
 export async function cotaPorFilial(pesquisaId: string) {
-  const cota = await db
-    .select({ filialId: schema.qlpColaboradores.filialId, total: count() })
+  const pesq = await db.query.pesquisas.findFirst({ where: eq(schema.pesquisas.id, pesquisaId) });
+  const alvo = pesq?.filiaisAlvo ?? null;
+  const cotaRaw = await db
+    .select({ filialId: schema.qlpColaboradores.filialId, codigo: schema.filiais.codigo, total: count() })
     .from(schema.qlpColaboradores)
+    .innerJoin(schema.filiais, eq(schema.filiais.id, schema.qlpColaboradores.filialId))
     .where(eq(schema.qlpColaboradores.ativo, true))
-    .groupBy(schema.qlpColaboradores.filialId);
+    .groupBy(schema.qlpColaboradores.filialId, schema.filiais.codigo);
+  const cota = cotaRaw.filter((c) => filialPermitida(alvo, c.codigo));
   const feitas = await db
     .select({ filialId: schema.pesquisaRespostas.filialId, total: count() })
     .from(schema.pesquisaRespostas)
@@ -84,7 +97,7 @@ export async function cotaPorFilial(pesquisaId: string) {
     .groupBy(schema.pesquisaRespostas.filialId);
   const mapaFeitas = new Map(feitas.map((f) => [f.filialId, f.total]));
   return cota
-    .filter((c): c is { filialId: string; total: number } => !!c.filialId)
+    .filter((c): c is { filialId: string; codigo: string; total: number } => !!c.filialId)
     .map((c) => ({ filialId: c.filialId, cota: c.total, respondidas: mapaFeitas.get(c.filialId) ?? 0 }));
 }
 
@@ -106,6 +119,7 @@ export async function enviarRespostaPesquisa(
       if (!input.filialId) throw new Error('selecione a sua filial');
       const filial = await db.query.filiais.findFirst({ where: eq(schema.filiais.id, input.filialId) });
       if (!filial) throw new Error('filial inválida');
+      if (!filialPermitida(p.filiaisAlvo, filial.codigo)) throw new Error(MSG_FILIAL);
       const cotas = await cotaPorFilial(p.id);
       const c = cotas.find((x) => x.filialId === filial.id);
       if (!c) throw new Error('filial sem colaboradores cadastrados');
@@ -114,6 +128,7 @@ export async function enviarRespostaPesquisa(
     } else {
       const col = await acharColaborador(input.chapa ?? '');
       if (!col) throw new Error('matrícula não encontrada');
+      if (!filialPermitida(p.filiaisAlvo, String(col.codfilial))) throw new Error(MSG_FILIAL);
       quem = {
         pesquisaId: p.id,
         chapa: col.chapa,

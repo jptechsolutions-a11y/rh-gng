@@ -2,6 +2,10 @@ import 'server-only';
 import { count, desc, eq, inArray } from 'drizzle-orm';
 import { db, schema } from '@/db/client';
 import type { Valor } from './tipos';
+import { normalizarCodigoFilial } from '@/lib/vagas/normalizar-codigo-filial';
+
+const noAlvo = (alvo: string[] | null, codigo: string | number | null | undefined) =>
+  !alvo || (codigo != null && alvo.includes(normalizarCodigoFilial(String(codigo))));
 
 export interface AlvoColab {
   chapa: string;
@@ -28,19 +32,27 @@ export interface CotaFilial {
   respondidas: number;
 }
 
-/** Lista de pesquisas + respondidas + público-alvo (identificada: ativos do QLP; anônima: soma das cotas = ativos do QLP). */
+/** Lista de pesquisas + respondidas + público-alvo — só contam as filiais em que a pesquisa é válida. */
 export async function listarPesquisasComContagem() {
-  const [pesqs, resp, alvoRows] = await Promise.all([
+  const [pesqs, resp, qlp] = await Promise.all([
     db.select().from(schema.pesquisas).orderBy(desc(schema.pesquisas.createdAt)),
     db
-      .select({ pesquisaId: schema.pesquisaRespostas.pesquisaId, total: count() })
+      .select({ pesquisaId: schema.pesquisaRespostas.pesquisaId, filial: schema.pesquisaRespostas.filialCodigo, total: count() })
       .from(schema.pesquisaRespostas)
-      .groupBy(schema.pesquisaRespostas.pesquisaId),
-    db.select({ total: count() }).from(schema.qlpColaboradores).where(eq(schema.qlpColaboradores.ativo, true)),
+      .groupBy(schema.pesquisaRespostas.pesquisaId, schema.pesquisaRespostas.filialCodigo),
+    db
+      .select({ codfilial: schema.qlpColaboradores.codfilial, total: count() })
+      .from(schema.qlpColaboradores)
+      .where(eq(schema.qlpColaboradores.ativo, true))
+      .groupBy(schema.qlpColaboradores.codfilial),
   ]);
-  const alvo = alvoRows[0]?.total ?? 0;
-  const mapa = new Map(resp.map((r) => [r.pesquisaId, r.total]));
-  return pesqs.map((p) => ({ ...p, respondidas: mapa.get(p.id) ?? 0, alvo }));
+  return pesqs.map((p) => {
+    const alvo = qlp.filter((q) => noAlvo(p.filiaisAlvo, q.codfilial)).reduce((s, q) => s + q.total, 0);
+    const respondidas = resp
+      .filter((r) => r.pesquisaId === p.id && noAlvo(p.filiaisAlvo, r.filial))
+      .reduce((s, r) => s + r.total, 0);
+    return { ...p, respondidas, alvo };
+  });
 }
 
 export async function carregarIndicadores(id: string) {
@@ -66,11 +78,13 @@ export async function carregarIndicadores(id: string) {
       .where(eq(schema.qlpColaboradores.ativo, true)),
   ]);
 
-  const itens = respostasRaw.length
+  // Respostas de filiais fora da pesquisa não entram nos indicadores (continuam guardadas).
+  const respostasValidas = respostasRaw.filter((r) => noAlvo(pesquisa.filiaisAlvo, r.filialCodigo));
+  const itens = respostasValidas.length
     ? await db
         .select()
         .from(schema.pesquisaRespostaItens)
-        .where(inArray(schema.pesquisaRespostaItens.respostaId, respostasRaw.map((r) => r.id)))
+        .where(inArray(schema.pesquisaRespostaItens.respostaId, respostasValidas.map((r) => r.id)))
     : [];
   const porResposta = new Map<string, Record<string, Valor>>();
   for (const it of itens) {
@@ -79,7 +93,7 @@ export async function carregarIndicadores(id: string) {
     porResposta.set(it.respostaId, m);
   }
 
-  const respostas: RespostaRow[] = respostasRaw.map((r) => ({
+  const respostas: RespostaRow[] = respostasValidas.map((r) => ({
     id: r.id,
     chapa: r.chapa,
     nome: r.nome,
@@ -90,7 +104,7 @@ export async function carregarIndicadores(id: string) {
     valores: porResposta.get(r.id) ?? {},
   }));
 
-  const alvo: AlvoColab[] = alvoRaw.map((a) => ({
+  const alvo: AlvoColab[] = alvoRaw.filter((a) => noAlvo(pesquisa.filiaisAlvo, a.codfilial)).map((a) => ({
     chapa: a.chapa,
     nome: a.nome,
     funcao: a.funcao,

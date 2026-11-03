@@ -51,6 +51,7 @@ export default async function PesquisasPage() {
                     status: p.status,
                     respondidas: p.respondidas,
                     alvo: p.alvo,
+                    filiaisAlvo: p.filiaisAlvo ?? null,
                     criadaPorNome: p.criadaPorNome,
                     createdAt: p.createdAt.toISOString(),
                   }}
@@ -76,6 +77,7 @@ export default async function PesquisasPage() {
                     status: p.status,
                     respondidas: p.respondidas,
                     alvo: p.alvo,
+                    filiaisAlvo: p.filiaisAlvo ?? null,
                     criadaPorNome: p.criadaPorNome,
                     createdAt: p.createdAt.toISOString(),
                   }}

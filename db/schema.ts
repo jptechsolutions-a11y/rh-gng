@@ -709,6 +709,7 @@ export const pesquisas = pgTable('pesquisas', {
   descricao: text('descricao'),
   anonima: boolean('anonima').notNull().default(false),
   status: text('status').notNull().default('aberta'), // 'aberta' | 'encerrada'
+  filiaisAlvo: jsonb('filiais_alvo').$type<string[] | null>(), // null = todas as filiais; senão, só estas (códigos normalizados)
   criadaPorNome: text('criada_por_nome').notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   encerradaEm: timestamp('encerrada_em', { withTimezone: true }),

@@ -9,7 +9,7 @@ import type { EpiRow, StatusEpi } from './tipos';
 export async function buscarEpi(s: Session) {
   const imp = await db.query.epiImports.findFirst({
     where: eq(schema.epiImports.concluida, true),
-    orderBy: desc(schema.epiImports.createdAt),
+    orderBy: [desc(schema.epiImports.dataRef), desc(schema.epiImports.createdAt)],
   });
   if (!imp) return { imp: null, rows: [] as EpiRow[] };
 

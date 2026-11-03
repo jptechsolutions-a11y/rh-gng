@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Fragment, useMemo, useState } from 'react';
 import {
   Activity, AlertTriangle, Building2, CalendarClock, ChevronDown, ChevronRight, HardHat, LayoutGrid,
@@ -177,9 +178,17 @@ export function EpiDashboard({ rows, atualizadoEm }: { rows: EpiRow[]; atualizad
             </select>
           </label>
         ))}
-        {atualizadoEm && (
-          <span className="ml-auto text-[11px] text-conecta-muted">Base de {new Date(atualizadoEm).toLocaleDateString('pt-BR')}</span>
-        )}
+        <span className="ml-auto flex items-center gap-3">
+          {atualizadoEm && (
+            <span className="text-[11px] text-conecta-muted">Base de {new Date(atualizadoEm).toLocaleDateString('pt-BR')}</span>
+          )}
+          <Link
+            href="/epi/comparativo"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-conecta-accent text-white px-3 py-1.5 text-[11px] font-display font-semibold uppercase tracking-[0.12em] hover:brightness-110"
+          >
+            Comparar com a anterior
+          </Link>
+        </span>
       </div>
       {filtrosAtivos.length > 0 && (
         <div className="flex flex-wrap items-center gap-2">

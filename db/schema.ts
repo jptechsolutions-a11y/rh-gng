@@ -767,6 +767,7 @@ export const epiImports = pgTable('epi_imports', {
   importadoPorNome: text('importado_por_nome').notNull(),
   totalLinhas: integer('total_linhas').notNull().default(0),
   concluida: boolean('concluida').notNull().default(false),
+  dataRef: date('data_ref'), // data do painel (vem do nome do arquivo) — base do comparativo entre atualizações
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 

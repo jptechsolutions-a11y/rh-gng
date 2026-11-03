@@ -4,7 +4,7 @@ import {
   CalendarClock, Plus, BarChart3, UserCog, Target, BookOpen, Printer, ClipboardCheck,
   GalleryHorizontal, Cloud, Clock, AlertTriangle, Trophy, GraduationCap, CalendarOff,
   Network, Upload, IdCard, ListTree, UsersRound,
-  Bus, Route, Briefcase, ListChecks, ClipboardPen, HardHat,
+  Bus, Route, Briefcase, ListChecks, ClipboardPen, HardHat, GitCompare,
 } from 'lucide-react';
 
 // Fonte ÚNICA de navegação — consumida pela Sidebar (desktop) e pela MobileNav.
@@ -116,7 +116,8 @@ export const PESQUISAS_NAV: NavItem[] = [
 ];
 
 export const EPI_NAV_BASE: NavItem[] = [
-  { href: '/epi', label: 'Dashboard EPI', icon: HardHat },
+  { href: '/epi',             label: 'Dashboard EPI', icon: HardHat },
+  { href: '/epi/comparativo', label: 'Comparativo',   icon: GitCompare },
 ];
 export const EPI_NAV_ADMIN_EXTRAS: NavItem[] = [
   { href: '/epi/importar', label: 'Importar planilha', icon: Upload },

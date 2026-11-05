@@ -1,5 +1,5 @@
 import 'server-only';
-import { eq, inArray } from 'drizzle-orm';
+import { eq, inArray, sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import {
   qlpColaboradores,
@@ -258,8 +258,38 @@ export async function runImportSync(input: {
   }
 
   if (novosColab.length > 0) {
-    for (const batch of chunked(novosColab, CHUNK)) {
-      await db.insert(qlpColaboradores).values(batch);
+    // "Novo" = chapa que não está ATIVA hoje. Ela pode já existir como INATIVA (desligado que voltou /
+    // reaparece no quadro): a chapa é única na tabela, então reativa o cadastro existente em vez de
+    // inserir de novo (antes isso quebrava com "duplicate key ... qlp_colaboradores_chapa_key").
+    // Chapa repetida dentro do próprio arquivo: vale a última linha (ON CONFLICT não aceita a mesma chave 2x no lote).
+    const unicos = Array.from(new Map(novosColab.map((c) => [c.chapa, c])).values());
+    for (const batch of chunked(unicos, CHUNK)) {
+      await db
+        .insert(qlpColaboradores)
+        .values(batch)
+        .onConflictDoUpdate({
+          target: qlpColaboradores.chapa,
+          set: {
+            nome: sql`excluded.nome`,
+            regional: sql`excluded.regional`,
+            bandeira: sql`excluded.bandeira`,
+            codfilial: sql`excluded.codfilial`,
+            filialId: sql`excluded.filial_id`,
+            funcao: sql`excluded.funcao`,
+            secao: sql`excluded.secao`,
+            horario: sql`excluded.horario`,
+            nacionalidade: sql`excluded.nacionalidade`,
+            dtAdmissao: sql`excluded.dt_admissao`,
+            mesNasc: sql`excluded.mes_nasc`,
+            idade: sql`excluded.idade`,
+            situacao: sql`excluded.situacao`,
+            tierResolvido: sql`excluded.tier_resolvido`,
+            nivelResolvido: sql`excluded.nivel_resolvido`,
+            trilhaResolvida: sql`excluded.trilha_resolvida`,
+            ativo: true,
+            updatedAt: new Date(),
+          },
+        });
     }
   }
 

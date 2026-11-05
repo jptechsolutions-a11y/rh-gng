@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { and, eq, ne } from 'drizzle-orm';
+import { and, desc, eq, ne } from 'drizzle-orm';
 import { db, schema } from '@/db/client';
 import { requireSession } from '@/lib/auth/session';
 import type { IcHeadcountInput, IcPendenciaInput } from '@/lib/ic/tipos';
@@ -51,6 +51,20 @@ export async function concluirImportIc(importId: string, headcount: IcHeadcountI
   if (!imp || imp.concluida) throw new Error('lote de importação inválido');
   if (headcount.length > 0) {
     await db.insert(schema.icHeadcount).values(headcount.map((h) => ({ importId, filialCodigo: h.filialCodigo, qtd: h.qtd })));
+  } else {
+    // Planilha só com pendências (sem o cadastro de funcionários): reaproveita o quadro da semana mais recente anterior.
+    const [anterior] = await db
+      .select({ id: schema.icImports.id })
+      .from(schema.icImports)
+      .where(and(eq(schema.icImports.concluida, true), ne(schema.icImports.id, importId)))
+      .orderBy(desc(schema.icImports.semanaRef))
+      .limit(1);
+    if (anterior) {
+      const hc = await db.select().from(schema.icHeadcount).where(eq(schema.icHeadcount.importId, anterior.id));
+      if (hc.length > 0) {
+        await db.insert(schema.icHeadcount).values(hc.map((h) => ({ importId, filialCodigo: h.filialCodigo, qtd: h.qtd })));
+      }
+    }
   }
   await db.update(schema.icImports).set({ concluida: true, totalPendencias }).where(eq(schema.icImports.id, importId));
   // Reimportar a mesma semana substitui; semanas diferentes ficam no histórico.

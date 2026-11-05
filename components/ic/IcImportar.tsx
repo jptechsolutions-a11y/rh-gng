@@ -27,14 +27,18 @@ export function IcImportar({ semanas }: { semanas: { semanaRef: string; arquivo:
       setFase('lendo');
       setMsg('Lendo a planilha no navegador… arquivos grandes levam até 1 minuto.');
       const buf = await file.arrayBuffer();
-      // Só a aba BASE é lida (a outra aba é um recorte dela).
-      const wb = XLSX.read(buf, { type: 'array', cellDates: true, sheets: 'BASE' });
+      // Usa a aba BASE (completa, com o cadastro de funcionários) ou, se não houver, a planilha simples de pendências.
+      const wb = XLSX.read(buf, { type: 'array', cellDates: true });
       const { pendencias, headcount, totalBase } = parseBaseIc(wb);
-      if (pendencias.length === 0) throw new Error('Nenhuma pendência da bandeira PERLOG encontrada na aba BASE');
+      if (pendencias.length === 0) throw new Error('Nenhuma pendência da bandeira PERLOG encontrada no arquivo');
 
       setFase('enviando');
       const func = headcount.reduce((s, h) => s + h.qtd, 0);
-      setMsg(`${pendencias.length} pendências PERLOG e ${func} funcionários (de ${totalBase} linhas na base). Enviando…`);
+      setMsg(
+        func > 0
+          ? `${pendencias.length} pendências PERLOG e ${func} funcionários (de ${totalBase} linhas na base). Enviando…`
+          : `${pendencias.length} pendências PERLOG (de ${totalBase} linhas). Sem cadastro de funcionários no arquivo — uso o quadro da semana anterior. Enviando…`,
+      );
       importId = await iniciarImportIc(file.name, semana);
       for (let i = 0; i < pendencias.length; i += LOTE) {
         await enviarLoteIc(importId, pendencias.slice(i, i + LOTE));

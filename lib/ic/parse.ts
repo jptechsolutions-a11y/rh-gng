@@ -42,23 +42,32 @@ export function semanaDoNomeArquivo(nome: string, hoje = new Date()): string | n
   return `${ano}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
 }
 
+/** Acha a aba com o cabeçalho (CHAPA, TIPO, PENDENCIA, BANDEIRA): prefere a "BASE" completa; senão serve qualquer aba no formato simples (ex.: "Planilha2"). */
+function achaAba(wb: XLSX.WorkBook): { aba: string; rows: unknown[][]; hdr: number } | null {
+  const ordem = [...wb.SheetNames].sort((a, b) => (norm(b) === ABA ? 1 : 0) - (norm(a) === ABA ? 1 : 0));
+  for (const aba of ordem) {
+    const ws = wb.Sheets[aba];
+    if (!ws) continue;
+    const rows = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, defval: null, raw: true });
+    // O cabeçalho pode não estar na 1ª linha (há avisos acima na BASE).
+    for (let i = 0; i < Math.min(rows.length, 60); i++) {
+      const cols = (rows[i] ?? []).map(norm);
+      if (cols.includes('CHAPA') && cols.includes('TIPO') && cols.includes('PENDENCIA') && cols.includes('BANDEIRA')) return { aba, rows, hdr: i };
+    }
+  }
+  return null;
+}
+
 /**
- * Lê a aba BASE do "IC SEMANAL": linhas PERLOG viram pendências; as linhas de
- * cadastro (TIPO "FUNCIONÁRIO", PENDENCIA "CADASTRO DE FUNCIONÁRIOS") não são
- * pendência — só alimentam o total de funcionários por filial.
+ * Lê o "IC SEMANAL": linhas PERLOG viram pendências. Na aba BASE completa vêm também as linhas de
+ * cadastro (TIPO "FUNCIONÁRIO", PENDENCIA "CADASTRO DE FUNCIONÁRIOS"), que não são pendência —
+ * só alimentam o total de funcionários por filial. Na planilha simples (só pendências) o
+ * headcount vem vazio e o sistema reaproveita o da semana anterior.
  */
 export function parseBaseIc(wb: XLSX.WorkBook): { pendencias: IcPendenciaInput[]; headcount: IcHeadcountInput[]; totalBase: number } {
-  const aba = wb.SheetNames.find((n) => norm(n) === ABA);
-  if (!aba) throw new Error(`Aba "${ABA}" não encontrada no arquivo`);
-  const rows = XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets[aba]!, { header: 1, defval: null, raw: true });
-
-  // O cabeçalho não está na 1ª linha (há avisos acima): procura a linha com CHAPA + TIPO + PENDENCIA.
-  let hdr = -1;
-  for (let i = 0; i < Math.min(rows.length, 60); i++) {
-    const cols = (rows[i] ?? []).map(norm);
-    if (cols.includes('CHAPA') && cols.includes('TIPO') && cols.includes('PENDENCIA') && cols.includes('BANDEIRA')) { hdr = i; break; }
-  }
-  if (hdr < 0) throw new Error('Cabeçalho (CHAPA, TIPO, PENDENCIA, BANDEIRA) não encontrado na aba BASE');
+  const achada = achaAba(wb);
+  if (!achada) throw new Error('Não encontrei uma aba com as colunas CHAPA, TIPO, PENDENCIA e BANDEIRA (esperava "BASE" ou "Planilha2")');
+  const { rows, hdr } = achada;
   const idx = new Map<string, number>();
   (rows[hdr] as unknown[]).forEach((h, i) => { const k = norm(h); if (k && !idx.has(k)) idx.set(k, i); });
   const c = (r: unknown[], nome: string) => { const i = idx.get(nome); return i == null ? null : r[i]; };

@@ -20,7 +20,7 @@ const sql = postgres(env.DIRECT_URL!, { ssl: 'require', onnotice: () => {} });
 try {
   await sql.unsafe(readFileSync('db/migrations/0012_ic.sql', 'utf8'));
 
-  const wb = XLSX.read(readFileSync(arquivo), { type: 'buffer', cellDates: true, sheets: 'BASE' });
+  const wb = XLSX.read(readFileSync(arquivo), { type: 'buffer', cellDates: true });
   const { pendencias, headcount, totalBase } = parseBaseIc(wb);
   console.log(`lidas ${pendencias.length} pendências PERLOG e ${headcount.reduce((s, h) => s + h.qtd, 0)} funcionários (de ${totalBase} linhas)`);
 
@@ -38,6 +38,13 @@ try {
   }
   if (headcount.length > 0) {
     await sql`INSERT INTO ic_headcount ${sql(headcount.map((h) => ({ import_id: imp!.id, filial_codigo: h.filialCodigo, qtd: h.qtd })))}`;
+  } else {
+    // Planilha só com pendências: reaproveita o quadro (funcionários por filial) da semana mais recente anterior.
+    const [ant] = await sql<{ id: string }[]>`SELECT id FROM ic_imports WHERE concluida AND id <> ${imp!.id} ORDER BY semana_ref DESC LIMIT 1`;
+    if (ant) {
+      await sql`INSERT INTO ic_headcount (import_id, filial_codigo, qtd) SELECT ${imp!.id}, filial_codigo, qtd FROM ic_headcount WHERE import_id = ${ant.id}`;
+      console.log('quadro (funcionários) reaproveitado da semana anterior');
+    }
   }
   await sql`UPDATE ic_imports SET concluida = true, total_pendencias = ${pendencias.length} WHERE id = ${imp!.id}`;
   await sql`DELETE FROM ic_imports WHERE semana_ref = ${semana} AND id <> ${imp!.id}`;

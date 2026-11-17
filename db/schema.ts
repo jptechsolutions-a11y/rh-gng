@@ -852,3 +852,34 @@ export const icResponsaveis = pgTable('ic_responsaveis', {
 });
 
 export type IcResponsavel = typeof icResponsaveis.$inferSelect;
+
+// =====================================================
+// Avaliação de Experiência (35/70 dias) — pendências por filial e gestor
+// =====================================================
+
+export const expImports = pgTable('exp_imports', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  dataRef: date('data_ref').notNull(),
+  arquivoNome: text('arquivo_nome').notNull(),
+  importadoPorNome: text('importado_por_nome').notNull(),
+  totalColaboradores: integer('total_colaboradores').notNull().default(0),
+  concluida: boolean('concluida').notNull().default(false),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const expLinhas = pgTable('exp_linhas', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  importId: uuid('import_id').notNull().references(() => expImports.id, { onDelete: 'cascade' }),
+  filialCodigo: text('filial_codigo').notNull(),
+  chapa: text('chapa').notNull(),
+  nome: text('nome').notNull(),
+  dtAdmissao: date('dt_admissao'),
+  avaliadorArquivo: text('avaliador_arquivo'),
+  prev35: date('prev_35'),
+  status35: text('status_35'),
+  prev70: date('prev_70'),
+  status70: text('status_70'),
+}, (t) => ({
+  importIdx: index('exp_linhas_import_idx').on(t.importId),
+  filialIdx: index('exp_linhas_filial_idx').on(t.filialCodigo),
+}));

@@ -95,6 +95,12 @@ export function ComiteDashboard({
       .sort((a, b) => a.filial.localeCompare(b.filial, undefined, { numeric: true }) || a.nome.localeCompare(b.nome));
   }, [filtradas, busca]);
 
+  const porFilial = useMemo(() => {
+    const m = new Map<string, ComiteLancamento[]>();
+    for (const l of lista) m.set(l.filial, [...(m.get(l.filial) ?? []), l]);
+    return Array.from(m.entries()).sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0], undefined, { numeric: true }));
+  }, [lista]);
+
   const filtrosAtivos = (Object.keys(filtros) as Dim[]).filter((d) => filtros[d]);
   const opcoesMes = meses.includes(mes) ? meses : [mes, ...meses];
 
@@ -135,11 +141,9 @@ export function ComiteDashboard({
           )}
 
           {/* KPIs */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[
               { l: 'Lançados', v: kpi.total, sub: `em ${kpi.filiais} filiais`, c: '#0D2B6B', icon: Users },
-              { l: 'Suspensões', v: kpi.susp, sub: 'no total', c: '#C62828', icon: Gavel },
-              { l: 'Advertências', v: kpi.adv, sub: 'no total', c: '#C98A0E', icon: Gavel },
               { l: 'Tempo médio de casa', v: kpi.tempo == null ? '—' : fmtTempo(Math.round(kpi.tempo)), sub: 'até o mês de referência', c: '#E8621A', icon: Hourglass },
             ].map((k) => (
               <ConectaCard key={k.l}>
@@ -160,38 +164,33 @@ export function ComiteDashboard({
             <VagasRankingBars titulo="Por turno" icon={Clock} color="orange" labelWidthClass="w-32" data={g.turno} selected={filtros.turno ?? null} onSelect={(v) => alternar('turno', v)} />
           </div>
 
-          {/* Lista */}
+          {/* Por filial */}
           <ConectaCard noPadding>
             <div className="p-5 pb-3 space-y-3">
-              <SectionHeader label={`Colaboradores (${lista.length}) — clique no nome para ver a justificativa`} icon={Users} />
+              <SectionHeader label="Por filial — clique no nome para ver a justificativa" icon={Building2} />
               <div className="relative max-w-sm">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-conecta-muted" />
                 <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar nome ou matrícula…" className="w-full rounded-lg border border-conecta-primary/15 pl-8 pr-3 py-1.5 text-sm" />
               </div>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-[10px] font-display uppercase tracking-[0.18em] text-conecta-muted border-y border-conecta-primary/10 bg-slate-50">
-                    <th className="px-5 py-2">Filial</th><th className="px-3 py-2">Nome</th><th className="px-3 py-2">Função</th>
-                    <th className="px-3 py-2">Tempo de empresa</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-conecta-primary/8">
-                  {lista.map((l) => (
-                    <tr key={l.id} className="hover:bg-slate-50/70">
-                      <td className="px-5 py-2 tabular-nums">{l.filial}</td>
-                      <td className="px-3 py-2">
-                        <button type="button" onClick={() => setAberto(l)} className="text-left font-semibold text-conecta-primary hover:text-conecta-accent underline-offset-2 hover:underline">{l.nome}</button>
-                        <div className="text-[11px] text-conecta-muted tabular-nums">{l.chapa}</div>
-                      </td>
-                      <td className="px-3 py-2">{l.funcao}</td>
-                      <td className="px-3 py-2">{fmtTempo(l.tempoMeses)}</td>
-                    </tr>
-                  ))}
-                  {lista.length === 0 && <tr><td colSpan={4} className="px-5 py-10 text-center text-conecta-muted">Nada com esses filtros.</td></tr>}
-                </tbody>
-              </table>
+            <div className="px-5 pb-5 grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {porFilial.map(([filial, itens]) => (
+                <div key={filial} className="rounded-xl border border-conecta-primary/10 overflow-hidden">
+                  <div className="flex items-center justify-between bg-conecta-primary/5 px-4 py-2">
+                    <span className="font-display text-[12px] uppercase tracking-[0.18em] font-bold text-conecta-primary">Filial {filial}</span>
+                    <span className="font-display text-lg font-extrabold tabular-nums text-conecta-accent">{itens.length}</span>
+                  </div>
+                  <ul className="divide-y divide-conecta-primary/8">
+                    {itens.map((l) => (
+                      <li key={l.id} className="px-4 py-2 flex items-baseline gap-3">
+                        <button type="button" onClick={() => setAberto(l)} className="text-left text-sm font-semibold text-conecta-primary hover:text-conecta-accent hover:underline underline-offset-2">{l.nome}</button>
+                        <span className="ml-auto text-[11px] text-conecta-muted text-right">{l.funcao} · {fmtTempo(l.tempoMeses)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+              {porFilial.length === 0 && <p className="col-span-full py-8 text-center text-sm text-conecta-muted">Nada com esses filtros.</p>}
             </div>
           </ConectaCard>
         </>

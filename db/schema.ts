@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm';
 import {
   pgTable, uuid, text, boolean, timestamp, integer, numeric, jsonb, date,
-  bigserial, primaryKey, index, uniqueIndex, check, smallint,
+  bigserial, primaryKey, index, uniqueIndex, unique, check, smallint,
 } from 'drizzle-orm/pg-core';
 
 export const filiais = pgTable('filiais', {
@@ -852,3 +852,62 @@ export const icResponsaveis = pgTable('ic_responsaveis', {
 });
 
 export type IcResponsavel = typeof icResponsaveis.$inferSelect;
+
+// =====================================================
+// Avaliação de Experiência (35/70 dias) — pendências por filial e gestor
+// =====================================================
+
+export const expImports = pgTable('exp_imports', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  dataRef: date('data_ref').notNull(),
+  arquivoNome: text('arquivo_nome').notNull(),
+  importadoPorNome: text('importado_por_nome').notNull(),
+  totalColaboradores: integer('total_colaboradores').notNull().default(0),
+  concluida: boolean('concluida').notNull().default(false),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// =====================================================
+// Comitê de Desligamento — lançamentos mensais por filial
+// =====================================================
+
+export const comiteDesligamentos = pgTable('comite_desligamentos', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  filialCodigo: text('filial_codigo').notNull(),
+  chapa: text('chapa').notNull(),
+  nome: text('nome').notNull(),
+  funcao: text('funcao'),
+  secao: text('secao'),
+  dtAdmissao: date('dt_admissao'),
+  idade: smallint('idade'),
+  horario: text('horario'),
+  qtdSuspensoes: integer('qtd_suspensoes').notNull().default(0),
+  qtdAdvertencias: integer('qtd_advertencias').notNull().default(0),
+  mesReferencia: date('mes_referencia').notNull(),
+  justificativa: text('justificativa').notNull(),
+  criadoPor: text('criado_por').notNull(),
+  atualizadoPor: text('atualizado_por'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  mesIdx: index('comite_desl_mes_idx').on(t.mesReferencia),
+  filialIdx: index('comite_desl_filial_idx').on(t.filialCodigo),
+  chapaMesUniq: unique('comite_desl_chapa_mes_uniq').on(t.chapa, t.mesReferencia),
+}));
+
+export const expLinhas = pgTable('exp_linhas', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  importId: uuid('import_id').notNull().references(() => expImports.id, { onDelete: 'cascade' }),
+  filialCodigo: text('filial_codigo').notNull(),
+  chapa: text('chapa').notNull(),
+  nome: text('nome').notNull(),
+  dtAdmissao: date('dt_admissao'),
+  avaliadorArquivo: text('avaliador_arquivo'),
+  prev35: date('prev_35'),
+  status35: text('status_35'),
+  prev70: date('prev_70'),
+  status70: text('status_70'),
+}, (t) => ({
+  importIdx: index('exp_linhas_import_idx').on(t.importId),
+  filialIdx: index('exp_linhas_filial_idx').on(t.filialCodigo),
+}));

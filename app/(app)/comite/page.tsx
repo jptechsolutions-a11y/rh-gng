@@ -1,0 +1,24 @@
+import { requireSession } from '@/lib/auth/session';
+import { TopBar } from '@/components/layout/TopBar';
+import { buscarComite } from '@/lib/comite/buscar';
+import { ComiteDashboard } from '@/components/comite/ComiteDashboard';
+
+export const dynamic = 'force-dynamic';
+
+export default async function ComitePage({ searchParams }: { searchParams: Promise<{ mes?: string }> }) {
+  const s = await requireSession();
+  const { mes } = await searchParams;
+  const d = await buscarComite(s, mes);
+  const badge =
+    s.perfil === 'admin' ? 'ADMIN' :
+    s.perfil === 'filial' ? `Filial ${s.filialCodigo}` :
+    s.escopo === 'nacional' ? 'NACIONAL' : 'REGIONAL';
+  return (
+    <>
+      <TopBar titulo="Comitê de Desligamento" subtitulo="Apresentação mensal dos colaboradores lançados" badge={badge} />
+      <div className="p-4 lg:p-6">
+        <ComiteDashboard lancamentos={d.lancamentos} mes={d.mes} meses={d.meses} anteriorPorFilial={d.anteriorPorFilial} />
+      </div>
+    </>
+  );
+}

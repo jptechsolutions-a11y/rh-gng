@@ -19,6 +19,8 @@ import {
   PESQUISAS_NAV,
   EPI_NAV_BASE, EPI_NAV_ADMIN_EXTRAS,
   IC_NAV_BASE, IC_NAV_ADMIN_EXTRAS,
+  EXPERIENCIA_NAV_BASE, EXPERIENCIA_NAV_ADMIN_EXTRAS,
+  COMITE_NAV,
 } from './nav-config';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 
@@ -55,6 +57,12 @@ export function Sidebar({
   const inIc =
     pathname === '/ic' ||
     pathname.startsWith('/ic/');
+  const inComite =
+    pathname === '/comite' ||
+    pathname.startsWith('/comite/');
+  const inExp =
+    pathname === '/experiencia' ||
+    pathname.startsWith('/experiencia/');
   const inEpi =
     pathname === '/epi' ||
     pathname.startsWith('/epi/');
@@ -70,7 +78,13 @@ export function Sidebar({
       pathname.startsWith('/entrevista/') ||
       pathname.startsWith('/candidato/')
     );
-  const nav = inIc
+  const nav = inComite
+    ? COMITE_NAV
+    : inExp
+    ? perfil === 'admin'
+      ? [...EXPERIENCIA_NAV_BASE, ...EXPERIENCIA_NAV_ADMIN_EXTRAS]
+      : EXPERIENCIA_NAV_BASE
+    : inIc
     ? perfil === 'admin'
       ? [...IC_NAV_BASE, ...IC_NAV_ADMIN_EXTRAS]
       : IC_NAV_BASE
@@ -109,7 +123,11 @@ export function Sidebar({
               : perfil === 'visualizador'
                 ? VISUALIZADOR_NAV
                 : FILIAL_NAV;
-  const moduleLabel = inIc
+  const moduleLabel = inComite
+    ? 'Comitê de Desligamento'
+    : inExp
+    ? 'Avaliação de Experiência'
+    : inIc
     ? 'IC'
     : inEpi
     ? 'EPI'

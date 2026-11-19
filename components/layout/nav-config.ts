@@ -123,6 +123,12 @@ export const EPI_NAV_ADMIN_EXTRAS: NavItem[] = [
   { href: '/epi/importar', label: 'Importar planilha', icon: Upload },
 ];
 
+export const COMITE_NAV: NavItem[] = [
+  { href: '/comite',             label: 'Apresentação', icon: LayoutDashboard },
+  { href: '/comite/lancar',      label: 'Lançar',       icon: Plus },
+  { href: '/comite/lancamentos', label: 'Lançamentos',  icon: ListChecks },
+];
+
 export const EXPERIENCIA_NAV_BASE: NavItem[] = [
   { href: '/experiencia', label: 'Pendências', icon: ClipboardCheck },
 ];

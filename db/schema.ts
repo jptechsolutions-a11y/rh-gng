@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm';
 import {
   pgTable, uuid, text, boolean, timestamp, integer, numeric, jsonb, date,
-  bigserial, primaryKey, index, uniqueIndex, check, smallint,
+  bigserial, primaryKey, index, uniqueIndex, unique, check, smallint,
 } from 'drizzle-orm/pg-core';
 
 export const filiais = pgTable('filiais', {
@@ -866,6 +866,34 @@ export const expImports = pgTable('exp_imports', {
   concluida: boolean('concluida').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
+
+// =====================================================
+// Comitê de Desligamento — lançamentos mensais por filial
+// =====================================================
+
+export const comiteDesligamentos = pgTable('comite_desligamentos', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  filialCodigo: text('filial_codigo').notNull(),
+  chapa: text('chapa').notNull(),
+  nome: text('nome').notNull(),
+  funcao: text('funcao'),
+  secao: text('secao'),
+  dtAdmissao: date('dt_admissao'),
+  idade: smallint('idade'),
+  horario: text('horario'),
+  qtdSuspensoes: integer('qtd_suspensoes').notNull().default(0),
+  qtdAdvertencias: integer('qtd_advertencias').notNull().default(0),
+  mesReferencia: date('mes_referencia').notNull(),
+  justificativa: text('justificativa').notNull(),
+  criadoPor: text('criado_por').notNull(),
+  atualizadoPor: text('atualizado_por'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  mesIdx: index('comite_desl_mes_idx').on(t.mesReferencia),
+  filialIdx: index('comite_desl_filial_idx').on(t.filialCodigo),
+  chapaMesUniq: unique('comite_desl_chapa_mes_uniq').on(t.chapa, t.mesReferencia),
+}));
 
 export const expLinhas = pgTable('exp_linhas', {
   id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),

@@ -16,6 +16,7 @@ import {
   HardHat,
   Trophy,
   ClipboardCheck,
+  Gavel,
 } from 'lucide-react';
 import { ConectaLogo } from '@/components/brand/ConectaLogo';
 import { ConectaSymbol } from '@/components/brand/ConectaSymbol';
@@ -461,6 +462,35 @@ export default async function InicioPage() {
                   Pendências de 35 e 70 dias por filial e gestor, com alerta de prazo.
                 </p>
                 <div className="inline-flex items-center gap-2 text-[13px] font-display font-semibold text-conecta-accent group-hover:gap-3 transition-all mt-3">
+                  Acessar
+                  <ArrowRight className="h-4 w-4" />
+                </div>
+              </div>
+            </div>
+          </Link>
+
+          {/* Comitê de Desligamento */}
+          <Link
+            href="/comite"
+            className="cg-module-card group relative rounded-2xl bg-white text-conecta-text p-5 overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-[0_20px_44px_-12px_rgba(13,43,107,0.45)]"
+          >
+            <span aria-hidden className="absolute top-0 left-0 right-0 h-1 w-full" style={{ background: '#0D2B6B' }} />
+            <div className="absolute top-4 right-4 h-24 w-24 bg-conecta-primary/10 rounded-full blur-3xl group-hover:bg-conecta-primary/20 transition-colors" />
+            <div className="relative flex items-start gap-4">
+              <div
+                className="grid place-items-center h-12 w-12 rounded-xl text-white shrink-0"
+                style={{ background: '#0D2B6B', boxShadow: '0 10px 22px -8px rgba(13,43,107,0.5)' }}
+              >
+                <Gavel className="h-6 w-6" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <h2 className="font-display text-[18px] font-extrabold text-conecta-primary tracking-tight leading-tight">
+                  Comitê de Desligamento
+                </h2>
+                <p className="text-[12px] text-conecta-muted mt-1 leading-snug">
+                  Lançamento mensal de indicados ao desligamento, com justificativa e indicadores.
+                </p>
+                <div className="inline-flex items-center gap-2 text-[13px] font-display font-semibold text-conecta-primary group-hover:gap-3 transition-all mt-3">
                   Acessar
                   <ArrowRight className="h-4 w-4" />
                 </div>

@@ -135,14 +135,12 @@ export function ComiteDashboard({
           )}
 
           {/* KPIs */}
-          <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
               { l: 'Lançados', v: kpi.total, sub: `em ${kpi.filiais} filiais`, c: '#0D2B6B', icon: Users },
-              { l: 'Suspensões', v: kpi.susp, sub: `${dec(kpi.total ? kpi.susp / kpi.total : null)} por pessoa`, c: '#C62828', icon: Gavel },
-              { l: 'Advertências', v: kpi.adv, sub: `${dec(kpi.total ? kpi.adv / kpi.total : null)} por pessoa`, c: '#C98A0E', icon: Gavel },
+              { l: 'Suspensões', v: kpi.susp, sub: 'no total', c: '#C62828', icon: Gavel },
+              { l: 'Advertências', v: kpi.adv, sub: 'no total', c: '#C98A0E', icon: Gavel },
               { l: 'Tempo médio de casa', v: kpi.tempo == null ? '—' : fmtTempo(Math.round(kpi.tempo)), sub: 'até o mês de referência', c: '#E8621A', icon: Hourglass },
-              { l: 'Idade média', v: kpi.idade == null ? '—' : `${dec(kpi.idade)} anos`, sub: 'quando informada', c: '#0D2B6B', icon: UserRound },
-              { l: 'Filiais', v: kpi.filiais, sub: 'com lançamentos', c: '#E8621A', icon: Building2 },
             ].map((k) => (
               <ConectaCard key={k.l}>
                 <div className="flex items-center gap-2 text-[10px] font-display uppercase tracking-[0.18em] text-conecta-muted font-semibold">
@@ -160,38 +158,12 @@ export function ComiteDashboard({
             <VagasRankingBars titulo="Por função (top 10)" icon={Briefcase} color="orange" labelWidthClass="w-44" data={g.funcao} selected={filtros.funcao ?? null} onSelect={(v) => alternar('funcao', v)} />
             <VagasRankingBars titulo="Por faixa de idade" icon={UserRound} labelWidthClass="w-32" data={g.idade} selected={filtros.idade ?? null} onSelect={(v) => alternar('idade', v)} />
             <VagasRankingBars titulo="Por turno" icon={Clock} color="orange" labelWidthClass="w-32" data={g.turno} selected={filtros.turno ?? null} onSelect={(v) => alternar('turno', v)} />
-            <VagasRankingBars titulo="Por tempo de empresa" icon={Hourglass} labelWidthClass="w-40" data={g.tempo} selected={filtros.tempo ?? null} onSelect={(v) => alternar('tempo', v)} />
-            <VagasRankingBars titulo="Por quantidade de medidas (susp. + adv.)" icon={Gavel} color="orange" labelWidthClass="w-40" data={g.medidas} selected={filtros.medidas ?? null} onSelect={(v) => alternar('medidas', v)} />
           </div>
-
-          {/* Comparativo com o mês anterior */}
-          <ConectaCard noPadding>
-            <div className="p-5 pb-3"><SectionHeader label="Comparativo com o mês anterior (por filial)" icon={Building2} /></div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-[10px] font-display uppercase tracking-[0.18em] text-conecta-muted border-y border-conecta-primary/10 bg-slate-50">
-                    <th className="px-5 py-2">Filial</th><th className="px-3 py-2 text-right">Mês anterior</th><th className="px-3 py-2 text-right">{nomeMes(mes)}</th><th className="px-3 py-2 text-right">Variação</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-conecta-primary/8">
-                  {g.filiaisCmp.map(({ f, a, p }) => (
-                    <tr key={f}>
-                      <td className="px-5 py-2 tabular-nums">{f}</td>
-                      <td className="px-3 py-2 text-right tabular-nums">{p}</td>
-                      <td className="px-3 py-2 text-right tabular-nums font-semibold">{a}</td>
-                      <td className={`px-3 py-2 text-right tabular-nums font-semibold ${a > p ? 'text-rose-700' : a < p ? 'text-emerald-700' : 'text-conecta-muted'}`}>{a - p > 0 ? '+' : ''}{a - p}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </ConectaCard>
 
           {/* Lista */}
           <ConectaCard noPadding>
             <div className="p-5 pb-3 space-y-3">
-              <SectionHeader label={`Colaboradores lançados (${lista.length}) — clique no nome para ver a justificativa`} icon={Users} />
+              <SectionHeader label={`Colaboradores (${lista.length}) — clique no nome para ver a justificativa`} icon={Users} />
               <div className="relative max-w-sm">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-conecta-muted" />
                 <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar nome ou matrícula…" className="w-full rounded-lg border border-conecta-primary/15 pl-8 pr-3 py-1.5 text-sm" />
@@ -202,8 +174,7 @@ export function ComiteDashboard({
                 <thead>
                   <tr className="text-left text-[10px] font-display uppercase tracking-[0.18em] text-conecta-muted border-y border-conecta-primary/10 bg-slate-50">
                     <th className="px-5 py-2">Filial</th><th className="px-3 py-2">Nome</th><th className="px-3 py-2">Função</th>
-                    <th className="px-3 py-2">Turno</th><th className="px-3 py-2 text-center">Idade</th><th className="px-3 py-2">Tempo de empresa</th>
-                    <th className="px-3 py-2 text-center">Susp.</th><th className="px-3 py-2 text-center">Adv.</th>
+                    <th className="px-3 py-2">Tempo de empresa</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-conecta-primary/8">
@@ -215,14 +186,10 @@ export function ComiteDashboard({
                         <div className="text-[11px] text-conecta-muted tabular-nums">{l.chapa}</div>
                       </td>
                       <td className="px-3 py-2">{l.funcao}</td>
-                      <td className="px-3 py-2">{l.turno}</td>
-                      <td className="px-3 py-2 text-center tabular-nums">{l.idade ?? '—'}</td>
                       <td className="px-3 py-2">{fmtTempo(l.tempoMeses)}</td>
-                      <td className="px-3 py-2 text-center tabular-nums">{l.suspensoes}</td>
-                      <td className="px-3 py-2 text-center tabular-nums">{l.advertencias}</td>
                     </tr>
                   ))}
-                  {lista.length === 0 && <tr><td colSpan={8} className="px-5 py-10 text-center text-conecta-muted">Nada com esses filtros.</td></tr>}
+                  {lista.length === 0 && <tr><td colSpan={4} className="px-5 py-10 text-center text-conecta-muted">Nada com esses filtros.</td></tr>}
                 </tbody>
               </table>
             </div>

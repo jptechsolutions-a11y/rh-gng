@@ -20,6 +20,21 @@ export function paraLancamento(l: Linha): ComiteLancamento {
   };
 }
 
+/** Lançamento sem idade/horário gravados (QLP ainda sem a coluna na época): completa com o QLP atual. */
+async function completarDoQlp(linhas: Linha[]): Promise<Linha[]> {
+  const faltando = linhas.filter((l) => l.idade == null || l.horario == null).map((l) => l.chapa);
+  if (faltando.length === 0) return linhas;
+  const qlp = await db
+    .select({ chapa: schema.qlpColaboradores.chapa, idade: schema.qlpColaboradores.idade, horario: schema.qlpColaboradores.horario })
+    .from(schema.qlpColaboradores)
+    .where(inArray(schema.qlpColaboradores.chapa, faltando));
+  const porChapa = new Map(qlp.map((q) => [q.chapa, q]));
+  return linhas.map((l) => {
+    const q = porChapa.get(l.chapa);
+    return q ? { ...l, idade: l.idade ?? q.idade, horario: l.horario ?? q.horario } : l;
+  });
+}
+
 /** Lançamentos do mês dentro do escopo da sessão + meses com lançamento + contagem por filial do mês anterior. */
 export async function buscarComite(s: Session, mesParam?: string | null) {
   const permitidas = await filiaisPermitidas(s);
@@ -47,7 +62,7 @@ export async function buscarComite(s: Session, mesParam?: string | null) {
   ]);
   return {
     mes, meses, filiais: permitidas,
-    lancamentos: linhas.map(paraLancamento),
+    lancamentos: (await completarDoQlp(linhas)).map(paraLancamento),
     anteriorPorFilial: Object.fromEntries(anteriores.map((a) => [a.filial, a.n])) as Record<string, number>,
   };
 }
@@ -57,5 +72,5 @@ export async function buscarLancamento(s: Session, id: string): Promise<ComiteLa
   const [l] = await db.select().from(schema.comiteDesligamentos).where(eq(schema.comiteDesligamentos.id, id)).limit(1);
   if (!l) return null;
   const ok = (await filiaisPermitidas(s)).some((f) => f.codigo === l.filialCodigo);
-  return ok ? paraLancamento(l) : null;
+  return ok ? paraLancamento((await completarDoQlp([l]))[0]!) : null;
 }

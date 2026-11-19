@@ -150,7 +150,26 @@
       "Bash(python manual_qlp.py)",
       "Skill(artifact-design)",
       "Skill(artifact-design:*)",
-      "Bash(gh pr *)"
+      "Bash(gh pr *)",
+      "Bash(gh run *)",
+      "PowerShell(Set-Location \"C:\\\\Users\\\\juliano.correa\\\\Desktop\\\\G&G\"; $env:DATABASE_URL=\"postgres://build:build@localhost:5432/build\"; node node_modules/next/dist/bin/next build --no-lint 2>&1 | Select-Object -Last 20)",
+      "PowerShell(Set-Location \"C:\\\\Users\\\\juliano.correa\\\\Desktop\\\\G&G\"; $env:DATABASE_URL=\"postgres://build:build@localhost:5432/build\"; node node_modules/next/dist/bin/next build --no-lint 2>&1 | Select-Object -Last 25)",
+      "Bash(git commit -m 'fix\\(indicadores\\): corrige 504 na importação de cursos *)",
+      "Bash(npx vitest *)",
+      "PowerShell(npx vitest run lib/qlp/import-sync.test.ts lib/qlp/sync-diff.test.ts 2>&1)",
+      "PowerShell(node \"node_modules\\\\vitest\\\\vitest.mjs\" run lib/qlp/import-sync.test.ts lib/qlp/sync-diff.test.ts 2>&1)",
+      "PowerShell(node \"node_modules\\\\vitest\\\\vitest.mjs\" run lib/qlp/detectar-mudancas.test.ts lib/qlp/sync-diff.test.ts lib/qlp/xls-parser.test.ts lib/qlp/autoclassify.test.ts 2>&1)",
+      "PowerShell(npx tsc --noEmit -p tsconfig.json 2>&1)",
+      "PowerShell(node \"node_modules\\\\typescript\\\\bin\\\\tsc\" --noEmit -p tsconfig.json 2>&1)",
+      "Bash(python3 -c ' *)",
+      "Bash(node -e ' *)",
+      "PowerShell(node \"node_modules\\\\vitest\\\\vitest.mjs\" run 2>&1)",
+      "PowerShell(node \"node_modules\\\\drizzle-kit\\\\bin.cjs\" generate)",
+      "Bash(git commit -m 'feat\\(transporte\\): adiciona formatCpf e formatRotaLabel *)",
+      "PowerShell(node \"node_modules\\\\vitest\\\\vitest.mjs\" run lib/transporte/cadastro-xls-parser.test.ts)",
+      "Bash(git commit -m 'feat\\(transporte\\): extrai CPF da planilha de cadastro de passageiros *)",
+      "PowerShell(node \"node_modules\\\\typescript\\\\bin\\\\tsc\" --noEmit -p tsconfig.json)",
+      "PowerShell(cd \"C:\\\\Users\\\\juliano.correa\\\\Desktop\\\\G&G\"; git commit -m \"feat\\(transporte\\): mostra numero da rota \\(No\\) na coluna Rota de Passageiros\" --% -m \"Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>\")"
     ]
   }
 }

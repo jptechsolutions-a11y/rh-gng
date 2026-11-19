@@ -60,11 +60,17 @@ export function ExpDashboard({
   const [busca, setBusca] = useState('');
   const [limite, setLimite] = useState(60);
 
+  // Ao trocar a filial, descarta o gestor escolhido se ele não atua nela (e vice-versa).
+  const limparIncompativel = (n: Partial<Record<Dim, string>>, mudou: Dim) => {
+    const outro: Dim | null = mudou === 'filial' ? 'gestor' : mudou === 'gestor' ? 'filial' : null;
+    if (outro && n[outro] && !pendencias.some((p) => valor[mudou](p) === n[mudou] && valor[outro](p) === n[outro])) delete n[outro];
+    return n;
+  };
   const alternar = (d: Dim, v: string) =>
     setFiltros((f) => {
       const n = { ...f };
       if (n[d] === v) delete n[d]; else n[d] = v;
-      return n;
+      return limparIncompativel(n, d);
     });
 
   const casa = (p: ExpPendencia, ignorar?: Dim) =>
@@ -73,9 +79,10 @@ export function ExpDashboard({
   const filtradas = useMemo(() => para(), [pendencias, filtros]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const opcoes = useMemo(() => {
-    const o = (d: Dim) => Array.from(new Set(pendencias.map(valor[d]))).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    // Cada lista considera o filtro da outra: filial escolhida → só os gestores dela (e vice-versa).
+    const o = (d: Dim) => Array.from(new Set(para(d).map(valor[d]))).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
     return { filial: o('filial'), gestor: o('gestor') };
-  }, [pendencias]);
+  }, [pendencias, filtros]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const kpi = useMemo(() => {
     const k: Record<ExpSituacao, number> = { atrasada: 0, alerta: 0, prazo: 0 };
@@ -144,7 +151,7 @@ export function ExpDashboard({
             <span className="font-display text-[10px] uppercase tracking-[0.22em] text-conecta-muted font-semibold">{DIM_LABEL[d]}</span>
             <select
               value={filtros[d] ?? ''}
-              onChange={(e) => setFiltros((f) => { const n = { ...f }; if (e.target.value) n[d] = e.target.value; else delete n[d]; return n; })}
+              onChange={(e) => setFiltros((f) => { const n = { ...f }; if (e.target.value) n[d] = e.target.value; else delete n[d]; return limparIncompativel(n, d); })}
               className={selCls}
             >
               <option value="">Todos</option>

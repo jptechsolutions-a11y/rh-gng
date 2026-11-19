@@ -5,7 +5,7 @@ import { db, schema } from '@/db/client';
 import type { Session } from '@/lib/auth/session';
 import { getFiliaisCodigosVisiveis } from '@/lib/auth/session';
 import { normalizarCodigoFilial } from '@/lib/vagas/normalizar-codigo-filial';
-import { classificar, SEM_GESTOR, statusPendente, type ExpPendencia, type ExpResumoImport } from './tipos';
+import { classificar, SEM_GESTOR, statusPendente, type ExpEvolucao, type ExpPendencia, type ExpResumoImport } from './tipos';
 
 /** Hoje (yyyy-mm-dd) no fuso de Brasília — o alerta de 5 dias conta a partir daqui, não da data da extração. */
 export function hojeBrasilia(): string {
@@ -38,7 +38,7 @@ export async function buscarExperiencia(s: Session, importId?: string | null) {
     .orderBy(desc(schema.expImports.dataRef));
   const resumos: ExpResumoImport[] = imports.map((i) => ({ id: i.id, dataRef: i.dataRef, colaboradores: i.totalColaboradores }));
   const atual = imports.find((i) => i.id === importId) ?? imports[0] ?? null;
-  if (!atual) return { hoje, imports: resumos, atualId: null, dataRef: null, pendencias: [] as ExpPendencia[], totalColab: 0, evolucao: [] as { dataRef: string; pendencias: number }[] };
+  if (!atual) return { hoje, imports: resumos, atualId: null, dataRef: null, pendencias: [] as ExpPendencia[], totalColab: 0, colabPorFilial: {} as Record<string, number>, evolucao: [] as ExpEvolucao[] };
 
   const escopoRaw = getFiliaisCodigosVisiveis(s);
   const escopo = escopoRaw ? new Set(escopoRaw.map(normalizarCodigoFilial)) : null;
@@ -49,10 +49,11 @@ export async function buscarExperiencia(s: Session, importId?: string | null) {
     db
       .select({
         importId: schema.expLinhas.importId,
+        filial: schema.expLinhas.filialCodigo,
         n: sql<number>`(count(*) filter (where ${schema.expLinhas.status35} in ('PFP','PDP')) + count(*) filter (where ${schema.expLinhas.status70} in ('PFP','PDP')))::int`,
       })
       .from(schema.expLinhas)
-      .groupBy(schema.expLinhas.importId),
+      .groupBy(schema.expLinhas.importId, schema.expLinhas.filialCodigo),
   ]);
 
   const pendencias: ExpPendencia[] = [];
@@ -74,12 +75,22 @@ export async function buscarExperiencia(s: Session, importId?: string | null) {
     }
   }
 
-  const refDe = new Map(imports.map((i) => [i.id, i.dataRef]));
-  const evolucao = evo
-    .map((e) => ({ dataRef: refDe.get(e.importId) ?? '', pendencias: e.n }))
-    .filter((e) => e.dataRef)
-    .sort((a, b) => a.dataRef.localeCompare(b.dataRef));
+  const colabPorFilial: Record<string, number> = {};
+  for (const l of linhas) if (!escopo || escopo.has(l.filialCodigo)) colabPorFilial[l.filialCodigo] = (colabPorFilial[l.filialCodigo] ?? 0) + 1;
 
-  // A evolução soma a base inteira: só aparece para quem enxerga todas as filiais.
-  return { hoje, imports: resumos, atualId: atual.id, dataRef: atual.dataRef, pendencias, totalColab, evolucao: escopo ? [] : evolucao };
+  // Evolução: pendências por filial em cada base importada (só filiais do escopo).
+  const refDe = new Map(imports.map((i) => [i.id, i.dataRef]));
+  const porBase = new Map<string, Record<string, number>>();
+  for (const e of evo) {
+    const ref = refDe.get(e.importId);
+    if (!ref || (escopo && !escopo.has(e.filial))) continue;
+    const o = porBase.get(ref) ?? {};
+    o[e.filial] = (o[e.filial] ?? 0) + e.n;
+    porBase.set(ref, o);
+  }
+  const evolucao = Array.from(porBase.entries())
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([dataRef, porFilial]) => ({ dataRef, porFilial }));
+
+  return { hoje, imports: resumos, atualId: atual.id, dataRef: atual.dataRef, pendencias, totalColab, colabPorFilial, evolucao };
 }

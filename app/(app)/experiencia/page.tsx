@@ -21,6 +21,7 @@ export default async function ExperienciaPage({ searchParams }: { searchParams: 
         <ExpDashboard
           pendencias={d.pendencias}
           totalColab={d.totalColab}
+          colabPorFilial={d.colabPorFilial}
           hoje={d.hoje}
           dataRef={d.dataRef}
           imports={d.imports}

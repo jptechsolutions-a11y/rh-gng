@@ -37,6 +37,12 @@ export interface ExpResumoImport {
   colaboradores: number;
 }
 
+/** Pendências por filial em cada base importada (para comparar uma extração com a anterior). */
+export interface ExpEvolucao {
+  dataRef: string;
+  porFilial: Record<string, number>;
+}
+
 export const SEM_GESTOR = 'Sem gestor';
 
 /** Pendente = PFP/PDP (ou aguardando). Realizada = RDP/RFP/concluída. */

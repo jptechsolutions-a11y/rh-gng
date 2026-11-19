@@ -2,19 +2,30 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { AlertTriangle, BellRing, Building2, CalendarClock, ClipboardCheck, Search, UserCog, Users, X } from 'lucide-react';
+import { AlertTriangle, BellRing, Building2, CalendarClock, ClipboardCheck, Hourglass, PieChart, Scale, Search, UserCog, Users, X } from 'lucide-react';
 import { ConectaCard, SectionHeader } from '@/components/ui/conecta-card';
+import { VagasRankingBars } from '@/components/vagas/VagasRankingBars';
 import { ExpBars, COR_SIT, LABEL_SIT, type ExpBarItem } from './ExpBars';
-import { DIAS_ALERTA, type ExpPendencia, type ExpResumoImport, type ExpSituacao } from '@/lib/experiencia/tipos';
+import { ExpAgenda, ExpCardsCd, ExpComparativoBases, ExpDupla, type CdCard } from './ExpGraficos';
+import { DIAS_ALERTA, type ExpEvolucao, type ExpPendencia, type ExpResumoImport, type ExpSituacao } from '@/lib/experiencia/tipos';
 
-type Dim = 'filial' | 'gestor' | 'etapa' | 'situacao';
-const DIM_LABEL: Record<Dim, string> = { filial: 'Filial', gestor: 'Gestor', etapa: 'Etapa', situacao: 'Situação' };
+type Dim = 'filial' | 'gestor' | 'etapa' | 'situacao' | 'faixa' | 'prazo';
+const DIM_LABEL: Record<Dim, string> = { filial: 'Filial', gestor: 'Gestor', etapa: 'Etapa', situacao: 'Situação', faixa: 'Faixa', prazo: 'Prazo' };
+
+const FAIXAS = ['Atraso > 1 ano', 'Atraso 91–365 dias', 'Atraso 31–90 dias', 'Atraso 8–30 dias', 'Atraso 1–7 dias', 'Vence em ≤ 5 dias', 'No prazo (> 5 dias)'] as const;
+const faixaDe = (p: ExpPendencia): string => {
+  const a = -p.dias;
+  if (p.dias >= 0) return p.dias <= DIAS_ALERTA ? FAIXAS[5] : FAIXAS[6];
+  return a > 365 ? FAIXAS[0] : a > 90 ? FAIXAS[1] : a > 30 ? FAIXAS[2] : a > 7 ? FAIXAS[3] : FAIXAS[4];
+};
 
 const valor: Record<Dim, (p: ExpPendencia) => string> = {
   filial: (p) => p.filial,
   gestor: (p) => p.gestor,
   etapa: (p) => (p.etapa === '35' ? '35 dias' : '70 dias'),
   situacao: (p) => LABEL_SIT[p.situacao],
+  faixa: faixaDe,
+  prazo: (p) => p.prazo,
 };
 
 const fmtData = (iso: string | null) => (iso ? iso.split('-').reverse().join('/') : '—');
@@ -45,15 +56,16 @@ function Badge({ p }: { p: ExpPendencia }) {
 }
 
 export function ExpDashboard({
-  pendencias, totalColab, hoje, dataRef, imports, atualId, evolucao,
+  pendencias, totalColab, colabPorFilial, hoje, dataRef, imports, atualId, evolucao,
 }: {
   pendencias: ExpPendencia[];
   totalColab: number;
+  colabPorFilial: Record<string, number>;
   hoje: string;
   dataRef: string | null;
   imports: ExpResumoImport[];
   atualId: string | null;
-  evolucao: { dataRef: string; pendencias: number }[];
+  evolucao: ExpEvolucao[];
 }) {
   const router = useRouter();
   const [filtros, setFiltros] = useState<Partial<Record<Dim, string>>>({});
@@ -95,7 +107,39 @@ export function ExpDashboard({
       label: LABEL_SIT[s], total: para('situacao').filter((p) => p.situacao === s).length,
     }));
     const etapa = ['35 dias', '70 dias'].map((e) => ({ label: e, total: para('etapa').filter((p) => valor.etapa(p) === e).length }));
-    return { filial: agrupar(para('filial'), 'filial'), gestor: agrupar(para('gestor'), 'gestor', 30), sit, etapa };
+    const baseFaixa = para('faixa');
+    const faixa = FAIXAS.map((f) => ({ label: f, total: baseFaixa.filter((p) => faixaDe(p) === f).length }));
+
+    // Comparativo 35 × 70 por CD
+    const dup = new Map<string, { label: string; a: number; b: number }>();
+    for (const p of para('filial')) {
+      const it = dup.get(p.filial) ?? { label: p.filial, a: 0, b: 0 };
+      if (p.etapa === '35') it.a++; else it.b++;
+      dup.set(p.filial, it);
+    }
+    const dupla = Array.from(dup.values()).sort((x, y) => y.a + y.b - (x.a + x.b));
+
+    // Agenda: vencimentos dos próximos 14 dias (a partir de hoje)
+    const basePrazo = para('prazo');
+    const dias = Array.from({ length: 14 }, (_, i) => {
+      const iso = new Date(Date.parse(hoje + 'T00:00:00Z') + i * 86400000).toISOString().slice(0, 10);
+      return { iso, n: basePrazo.filter((p) => p.prazo === iso).length, alerta: i <= DIAS_ALERTA };
+    });
+    const atrasadas = basePrazo.filter((p) => p.situacao === 'atrasada').length;
+
+    // Cartões por CD
+    const cd = new Map<string, CdCard>();
+    for (const p of para('filial')) {
+      const c = cd.get(p.filial) ?? { filial: p.filial, total: 0, atrasada: 0, alerta: 0, colabPend: 0, colab: colabPorFilial[p.filial] ?? 0 };
+      c.total++;
+      if (p.situacao === 'atrasada') c.atrasada++;
+      if (p.situacao === 'alerta') c.alerta++;
+      cd.set(p.filial, c);
+    }
+    for (const [f, c] of cd) c.colabPend = new Set(para('filial').filter((p) => p.filial === f).map((p) => p.chapa)).size;
+    const cards = Array.from(cd.values()).sort((a, b) => b.total - a.total);
+
+    return { filial: agrupar(para('filial'), 'filial'), gestor: agrupar(para('gestor'), 'gestor', 30), sit, etapa, faixa, dupla, dias, atrasadas, cards };
   }, [pendencias, filtros]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const lista = useMemo(() => {
@@ -120,8 +164,6 @@ export function ExpDashboard({
 
   const totalAlerta = pendencias.filter((p) => p.situacao === 'alerta').length;
   const totalAtrasada = pendencias.filter((p) => p.situacao === 'atrasada').length;
-  const anterior = evolucao.length > 1 ? evolucao[evolucao.length - 2] : null;
-  const ultimo = evolucao.length > 0 ? evolucao[evolucao.length - 1] : null;
 
   return (
     <div className="space-y-5">
@@ -183,7 +225,7 @@ export function ExpDashboard({
               title="Remover filtro"
               className="inline-flex items-center gap-1.5 rounded-full bg-conecta-accent/10 border border-conecta-accent/30 text-conecta-accent px-2.5 py-1 text-[11px] font-display font-semibold hover:bg-conecta-accent/20"
             >
-              {DIM_LABEL[d]}: {filtros[d]}
+              {DIM_LABEL[d]}: {d === 'prazo' ? fmtData(filtros[d]!) : filtros[d]}
               <X className="h-3 w-3" />
             </button>
           ))}
@@ -211,17 +253,43 @@ export function ExpDashboard({
           </ConectaCard>
         ))}
       </div>
-      {anterior && ultimo && (
-        <p className="text-[11px] text-conecta-muted -mt-2">
-          Evolução (base inteira): {fmtData(anterior.dataRef)} → {fmtData(ultimo.dataRef)}: {anterior.pendencias} → <strong>{ultimo.pendencias}</strong> pendências
-          ({ultimo.pendencias - anterior.pendencias >= 0 ? '+' : ''}{ultimo.pendencias - anterior.pendencias}).
-        </p>
-      )}
+      {/* Pendências por CD */}
+      <ConectaCard>
+        <SectionHeader label="Avaliações pendentes por CD" icon={Building2} />
+        <div className="mt-4">
+          {g.cards.length === 0 ? (
+            <p className="py-6 text-center text-sm text-conecta-muted">Sem pendências</p>
+          ) : (
+            <ExpCardsCd data={g.cards} selected={filtros.filial ?? null} onSelect={(v) => alternar('filial', v)} />
+          )}
+        </div>
+      </ConectaCard>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <ExpBars titulo="Pendências por filial" icon={Building2} labelWidthClass="w-16" data={g.filial} selected={filtros.filial ?? null} onSelect={(v) => alternar('filial', v)} />
+        <VagasRankingBars
+          titulo="Pendências por situação"
+          icon={PieChart}
+          color="orange"
+          labelWidthClass="w-40"
+          data={g.sit}
+          selected={filtros.situacao ?? null}
+          onSelect={(v) => alternar('situacao', v)}
+        />
+        <VagasRankingBars
+          titulo="Idade da pendência (faixas de atraso)"
+          icon={Hourglass}
+          labelWidthClass="w-44"
+          data={g.faixa}
+          selected={filtros.faixa ?? null}
+          onSelect={(v) => alternar('faixa', v)}
+        />
+        <ExpBars titulo="Pendências por filial (situação)" icon={Building2} labelWidthClass="w-16" data={g.filial} selected={filtros.filial ?? null} onSelect={(v) => alternar('filial', v)} />
         <ExpBars titulo="Pendências por gestor (top 30)" icon={UserCog} labelWidthClass="w-44" data={g.gestor} selected={filtros.gestor ?? null} onSelect={(v) => alternar('gestor', v)} />
+        <ExpDupla titulo="Comparativo 35 × 70 dias por CD" icon={Scale} data={g.dupla} selected={filtros.filial ?? null} onSelect={(v) => alternar('filial', v)} />
+        <ExpAgenda titulo="Agenda de vencimentos (próximos 14 dias)" icon={CalendarClock} dias={g.dias} atrasadas={g.atrasadas} selected={filtros.prazo ?? null} onSelect={(v) => alternar('prazo', v)} />
       </div>
+
+      <ExpComparativoBases evolucao={evolucao} />
 
       {/* Detalhe */}
       <ConectaCard noPadding>

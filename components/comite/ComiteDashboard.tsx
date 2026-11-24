@@ -5,14 +5,15 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   Briefcase, Building2, CheckCircle2, ChevronDown, ChevronRight, Clock, Gavel, History, Hourglass,
-  Pencil, Repeat, Search, UserRound, Users, X, XCircle,
+  Pencil, Repeat, Search, Undo2, UserRound, Users, X, XCircle,
 } from 'lucide-react';
 import { ConectaCard, SectionHeader } from '@/components/ui/conecta-card';
 import { VagasRankingBars } from '@/components/vagas/VagasRankingBars';
 import { RoscaCard } from '@/components/comite/RoscaCard';
 import { HistoricoPedidos } from '@/components/comite/HistoricoPedidos';
+import { BotoesDecisao, PainelDecisao, useDecisaoComite } from '@/components/comite/DecisaoPainel';
 import {
-  FAIXAS_IDADE, TURNOS, faixaIdade, fmtTempo, nomeMes, type ComiteLancamento,
+  FAIXAS_IDADE, TURNOS, faixaIdade, fmtTempo, nomeMes, type ComiteLancamento, type GestorOpt,
 } from '@/lib/comite/tipos';
 
 type Dim = 'filial' | 'funcao' | 'turno' | 'idade' | 'status';
@@ -70,17 +71,20 @@ const selectCls = 'rounded-lg border border-conecta-primary/15 bg-white px-3 py-
 const labelCls = 'font-display text-[10px] uppercase tracking-[0.22em] text-conecta-muted font-semibold';
 
 export function ComiteDashboard({
-  lancamentos, mes, meses, anteriorPorFilial,
+  lancamentos, mes, meses, anteriorPorFilial, podeDecidir = false, gestores = [],
 }: {
   lancamentos: ComiteLancamento[];
   mes: string;
   meses: string[];
   anteriorPorFilial: Record<string, number>;
+  podeDecidir?: boolean;
+  gestores?: GestorOpt[];
 }) {
   const router = useRouter();
   const [filtros, setFiltros] = useState<Partial<Record<Dim, string>>>({});
   const [busca, setBusca] = useState('');
   const [abertos, setAbertos] = useState<Set<string>>(new Set());
+  const d = useDecisaoComite((id) => setAbertos((prev) => new Set(prev).add(id)));
 
   const definir = (d: Dim, v: string) =>
     setFiltros((f) => { const n = { ...f }; if (!v) delete n[d]; else n[d] = v; return n; });
@@ -217,6 +221,7 @@ export function ComiteDashboard({
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-conecta-muted" />
                 <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar nome ou matrícula…" className="w-full rounded-lg border border-conecta-primary/15 pl-8 pr-3 py-1.5 text-sm" />
               </div>
+              {d.erro && <div role="alert" className="rounded-lg bg-rose-50 border border-rose-200 text-rose-900 p-2 text-sm">{d.erro}</div>}
             </div>
             <div className="px-5 pb-5 grid grid-cols-1 gap-4">
               {porFilial.map(([filial, itens]) => (
@@ -240,6 +245,11 @@ export function ComiteDashboard({
                             {l.historico.length > 0 && (
                               <span title="Já foi pedido antes e não aprovado" className="inline-flex items-center gap-1 rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-semibold text-violet-700">
                                 <History className="h-3 w-3" /> já pedido antes
+                              </span>
+                            )}
+                            {podeDecidir && (
+                              <span className="inline-flex items-center gap-3 text-[12px]">
+                                <BotoesDecisao l={l} d={d} />
                               </span>
                             )}
                             <span className="ml-auto text-[11px] text-conecta-muted text-right">{l.funcao} · {fmtTempo(l.tempoMeses)}</span>
@@ -279,7 +289,14 @@ export function ComiteDashboard({
                                   ) : (
                                     <span className="font-semibold">Aguardando decisão do comitê.</span>
                                   )}
+                                  {podeDecidir && l.decisao && (
+                                    <button type="button" disabled={d.pendente} onClick={() => d.decidir(l.id, null)} className="mt-2 flex items-center gap-1 text-[12px] font-semibold underline disabled:opacity-50">
+                                      <Undo2 className="h-3.5 w-3.5" /> Voltar para pendente
+                                    </button>
+                                  )}
                                 </div>
+
+                                {podeDecidir && d.decidindo?.id === l.id && <PainelDecisao painel={d.decidindo} gestores={gestores} d={d} />}
 
                                 <HistoricoPedidos historico={l.historico} />
 

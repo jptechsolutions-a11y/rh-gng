@@ -4,6 +4,7 @@ import { sql } from 'drizzle-orm';
 import { TopBar } from '@/components/layout/TopBar';
 import { QuadroTable, type QuadroRow, type EscalaOpt } from '@/components/qlp/QuadroTable';
 import type { LiderOpt } from '@/components/qlp/AtribuirTimeLoteModal';
+import { turnoDoHorario } from '@/lib/qlp/turno';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,9 +12,9 @@ export default async function QuadroPage() {
   const s = await requireSession();
   const filialFilter = s.perfil === 'filial' ? s.filialId : null;
 
-  const rows = (await db.execute(sql`
+  const rowsRaw = (await db.execute(sql`
     SELECT
-      c.id, c.chapa, c.nome, c.funcao, c.secao, c.situacao,
+      c.id, c.chapa, c.nome, c.funcao, c.secao, c.situacao, c.horario,
       c.tier_resolvido, c.filial_id,
       f.codigo AS filial_codigo,
       cl.nome AS lider_nome,
@@ -32,7 +33,9 @@ export default async function QuadroPage() {
     WHERE c.ativo
       AND (${filialFilter}::uuid IS NULL OR c.filial_id = ${filialFilter}::uuid)
     ORDER BY c.nome
-  `)) as unknown as QuadroRow[];
+  `)) as unknown as Omit<QuadroRow, 'turno'>[];
+  // Turno vem da hora de entrada do horário (regra em lib/qlp/turno.ts).
+  const rows: QuadroRow[] = rowsRaw.map((r) => ({ ...r, turno: turnoDoHorario(r.horario) }));
 
   const lideres = (await db.execute(sql`
     SELECT

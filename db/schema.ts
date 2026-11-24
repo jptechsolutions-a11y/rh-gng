@@ -901,13 +901,28 @@ export const comiteDesligamentos = pgTable('comite_desligamentos', {
   justificativa: text('justificativa').notNull(),
   criadoPor: text('criado_por').notNull(),
   atualizadoPor: text('atualizado_por'),
+  // Decisão do comitê: nulo = pendente | 'aprovado' | 'nao_aprovado' (com motivo).
+  decisao: text('decisao'),
+  decisaoMotivo: text('decisao_motivo'),
+  decididoPor: text('decidido_por'),
+  decididoEm: timestamp('decidido_em', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({
   mesIdx: index('comite_desl_mes_idx').on(t.mesReferencia),
   filialIdx: index('comite_desl_filial_idx').on(t.filialCodigo),
+  chapaIdx: index('comite_desl_chapa_idx').on(t.chapa),
   chapaMesUniq: unique('comite_desl_chapa_mes_uniq').on(t.chapa, t.mesReferencia),
 }));
+
+/** Ata do comitê de um mês: data da reunião e participantes. */
+export const comiteAtas = pgTable('comite_atas', {
+  mesReferencia: date('mes_referencia').primaryKey(),
+  dataComite: date('data_comite'),
+  participantes: jsonb('participantes').notNull().default(sql`'[]'::jsonb`),
+  atualizadoPor: text('atualizado_por'),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
 
 export const expLinhas = pgTable('exp_linhas', {
   id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),

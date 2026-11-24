@@ -303,3 +303,17 @@
 @media (prefers-reduced-motion: reduce) {
   .nuvem-palavra { animation: none; opacity: 1; }
 }
+
+/* ===== Escala da interface (telas grandes) =====
+   Deixa tudo menor e com mais respiro, como se o navegador estivesse com zoom reduzido,
+   sem o usuário precisar mexer no zoom. Para ajustar, troque só o valor de --ui-zoom
+   (1 = tamanho original; 0.8 = 80%). Celular e tablet não são afetados, nem a impressão.
+   As unidades de tela (100vh/100vw) não acompanham o zoom, então as classes h-screen,
+   min-h-screen e w-screen são compensadas para continuar preenchendo a janela. */
+:root { --ui-zoom: 0.8; }
+@media screen and (min-width: 1024px) {
+  html { zoom: var(--ui-zoom); }
+  .h-screen { height: calc(100vh / var(--ui-zoom)); }
+  .min-h-screen { min-height: calc(100vh / var(--ui-zoom)); }
+  .w-screen { width: calc(100vw / var(--ui-zoom)); }
+}

@@ -10,6 +10,7 @@ import { AtribuirTimeLoteModal, type LiderOpt } from './AtribuirTimeLoteModal';
 import { ExportarQuadroModal } from './ExportarQuadroModal';
 import { definirEscalaColaboradores } from '@/actions/qlp/escalas';
 import { formatarDias } from '@/lib/qlp/escala';
+import { TURNOS, rotuloTurno, type Turno } from '@/lib/qlp/turno';
 
 export interface QuadroRow {
   id: string;
@@ -28,7 +29,17 @@ export interface QuadroRow {
   escala_id: string | null;
   escala_nome: string | null;
   escala_dias: number[] | null;
+  /** Horário bruto do XLS ("20508 - 14/17/18/23 - SAB 14/18"). */
+  horario: string | null;
+  /** Turno deduzido da hora de entrada; nulo quando o horário não pôde ser lido. */
+  turno: Turno | null;
 }
+
+const TURNO_COR: Record<Turno, string> = {
+  manha: 'bg-amber-50 text-amber-700',
+  tarde: 'bg-orange-50 text-orange-700',
+  noturno: 'bg-indigo-50 text-indigo-700',
+};
 
 export interface EscalaOpt {
   id: string;
@@ -62,6 +73,7 @@ export function QuadroTable({
   const [funcaoFiltro, setFuncaoFiltro] = useState<string>('');
   const [secaoFiltro, setSecaoFiltro] = useState<string>('');
   const [escalaFiltro, setEscalaFiltro] = useState<string>('');
+  const [turnoFiltro, setTurnoFiltro] = useState<string>('');
   const [selecionados, setSelecionados] = useState<Set<string>>(new Set());
   const [escalaLote, setEscalaLote] = useState<string>('');
   const [erroEscala, setErroEscala] = useState<string | null>(null);
@@ -96,17 +108,20 @@ export function QuadroTable({
       if (secaoFiltro && r.secao !== secaoFiltro) return false;
       if (escalaFiltro === '__none' && r.escala_id) return false;
       if (escalaFiltro && escalaFiltro !== '__none' && r.escala_id !== escalaFiltro) return false;
+      if (turnoFiltro === '__none' && r.turno) return false;
+      if (turnoFiltro && turnoFiltro !== '__none' && r.turno !== turnoFiltro) return false;
       if (q) {
         const blob = `${r.chapa} ${r.nome} ${r.funcao}`.toLowerCase();
         if (!blob.includes(q)) return false;
       }
       return true;
     });
-  }, [rows, busca, semLider, tierFiltro, filialFiltro, funcaoFiltro, secaoFiltro, escalaFiltro]);
+  }, [rows, busca, semLider, tierFiltro, filialFiltro, funcaoFiltro, secaoFiltro, escalaFiltro, turnoFiltro]);
 
   function limparFiltros() {
     setBusca(''); setTierFiltro(''); setFilialFiltro('');
     setFuncaoFiltro(''); setSecaoFiltro(''); setSemLider(false); setEscalaFiltro('');
+    setTurnoFiltro('');
   }
 
   // Escalas que aparecem no filtro: as ativas + qualquer desativada que ainda esteja em uso no quadro.
@@ -266,7 +281,19 @@ export function QuadroTable({
                 <option key={id} value={id}>{nome}</option>
               ))}
             </select>
-            <div className="relative md:col-span-2 lg:col-span-3">
+            <select
+              className={selectClass}
+              value={turnoFiltro}
+              onChange={(e) => setTurnoFiltro(e.target.value)}
+              aria-label="Filtrar por turno"
+            >
+              <option value="">Turno: todos</option>
+              {TURNOS.map((t) => (
+                <option key={t.valor} value={t.valor}>{t.rotulo} ({t.faixa})</option>
+              ))}
+              <option value="__none">Turno: sem horário</option>
+            </select>
+            <div className="relative md:col-span-2 lg:col-span-2">
               <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-conecta-accent pointer-events-none" />
               <Input
                 placeholder="Buscar por chapa, nome ou função"
@@ -354,6 +381,7 @@ export function QuadroTable({
                 <th>Seção</th>
                 <th>Filial</th>
                 <th>Situação</th>
+                <th>Turno</th>
                 <th>Escala</th>
                 <th>Líder</th>
                 {podeEditar && <th className="text-right">Ações</th>}
@@ -385,6 +413,18 @@ export function QuadroTable({
                   <td className="text-conecta-muted">{r.secao ?? '—'}</td>
                   <td className="text-conecta-muted tabular-nums">{r.filial_codigo ?? '—'}</td>
                   <td className="text-conecta-muted">{r.situacao ?? '—'}</td>
+                  <td>
+                    {r.turno ? (
+                      <span
+                        className={`inline-block rounded-full px-2.5 py-0.5 text-[11px] font-display font-semibold ${TURNO_COR[r.turno]}`}
+                        title={r.horario ?? undefined}
+                      >
+                        {rotuloTurno(r.turno)}
+                      </span>
+                    ) : (
+                      <span className="text-conecta-muted" title={r.horario ?? 'Sem horário'}>—</span>
+                    )}
+                  </td>
                   <td>
                     {podeEditar ? (
                       <select

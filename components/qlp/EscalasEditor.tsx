@@ -12,7 +12,10 @@ export interface EscalaRow {
   nome: string;
   dias: number[];
   ativo: boolean;
+  /** Colaboradores ativos exibidos na tabela (respeita o filtro de filial). */
   qtd: number;
+  /** Colaboradores ativos em todas as filiais; decide se a escala pode ser excluída. */
+  qtdGeral: number;
 }
 
 function mensagem(e: unknown): string {
@@ -237,8 +240,8 @@ export function EscalasEditor({ escalas }: { escalas: EscalaRow[] }) {
                             <button
                               type="button"
                               onClick={() => excluir(e)}
-                              disabled={pending || e.qtd > 0}
-                              title={e.qtd > 0 ? 'Há colaboradores nesta escala — desative em vez de excluir' : 'Excluir'}
+                              disabled={pending || e.qtdGeral > 0}
+                              title={e.qtdGeral > 0 ?'Há colaboradores nesta escala — desative em vez de excluir' : 'Excluir'}
                               className="inline-flex items-center rounded-lg border border-rose-200 px-2 py-1.5 text-rose-600 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-40"
                               aria-label="Excluir escala"
                             >

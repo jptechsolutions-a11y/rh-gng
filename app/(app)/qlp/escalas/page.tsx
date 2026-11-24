@@ -1,21 +1,30 @@
 import { requireSession } from '@/lib/auth/session';
-import { db } from '@/db/client';
-import { sql } from 'drizzle-orm';
 import { TopBar } from '@/components/layout/TopBar';
-import { EscalasEditor, type EscalaRow } from '@/components/qlp/EscalasEditor';
+import { ConectaCard } from '@/components/ui/conecta-card';
+import { EscalasEditor } from '@/components/qlp/EscalasEditor';
+import { EscalasFiltro } from '@/components/qlp/EscalasFiltro';
+import { EscalasIndicadores } from '@/components/qlp/EscalasIndicadores';
+import { getIndicadoresEscalas, listarFiliaisAtivas } from '@/db/queries/qlp-escalas';
+import { SEM_TURNO, rotuloTurno, turnoDeParametro } from '@/lib/qlp/turno';
 
 export const dynamic = 'force-dynamic';
 
-export default async function EscalasPage() {
+export default async function EscalasPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ filial?: string; turno?: string }>;
+}) {
   await requireSession('admin');
+  const sp = await searchParams;
 
-  const rows = (await db.execute(sql`
-    SELECT
-      e.id, e.nome, e.dias, e.ativo,
-      (SELECT count(*) FROM qlp_colaboradores c WHERE c.escala_id = e.id AND c.ativo)::int AS qtd
-    FROM qlp_escalas e
-    ORDER BY e.ativo DESC, lower(e.nome)
-  `)) as unknown as EscalaRow[];
+  const filiais = await listarFiliaisAtivas();
+  // Só aceita um id que exista na lista; qualquer outro valor vira "todas".
+  const filial = filiais.find((f) => f.id === sp.filial) ?? null;
+  const filialId = filial?.id ?? null;
+  // Só aceita turnos conhecidos; qualquer outro valor vira "todos".
+  const turno = turnoDeParametro(sp.turno);
+
+  const dados = await getIndicadoresEscalas(filialId, turno);
 
   return (
     <>
@@ -25,7 +34,17 @@ export default async function EscalasPage() {
         badge="ADMIN"
       />
       <div className="space-y-5 p-4 lg:p-6">
-        <EscalasEditor escalas={rows.map((r) => ({ ...r, qtd: Number(r.qtd) }))} />
+        <ConectaCard>
+          <EscalasFiltro filiais={filiais} filialId={filialId} turno={turno ?? ''} />
+        </ConectaCard>
+
+        <EscalasIndicadores
+          dados={dados}
+          filialNome={filial ? `${filial.codigo} · ${filial.nome}` : null}
+          turnoRotulo={turno === null ? null : turno === 'sem' ? SEM_TURNO : rotuloTurno(turno)}
+        />
+
+        <EscalasEditor escalas={dados.escalas} />
       </div>
     </>
   );

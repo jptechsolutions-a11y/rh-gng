@@ -3,10 +3,17 @@ import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import { db, schema } from '@/db/client';
 import type { Session } from '@/lib/auth/session';
 import { filiaisPermitidas } from './acesso';
-import { mesAtual, mesValido, tempoEmpresaMeses, turnoDoHorario, type ComiteLancamento } from './tipos';
+import { pedidosAnteriores } from './historico';
+import {
+  mesAtual, mesValido, tempoEmpresaMeses, turnoDoHorario,
+  type ComiteLancamento, type Decisao, type PedidoAnterior,
+} from './tipos';
 
 type Linha = typeof schema.comiteDesligamentos.$inferSelect;
 
+const decisaoValida = (d: string | null): Decisao | null => (d === 'aprovado' || d === 'nao_aprovado' ? d : null);
+
+/** Converte a linha do banco; o histórico é anexado depois (ver `anexarHistorico`). */
 export function paraLancamento(l: Linha): ComiteLancamento {
   const mes = l.mesReferencia.slice(0, 7);
   return {
@@ -17,7 +24,42 @@ export function paraLancamento(l: Linha): ComiteLancamento {
     justificativa: l.justificativa, criadoPor: l.criadoPor,
     criadoEm: l.createdAt.toISOString(), atualizadoEm: l.updatedAt.toISOString(),
     tempoMeses: tempoEmpresaMeses(l.dtAdmissao, mes),
+    decisao: decisaoValida(l.decisao), decisaoMotivo: l.decisaoMotivo, decididoPor: l.decididoPor,
+    decididoEm: l.decididoEm ? l.decididoEm.toISOString() : null,
+    historico: [],
   };
+}
+
+/** Todos os pedidos NÃO aprovados dessas matrículas (qualquer mês), agrupados por matrícula. */
+async function naoAprovadosPorChapa(chapas: string[]): Promise<Map<string, PedidoAnterior[]>> {
+  const mapa = new Map<string, PedidoAnterior[]>();
+  if (chapas.length === 0) return mapa;
+  const linhas = await db
+    .select()
+    .from(schema.comiteDesligamentos)
+    .where(and(inArray(schema.comiteDesligamentos.chapa, chapas), eq(schema.comiteDesligamentos.decisao, 'nao_aprovado')));
+  for (const l of linhas) {
+    const lista = mapa.get(l.chapa) ?? [];
+    lista.push({
+      id: l.id, mes: l.mesReferencia.slice(0, 7), solicitadoEm: l.createdAt.toISOString(), solicitadoPor: l.criadoPor,
+      justificativa: l.justificativa, motivoReprovacao: l.decisaoMotivo ?? '—',
+      decididoPor: l.decididoPor, decididoEm: l.decididoEm ? l.decididoEm.toISOString() : null,
+    });
+    mapa.set(l.chapa, lista);
+  }
+  return mapa;
+}
+
+/** Preenche `historico` de cada lançamento com os pedidos não aprovados de meses anteriores. */
+export async function anexarHistorico(lancs: ComiteLancamento[]): Promise<ComiteLancamento[]> {
+  const porChapa = await naoAprovadosPorChapa(Array.from(new Set(lancs.map((l) => l.chapa))));
+  return lancs.map((l) => ({ ...l, historico: pedidosAnteriores(l.mes, porChapa.get(l.chapa) ?? []) }));
+}
+
+/** Pedidos anteriores não aprovados de uma matrícula, para avisar no lançamento (antes do mês informado). */
+export async function historicoDaChapa(chapa: string, mes: string): Promise<PedidoAnterior[]> {
+  const porChapa = await naoAprovadosPorChapa([chapa]);
+  return pedidosAnteriores(mes, porChapa.get(chapa) ?? []);
 }
 
 /** Lançamento sem idade/horário gravados (QLP ainda sem a coluna na época): completa com o QLP atual. */
@@ -62,7 +104,7 @@ export async function buscarComite(s: Session, mesParam?: string | null) {
   ]);
   return {
     mes, meses, filiais: permitidas,
-    lancamentos: (await completarDoQlp(linhas)).map(paraLancamento),
+    lancamentos: await anexarHistorico((await completarDoQlp(linhas)).map(paraLancamento)),
     anteriorPorFilial: Object.fromEntries(anteriores.map((a) => [a.filial, a.n])) as Record<string, number>,
   };
 }
@@ -72,5 +114,7 @@ export async function buscarLancamento(s: Session, id: string): Promise<ComiteLa
   const [l] = await db.select().from(schema.comiteDesligamentos).where(eq(schema.comiteDesligamentos.id, id)).limit(1);
   if (!l) return null;
   const ok = (await filiaisPermitidas(s)).some((f) => f.codigo === l.filialCodigo);
-  return ok ? paraLancamento((await completarDoQlp([l]))[0]!) : null;
+  if (!ok) return null;
+  const [com] = await anexarHistorico([paraLancamento((await completarDoQlp([l]))[0]!)]);
+  return com ?? null;
 }

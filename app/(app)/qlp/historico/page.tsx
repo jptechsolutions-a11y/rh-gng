@@ -34,6 +34,7 @@ const EVENTO_LABEL: Record<string, string> = {
   colaborador_desligado: 'Desligamento',
   import_executado: 'Import executado',
   funcao_reclassificada: 'Função reclassificada',
+  escala_alterada: 'Escala alterada',
 };
 
 export default async function HistoricoPage() {

@@ -2,7 +2,7 @@ import { requireSession } from '@/lib/auth/session';
 import { db } from '@/db/client';
 import { sql } from 'drizzle-orm';
 import { TopBar } from '@/components/layout/TopBar';
-import { QuadroTable, type QuadroRow } from '@/components/qlp/QuadroTable';
+import { QuadroTable, type QuadroRow, type EscalaOpt } from '@/components/qlp/QuadroTable';
 import type { LiderOpt } from '@/components/qlp/AtribuirTimeLoteModal';
 
 export const dynamic = 'force-dynamic';
@@ -19,8 +19,12 @@ export default async function QuadroPage() {
       cl.nome AS lider_nome,
       cl.secao AS lider_secao,
       l.tier  AS lider_tier,
-      l.id    AS lider_id
+      l.id    AS lider_id,
+      c.escala_id,
+      e.nome  AS escala_nome,
+      e.dias  AS escala_dias
     FROM qlp_colaboradores c
+    LEFT JOIN qlp_escalas e ON e.id = c.escala_id
     LEFT JOIN qlp_vinculos v ON v.colaborador_id = c.id
     LEFT JOIN qlp_lideres l ON l.id = v.lider_id
     LEFT JOIN qlp_colaboradores cl ON cl.id = l.colaborador_id
@@ -48,6 +52,10 @@ export default async function QuadroPage() {
     ORDER BY c.nome
   `)) as unknown as LiderOpt[];
 
+  const escalas = (await db.execute(sql`
+    SELECT id, nome, dias FROM qlp_escalas WHERE ativo ORDER BY lower(nome)
+  `)) as unknown as EscalaOpt[];
+
   const podeEditar = s.perfil === 'admin' || s.perfil === 'filial';
   const badge =
     s.perfil === 'filial' ? `Filial ${s.filialCodigo}` :
@@ -62,7 +70,7 @@ export default async function QuadroPage() {
     <>
       <TopBar titulo="QLP — Quadro" subtitulo={subtitulo} badge={badge} />
       <div className="space-y-5 p-4 lg:p-6">
-        <QuadroTable rows={rows} podeEditar={podeEditar} lideres={lideres} />
+        <QuadroTable rows={rows} podeEditar={podeEditar} lideres={lideres} escalas={escalas} />
       </div>
     </>
   );

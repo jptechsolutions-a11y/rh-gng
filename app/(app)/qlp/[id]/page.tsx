@@ -19,8 +19,11 @@ export default async function DetalhePage({ params }: { params: Promise<{ id: st
       c.tier_resolvido, c.nivel_resolvido, c.trilha_resolvida, c.ativo,
       f.codigo AS filial_codigo,
       f.nome   AS filial_nome,
+      e.nome   AS escala_nome,
+      e.dias   AS escala_dias,
       v.lider_id
     FROM qlp_colaboradores c
+    LEFT JOIN qlp_escalas e ON e.id = c.escala_id
     LEFT JOIN filiais f ON f.id = c.filial_id
     LEFT JOIN qlp_vinculos v ON v.colaborador_id = c.id
     WHERE c.id = ${id}
@@ -31,6 +34,7 @@ export default async function DetalhePage({ params }: { params: Promise<{ id: st
     dt_admissao: string | null; idade: number | null;
     tier_resolvido: string | null; nivel_resolvido: string | null;
     trilha_resolvida: string | null; ativo: boolean; lider_id: string | null;
+    escala_nome: string | null; escala_dias: number[] | null;
   }[];
 
   const colab = colabRows[0];
@@ -96,6 +100,8 @@ export default async function DetalhePage({ params }: { params: Promise<{ id: st
           filialNome: colab.filial_nome,
           tierResolvido: colab.tier_resolvido,
           nivelResolvido: colab.nivel_resolvido,
+          escalaNome: colab.escala_nome,
+          escalaDias: colab.escala_dias,
         }}
         ehLiderAtivo={Boolean(meuLiderId)}
         ocorrenciasResumo={ocorrenciasResumo}

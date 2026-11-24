@@ -436,6 +436,16 @@ export const feriadosMeta = pgTable('feriados_meta', {
 // QLP & Liderança
 // ============================================================
 
+// Escalas de trabalho (dias da semana) — catálogo gerenciado pelo admin.
+// `dias`: lista de 0..6 (0 = domingo).
+export const qlpEscalas = pgTable('qlp_escalas', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  nome: text('nome').notNull(),
+  dias: jsonb('dias').notNull().default(sql`'[]'::jsonb`),
+  ativo: boolean('ativo').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const qlpColaboradores = pgTable('qlp_colaboradores', {
   id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
   chapa: text('chapa').notNull().unique(),
@@ -456,9 +466,12 @@ export const qlpColaboradores = pgTable('qlp_colaboradores', {
   tierResolvido: text('tier_resolvido'),
   nivelResolvido: text('nivel_resolvido'),
   trilhaResolvida: text('trilha_resolvida'),
+  // Definida à mão (não vem do XLS): o import nunca grava nem apaga esta coluna.
+  escalaId: uuid('escala_id').references(() => qlpEscalas.id, { onDelete: 'set null' }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({
+  escalaIdx: index('qlp_colab_escala_idx').on(t.escalaId),
   filialIdx: index('qlp_colab_filial_idx').on(t.filialId),
   tierIdx: index('qlp_colab_tier_idx').on(t.tierResolvido),
   funcaoIdx: index('qlp_colab_funcao_idx').on(t.funcao),
@@ -536,6 +549,7 @@ export const qlpHistorico = pgTable('qlp_historico', {
   filialIdx: index('qlp_hist_filial_idx').on(t.filialContextoId),
 }));
 
+export type QlpEscala = typeof qlpEscalas.$inferSelect;
 export type QlpColaborador = typeof qlpColaboradores.$inferSelect;
 export type QlpLider = typeof qlpLideres.$inferSelect;
 export type QlpVinculo = typeof qlpVinculos.$inferSelect;

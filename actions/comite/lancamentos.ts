@@ -5,7 +5,8 @@ import { and, eq, inArray } from 'drizzle-orm';
 import { db, schema } from '@/db/client';
 import { requireSession } from '@/lib/auth/session';
 import { filiaisPermitidas, nomeUsuario } from '@/lib/comite/acesso';
-import { mesValido, type ColaboradorComite, type ComiteInput } from '@/lib/comite/tipos';
+import { historicoDaChapa } from '@/lib/comite/buscar';
+import { mesAtual, mesValido, type ColaboradorComite, type ComiteInput, type PedidoAnterior } from '@/lib/comite/tipos';
 import { candidatosChapa } from '@/lib/pesquisas/tipos';
 import { normalizarCodigoFilial } from '@/lib/vagas/normalizar-codigo-filial';
 
@@ -46,7 +47,7 @@ export async function buscarColaboradorComite(
   filialCodigo: string,
   chapa: string,
   mes?: string,
-): Promise<Res<{ colaborador: ColaboradorComite; jaLancado: { id: string; mes: string } | null }>> {
+): Promise<Res<{ colaborador: ColaboradorComite; jaLancado: { id: string; mes: string } | null; historico: PedidoAnterior[] }>> {
   try {
     const s = await requireSession();
     const r = await resolverColaborador(filialCodigo, chapa, await filiaisPermitidas(s));
@@ -60,7 +61,9 @@ export async function buscarColaboradorComite(
         .limit(1);
       if (l) jaLancado = { id: l.id, mes };
     }
-    return { ok: true, colaborador: r.c, jaLancado };
+    // Pedidos de meses anteriores que o comitê não aprovou (aviso no lançamento).
+    const historico = await historicoDaChapa(r.c.chapa, mes && mesValido(mes) ? mes : mesAtual());
+    return { ok: true, colaborador: r.c, jaLancado, historico };
   } catch (e) {
     return { ok: false, erro: e instanceof Error ? e.message : 'erro ao buscar' };
   }

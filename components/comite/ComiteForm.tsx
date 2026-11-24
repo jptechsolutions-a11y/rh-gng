@@ -8,9 +8,10 @@ import { ConectaCard, SectionHeader } from '@/components/ui/conecta-card';
 import {
   buscarColaboradorComite, criarLancamentoComite, editarLancamentoComite, excluirLancamentoComite,
 } from '@/actions/comite/lancamentos';
+import { HistoricoPedidos } from '@/components/comite/HistoricoPedidos';
 import {
   fmtTempo, mesAtual, nomeMes, tempoEmpresaMeses, turnoDoHorario,
-  type ColaboradorComite, type ComiteLancamento, type FilialOpcao,
+  type ColaboradorComite, type ComiteLancamento, type FilialOpcao, type PedidoAnterior,
 } from '@/lib/comite/tipos';
 
 const fmtData = (iso: string | null) => (iso ? iso.split('-').reverse().join('/') : '—');
@@ -35,6 +36,7 @@ export function ComiteForm({ filiais, lancamento }: { filiais: FilialOpcao[]; la
   const [chapa, setChapa] = useState(lancamento?.chapa ?? '');
   const [colab, setColab] = useState<ColaboradorComite | null>(null);
   const [jaLancado, setJaLancado] = useState<{ id: string; mes: string } | null>(null);
+  const [historico, setHistorico] = useState<PedidoAnterior[]>(lancamento?.historico ?? []);
   const [buscando, setBuscando] = useState(false);
   const [susp, setSusp] = useState(String(lancamento?.suspensoes ?? 0));
   const [adv, setAdv] = useState(String(lancamento?.advertencias ?? 0));
@@ -47,7 +49,7 @@ export function ComiteForm({ filiais, lancamento }: { filiais: FilialOpcao[]; la
   const filialValida = filiais.some((f) => f.codigo === filial.trim());
 
   async function buscar() {
-    setErro(null); setColab(null); setJaLancado(null);
+    setErro(null); setColab(null); setJaLancado(null); setHistorico([]);
     if (!filialValida) return setErro('escolha uma filial da lista');
     if (!chapa.trim()) return setErro('digite a matrícula');
     setBuscando(true);
@@ -56,6 +58,7 @@ export function ComiteForm({ filiais, lancamento }: { filiais: FilialOpcao[]; la
     if (!r.ok) return setErro(r.erro);
     setColab(r.colaborador);
     setJaLancado(r.jaLancado);
+    setHistorico(r.historico);
     if (r.colaborador.idade != null) setIdadeManual('');
   }
 
@@ -64,7 +67,7 @@ export function ComiteForm({ filiais, lancamento }: { filiais: FilialOpcao[]; la
     setMes(novoMes);
     if (!colab || editando) return;
     const r = await buscarColaboradorComite(colab.filialCodigo, colab.chapa, novoMes);
-    if (r.ok) setJaLancado(r.jaLancado);
+    if (r.ok) { setJaLancado(r.jaLancado); setHistorico(r.historico); }
   }
 
   const pessoa = editando
@@ -161,6 +164,11 @@ export function ComiteForm({ filiais, lancamento }: { filiais: FilialOpcao[]; la
             <Info l={`Tempo de empresa (até ${mes.slice(5)}/${mes.slice(0, 4)})`} v={fmtTempo(tempoEmpresaMeses(pessoa.admissao, mes))} />
             <Info l="Idade" v={pessoa.idade != null ? `${pessoa.idade} anos` : 'não consta no QLP'} />
           </div>
+          {historico.length > 0 && (
+            <div className="mt-4">
+              <HistoricoPedidos historico={historico} titulo="Atenção: este colaborador já foi pedido antes e não foi aprovado" />
+            </div>
+          )}
           {pessoa.idade == null && (
             <label className="mt-4 block max-w-[180px]">
               <span className={labelCls}>Idade (opcional)</span>

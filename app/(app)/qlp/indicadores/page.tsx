@@ -3,7 +3,7 @@ import { db } from '@/db/client';
 import { sql } from 'drizzle-orm';
 import { TopBar } from '@/components/layout/TopBar';
 import { ConectaCard, SectionHeader } from '@/components/ui/conecta-card';
-import { BarChart3, AlertTriangle, Map, Activity } from 'lucide-react';
+import { BarChart3, AlertTriangle, Map, Activity, CalendarDays } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,7 +11,7 @@ export default async function IndicadoresPage() {
   const s = await requireSession();
   const filialFilter = s.perfil === 'filial' ? s.filialId : null;
 
-  const [distTier, cobertura, pendencias, distSituacao] = await Promise.all([
+  const [distTier, cobertura, pendencias, distSituacao, distEscala] = await Promise.all([
     db.execute(sql`
       SELECT tier_resolvido AS tier, count(*)::int AS qtd
       FROM qlp_colaboradores
@@ -50,6 +50,14 @@ export default async function IndicadoresPage() {
       GROUP BY situacao
       ORDER BY count(*) DESC
     `),
+    db.execute(sql`
+      SELECT coalesce(e.nome, 'Não definida') AS escala, count(*)::int AS qtd
+      FROM qlp_colaboradores c
+      LEFT JOIN qlp_escalas e ON e.id = c.escala_id
+      WHERE c.ativo AND (${filialFilter}::uuid IS NULL OR c.filial_id = ${filialFilter}::uuid)
+      GROUP BY coalesce(e.nome, 'Não definida')
+      ORDER BY count(*) DESC
+    `),
   ]);
 
   const badge =
@@ -76,6 +84,11 @@ export default async function IndicadoresPage() {
             <Bars rows={distSituacao as unknown as { situacao: string; qtd: number }[]} keyField="situacao" />
           </ConectaCard>
         </div>
+
+        <ConectaCard>
+          <SectionHeader label="Distribuição por escala" icon={CalendarDays} className="mb-4" />
+          <Bars rows={distEscala as unknown as { escala: string; qtd: number }[]} keyField="escala" />
+        </ConectaCard>
 
         <ConectaCard>
           <SectionHeader label="Cobertura por filial" icon={Map} className="mb-4" />

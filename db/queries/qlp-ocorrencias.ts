@@ -98,6 +98,8 @@ export interface OcorrenciaPorColab {
   tier: string | null;
   nivelHierarquia: number;
   filialCodigo: string | null;
+  escalaNome: string | null;
+  escalaDias: number[] | null;
   inconsistencias: number;
   bhHoras: number;
   bhValor: number;
@@ -116,6 +118,8 @@ export async function getOcorrenciasPorColaborador(liderId: string): Promise<Oco
     tier: string | null;
     nivel_hierarquia: number;
     filial_codigo: string | null;
+    escala_nome: string | null;
+    escala_dias: number[] | null;
     inconsistencias: number;
     bh_horas: number;
     bh_valor: number;
@@ -124,12 +128,12 @@ export async function getOcorrenciasPorColaborador(liderId: string): Promise<Oco
     feriados_valor: number;
   }>(sql`
     WITH RECURSIVE team AS (
-      SELECT c.id, c.chapa, c.nome, c.funcao, c.tier_resolvido AS tier, c.filial_id, 1 AS nivel_h
+      SELECT c.id, c.chapa, c.nome, c.funcao, c.tier_resolvido AS tier, c.filial_id, c.escala_id, 1 AS nivel_h
       FROM qlp_vinculos v
       JOIN qlp_colaboradores c ON c.id = v.colaborador_id
       WHERE v.lider_id = ${liderId}
       UNION ALL
-      SELECT c2.id, c2.chapa, c2.nome, c2.funcao, c2.tier_resolvido, c2.filial_id, t.nivel_h + 1
+      SELECT c2.id, c2.chapa, c2.nome, c2.funcao, c2.tier_resolvido, c2.filial_id, c2.escala_id, t.nivel_h + 1
       FROM team t
       JOIN qlp_lideres l2 ON l2.colaborador_id = t.id
       JOIN qlp_vinculos v2 ON v2.lider_id = l2.id
@@ -143,6 +147,8 @@ export async function getOcorrenciasPorColaborador(liderId: string): Promise<Oco
       t.tier,
       t.nivel_h AS nivel_hierarquia,
       f.codigo AS filial_codigo,
+      es.nome AS escala_nome,
+      es.dias AS escala_dias,
       (SELECT count(*)::int FROM inconsist_snapshot s WHERE s.chapa = t.chapa) AS inconsistencias,
       coalesce((SELECT sum(horas_decimal) FROM bh_snapshot_atual s WHERE s.chapa = t.chapa), 0)::numeric AS bh_horas,
       coalesce((SELECT sum(valor_pgto)   FROM bh_snapshot_atual s WHERE s.chapa = t.chapa), 0)::numeric AS bh_valor,
@@ -151,6 +157,7 @@ export async function getOcorrenciasPorColaborador(liderId: string): Promise<Oco
       coalesce((SELECT sum(total) FROM feriados_snapshot s WHERE s.chapa = t.chapa AND s.pendencia IS NOT NULL), 0)::numeric AS feriados_valor
     FROM team t
     LEFT JOIN filiais f ON f.id = t.filial_id
+    LEFT JOIN qlp_escalas es ON es.id = t.escala_id
     ORDER BY t.nivel_h, t.nome
   `);
   return (rows as unknown as Array<{
@@ -161,6 +168,8 @@ export async function getOcorrenciasPorColaborador(liderId: string): Promise<Oco
     tier: string | null;
     nivel_hierarquia: number;
     filial_codigo: string | null;
+    escala_nome: string | null;
+    escala_dias: number[] | null;
     inconsistencias: number;
     bh_horas: number;
     bh_valor: number;
@@ -180,6 +189,8 @@ export async function getOcorrenciasPorColaborador(liderId: string): Promise<Oco
       tier: r.tier,
       nivelHierarquia: Number(r.nivel_hierarquia ?? 1),
       filialCodigo: r.filial_codigo,
+      escalaNome: r.escala_nome ?? null,
+      escalaDias: r.escala_dias ?? null,
       inconsistencias: inconsist,
       bhHoras,
       bhValor: Number(r.bh_valor ?? 0),

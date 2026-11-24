@@ -3,7 +3,7 @@ import {
   LayoutDashboard, Users, FileText, FileBarChart, Settings, ShieldCheck, ClipboardList, History,
   CalendarClock, Plus, BarChart3, UserCog, Target, BookOpen, Printer, ClipboardCheck,
   GalleryHorizontal, Cloud, Clock, AlertTriangle, Trophy, GraduationCap, CalendarOff,
-  Network, Upload, IdCard, ListTree, UsersRound,
+  Network, Upload, IdCard, ListTree, UsersRound, CalendarDays,
   Bus, Route, Briefcase, ListChecks, ClipboardPen, HardHat, GitCompare,
 } from 'lucide-react';
 
@@ -87,6 +87,7 @@ export const QLP_NAV_ADMIN_EXTRAS: NavItem[] = [
   { href: '/qlp/historico', label: 'Histórico',    icon: History },
   { href: '/qlp/lideres',   label: 'Líderes',      icon: ListTree },
   { href: '/qlp/cargos',    label: 'Cargos',       icon: IdCard },
+  { href: '/qlp/escalas',   label: 'Escalas',      icon: CalendarDays },
   { href: '/qlp/importar',  label: 'Importar XLS', icon: Upload },
 ];
 

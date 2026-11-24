@@ -6,6 +6,7 @@ import {
   BarChart3,
   ListTree,
   IdCard,
+  CalendarDays,
   Upload,
   ArrowRight,
   CheckCircle2,
@@ -76,6 +77,7 @@ export default async function QlpHome() {
                 <Atalho href="/qlp/historico" icon={History} titulo="Histórico" sub="Auditoria das movimentações" admin />
                 <Atalho href="/qlp/lideres" icon={ListTree} titulo="Líderes" sub="Espinha: gerentes, subgerentes e coords" admin />
                 <Atalho href="/qlp/cargos" icon={IdCard} titulo="Cargos" sub="Revisar classificação das funções" admin />
+                <Atalho href="/qlp/escalas" icon={CalendarDays} titulo="Escalas" sub="Criar e personalizar escalas de trabalho" admin />
                 <Atalho href="/qlp/importar" icon={Upload} titulo="Importar XLS" sub="Sync do Quadro Perlog" admin />
               </>
             )}

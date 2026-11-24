@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { ConectaCard, SectionHeader } from '@/components/ui/conecta-card';
 import { Input } from '@/components/ui/input';
+import { formatarDias } from '@/lib/qlp/escala';
 
 export interface TimeColab {
   colaboradorId: string;
@@ -16,6 +17,8 @@ export interface TimeColab {
   funcao: string;
   tier: string | null;
   filialCodigo: string | null;
+  escalaNome?: string | null;
+  escalaDias?: number[] | null;
   inconsistencias: number;
   bhHoras: number;
   bhValor: number;
@@ -160,6 +163,7 @@ export function MeuTimeTable({ time }: { time: TimeColab[] }) {
                 <th>Função</th>
                 <th>Tier</th>
                 <th>Filial</th>
+                <th>Escala</th>
                 <th className="text-right">
                   <span className="inline-flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> Inconsist.</span>
                 </th>
@@ -193,6 +197,9 @@ export function MeuTimeTable({ time }: { time: TimeColab[] }) {
                     </span>
                   </td>
                   <td className="text-conecta-muted tabular-nums">{c.filialCodigo ?? '—'}</td>
+                  <td className="text-conecta-muted" title={c.escalaNome ? formatarDias(c.escalaDias) : undefined}>
+                    {c.escalaNome ?? '—'}
+                  </td>
                   <td className="text-right">
                     <CelN value={c.inconsistencias} tone="amber" />
                   </td>

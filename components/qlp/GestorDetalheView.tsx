@@ -11,6 +11,7 @@ import { ConectaCard, SectionHeader } from '@/components/ui/conecta-card';
 import { SubTabs } from '@/components/ui/sub-tabs';
 import { TimeDistribuicaoCard } from './TimeDistribuicaoCard';
 import { MeuTimeTable, type TimeColab } from './MeuTimeTable';
+import { formatarDias } from '@/lib/qlp/escala';
 
 interface ColabInfo {
   nome: string;
@@ -22,6 +23,8 @@ interface ColabInfo {
   filialNome: string | null;
   tierResolvido: string | null;
   nivelResolvido: string | null;
+  escalaNome?: string | null;
+  escalaDias?: number[] | null;
 }
 
 interface CadeiaItem {
@@ -102,10 +105,15 @@ export function GestorDetalheView({
               )}
             </div>
 
-            <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="mt-5 grid grid-cols-2 sm:grid-cols-5 gap-3">
               <InfoChip label="Função" value={colab.funcao} />
               <InfoChip label="Seção" value={colab.secao ?? '—'} />
               <InfoChip label="Filial" value={colab.filialLabel} hint={colab.filialNome ?? undefined} />
+              <InfoChip
+                label="Escala"
+                value={colab.escalaNome ?? 'Não definida'}
+                hint={colab.escalaNome ? formatarDias(colab.escalaDias) : undefined}
+              />
               <InfoChip
                 label="Tier"
                 value={(colab.tierResolvido ?? '—').toUpperCase()}

@@ -10,6 +10,37 @@ export interface ColaboradorComite {
   horario: string | null;
 }
 
+/** Decisão do comitê sobre um pedido. Sem decisão = pendente. */
+export type Decisao = 'aprovado' | 'nao_aprovado';
+
+export const rotuloDecisao = (d: Decisao | null): string =>
+  d === 'aprovado' ? 'Aprovado' : d === 'nao_aprovado' ? 'Não aprovado' : 'Pendente';
+
+/** Gestor regional ou nacional do QLP que pode figurar como quem decidiu. */
+export interface GestorOpt {
+  /** id do líder no QLP (qlp_lideres.id) */
+  id: string;
+  nome: string;
+  funcao: string;
+  escopo: 'Nacional' | 'Regional';
+}
+
+/** Pedido anterior do mesmo colaborador que o comitê NÃO aprovou. */
+export interface PedidoAnterior {
+  id: string;
+  /** mês de referência do pedido (yyyy-mm) */
+  mes: string;
+  /** dia em que o pedido foi lançado (ISO) */
+  solicitadoEm: string;
+  solicitadoPor: string;
+  /** motivo da solicitação (justificativa original) */
+  justificativa: string;
+  /** motivo da não aprovação */
+  motivoReprovacao: string;
+  decididoPor: string | null;
+  decididoEm: string | null; // ISO
+}
+
 export interface ComiteLancamento {
   id: string;
   filial: string;
@@ -30,6 +61,13 @@ export interface ComiteLancamento {
   atualizadoEm: string; // ISO
   /** meses de empresa até o fim do mês de referência (null se sem data de admissão) */
   tempoMeses: number | null;
+  /** nulo = ainda pendente */
+  decisao: Decisao | null;
+  decisaoMotivo: string | null;
+  decididoPor: string | null;
+  decididoEm: string | null; // ISO
+  /** pedidos de meses anteriores que não foram aprovados (mais recente primeiro) */
+  historico: PedidoAnterior[];
 }
 
 export interface ComiteInput {

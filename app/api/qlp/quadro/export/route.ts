@@ -3,6 +3,7 @@ import * as XLSX from 'xlsx';
 import { sql } from 'drizzle-orm';
 import { db } from '@/db/client';
 import { requireSession } from '@/lib/auth/session';
+import { formatarDias } from '@/lib/qlp/escala';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,6 +15,8 @@ interface QuadroExportRow {
   filial_codigo: string | null;
   lider_nome: string | null;
   lider_secao: string | null;
+  escala_nome: string | null;
+  escala_dias: number[] | null;
 }
 
 export async function GET(req: NextRequest) {
@@ -46,8 +49,11 @@ export async function GET(req: NextRequest) {
       c.chapa, c.nome, c.funcao, c.secao,
       f.codigo AS filial_codigo,
       cl.nome AS lider_nome,
-      cl.secao AS lider_secao
+      cl.secao AS lider_secao,
+      e.nome AS escala_nome,
+      e.dias AS escala_dias
     FROM qlp_colaboradores c
+    LEFT JOIN qlp_escalas e ON e.id = c.escala_id
     LEFT JOIN qlp_vinculos v ON v.colaborador_id = c.id
     LEFT JOIN qlp_lideres l ON l.id = v.lider_id
     LEFT JOIN qlp_colaboradores cl ON cl.id = l.colaborador_id
@@ -64,6 +70,8 @@ export async function GET(req: NextRequest) {
     'Função': r.funcao,
     'Seção': r.secao ?? '',
     'Filial': r.filial_codigo ?? '',
+    'Escala': r.escala_nome ?? 'Não definida',
+    'Dias de trabalho': r.escala_nome ? formatarDias(r.escala_dias) : '',
     'Gestor Direto': r.lider_nome ?? '',
     'Seção Gestor': r.lider_secao ?? '',
     'Mesma Seção do Gestor?': !r.lider_nome
@@ -77,7 +85,7 @@ export async function GET(req: NextRequest) {
   const ws = XLSX.utils.json_to_sheet(data);
   ws['!cols'] = [
     { wch: 14 }, { wch: 30 }, { wch: 26 }, { wch: 26 },
-    { wch: 10 }, { wch: 30 }, { wch: 26 }, { wch: 20 },
+    { wch: 10 }, { wch: 22 }, { wch: 22 }, { wch: 30 }, { wch: 26 }, { wch: 20 },
   ];
   XLSX.utils.book_append_sheet(wb, ws, 'Quadro');
 

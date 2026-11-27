@@ -21,6 +21,7 @@ import {
   IC_NAV_BASE, IC_NAV_ADMIN_EXTRAS,
   EXPERIENCIA_NAV_BASE, EXPERIENCIA_NAV_ADMIN_EXTRAS,
   COMITE_NAV,
+  UNIFORMES_NAV_ADMIN, UNIFORMES_NAV_BASE,
 } from './nav-config';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 
@@ -69,6 +70,9 @@ export function Sidebar({
   const inPesquisas =
     pathname === '/pesquisas' ||
     pathname.startsWith('/pesquisas/');
+  const inUniformes =
+    pathname === '/uniformes' ||
+    pathname.startsWith('/uniformes/');
   // Visualizador dentro do módulo de entrevistas (histórico/entrevista/candidato)
   // recebe um menu contextual sem "Indicadores", que apontaria para outro módulo.
   const inEntrevistasVisualizador =
@@ -78,7 +82,9 @@ export function Sidebar({
       pathname.startsWith('/entrevista/') ||
       pathname.startsWith('/candidato/')
     );
-  const nav = inComite
+  const nav = inUniformes
+    ? perfil === 'admin' ? UNIFORMES_NAV_ADMIN : UNIFORMES_NAV_BASE
+    : inComite
     ? COMITE_NAV
     : inExp
     ? perfil === 'admin'
@@ -123,7 +129,9 @@ export function Sidebar({
               : perfil === 'visualizador'
                 ? VISUALIZADOR_NAV
                 : FILIAL_NAV;
-  const moduleLabel = inComite
+  const moduleLabel = inUniformes
+    ? 'Uniformes'
+    : inComite
     ? 'Comitê de Desligamento'
     : inExp
     ? 'Avaliação de Experiência'

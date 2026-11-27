@@ -940,3 +940,48 @@ export const expLinhas = pgTable('exp_linhas', {
   importIdx: index('exp_linhas_import_idx').on(t.importId),
   filialIdx: index('exp_linhas_filial_idx').on(t.filialCodigo),
 }));
+
+// ============================================================
+// Uniformes + usuários gestor (migration 0019)
+// ============================================================
+
+export const usuariosGestores = pgTable('usuarios_gestores', {
+  usuarioAcessoId: uuid('usuario_acesso_id').primaryKey().references(() => usuariosAcesso.id, { onDelete: 'cascade' }),
+  chapa: text('chapa').notNull().unique(),
+  colaboradorId: uuid('colaborador_id'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const uniformesSolicitacoes = pgTable('uniformes_solicitacoes', {
+  id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  solicitanteNome: text('solicitante_nome').notNull(),
+  solicitanteUsuario: text('solicitante_usuario').notNull(),
+  solicitantePerfil: text('solicitante_perfil').notNull(),
+  filialCodigo: text('filial_codigo').notNull(),
+  chapa: text('chapa').notNull(),
+  colaboradorNome: text('colaborador_nome').notNull(),
+  funcao: text('funcao'),
+  secao: text('secao'),
+  item: text('item').notNull(),
+  tamanho: text('tamanho').notNull(),
+  quantidade: smallint('quantidade').notNull().default(1),
+  motivo: text('motivo').notNull(),
+  motivoOutro: text('motivo_outro'),
+  status: text('status').notNull().default('solicitado'),
+  motivoRecusa: text('motivo_recusa'),
+  decididoPor: text('decidido_por'),
+  decididoEm: timestamp('decidido_em', { withTimezone: true }),
+  prontoEm: timestamp('pronto_em', { withTimezone: true }),
+  dataEntrega: date('data_entrega'),
+  entreguePor: text('entregue_por'),
+  exigeDevolucao: boolean('exige_devolucao').notNull().default(true),
+  devolvidoEm: date('devolvido_em'),
+  devolucaoObs: text('devolucao_obs'),
+  observacao: text('observacao'),
+}, (t) => ({
+  statusIdx: index('uniformes_status_idx').on(t.status, t.createdAt),
+  filialIdx: index('uniformes_filial_idx').on(t.filialCodigo),
+  chapaIdx: index('uniformes_chapa_idx').on(t.chapa),
+}));

@@ -12,6 +12,10 @@ export function middleware(req: NextRequest) {
   if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) return NextResponse.next();
   if (pathname === '/') return NextResponse.next();
 
+  // Repassa o caminho para os layouts (o usuário "gestor" só acessa alguns módulos).
+  const cabecalhos = new Headers(req.headers);
+  cabecalhos.set('x-pathname', pathname);
+
   const token = req.cookies.get(SESSION_COOKIE)?.value;
   if (!token || token.length < 16) {
     const url = req.nextUrl.clone();
@@ -19,7 +23,7 @@ export function middleware(req: NextRequest) {
     url.searchParams.set('next', pathname);
     return NextResponse.redirect(url);
   }
-  return NextResponse.next();
+  return NextResponse.next({ request: { headers: cabecalhos } });
 }
 
 export const config = {

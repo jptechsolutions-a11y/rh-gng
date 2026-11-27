@@ -20,6 +20,7 @@ import {
   IC_NAV_BASE, IC_NAV_ADMIN_EXTRAS,
   EXPERIENCIA_NAV_BASE, EXPERIENCIA_NAV_ADMIN_EXTRAS,
   COMITE_NAV,
+  UNIFORMES_NAV_ADMIN, UNIFORMES_NAV_BASE,
 } from './nav-config';
 
 export function MobileNav({ perfil, nome, subtitulo }: { perfil: 'filial' | 'admin' | 'visualizador'; nome: string; subtitulo: string }) {
@@ -63,6 +64,9 @@ export function MobileNav({ perfil, nome, subtitulo }: { perfil: 'filial' | 'adm
   const inPesquisas =
     pathname === '/pesquisas' ||
     pathname.startsWith('/pesquisas/');
+  const inUniformes =
+    pathname === '/uniformes' ||
+    pathname.startsWith('/uniformes/');
 
   const inEntrevistasVisualizador =
     perfil === 'visualizador' && (
@@ -72,7 +76,9 @@ export function MobileNav({ perfil, nome, subtitulo }: { perfil: 'filial' | 'adm
       pathname.startsWith('/candidato/')
     );
 
-  const nav = inComite
+  const nav = inUniformes
+    ? perfil === 'admin' ? UNIFORMES_NAV_ADMIN : UNIFORMES_NAV_BASE
+    : inComite
     ? COMITE_NAV
     : inExp
     ? perfil === 'admin'

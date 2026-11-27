@@ -1,5 +1,7 @@
+import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth/session';
+import { gestorPodeAcessar } from '@/lib/modules/gestor';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { MobileNav } from '@/components/layout/MobileNav';
 import { ConectaLogo } from '@/components/brand/ConectaLogo';
@@ -7,6 +9,12 @@ import { ConectaLogo } from '@/components/brand/ConectaLogo';
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const s = await getSession();
   if (!s) redirect('/login');
+
+  // Usuário gestor: só os módulos liberados (qualquer outro caminho volta para o início).
+  if (s.perfil === 'visualizador' && s.gestor) {
+    const caminho = (await headers()).get('x-pathname') ?? '';
+    if (caminho && !gestorPodeAcessar(caminho)) redirect('/inicio');
+  }
 
   const nome = s.perfil === 'filial' ? s.filialNome : (s.nome ?? 'Administrador');
   const sub  = s.perfil === 'filial' ? `Filial ${s.filialCodigo}` : `@${s.usuario}`;

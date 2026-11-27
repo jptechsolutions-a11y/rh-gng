@@ -22,6 +22,8 @@ export type VisualizadorSession = {
   escopo: 'lista' | 'nacional';
   filiaisIds: string[];      // vazio quando escopo='nacional'
   filiaisCodigos: string[];  // vazio quando escopo='nacional'
+  /** Usuário gerado a partir de um líder do QLP: só acessa os módulos liberados para gestor. */
+  gestor: boolean;
 };
 export type Session = FilialSession | AdminSession | VisualizadorSession;
 
@@ -205,6 +207,18 @@ export const getSession = cache(async (): Promise<Session | null> => {
       filiaisIds = rows2.map((r) => r.filialId);
       filiaisCodigos = rows2.map((r) => r.codigo).filter((c): c is string => !!c);
     }
+    // Marca de gestor em tabela própria; se a migration 0019 ainda não rodou, segue como não-gestor.
+    let gestor = false;
+    try {
+      const g = await db
+        .select({ id: schema.usuariosGestores.usuarioAcessoId })
+        .from(schema.usuariosGestores)
+        .where(eq(schema.usuariosGestores.usuarioAcessoId, s.usuarioAcessoId))
+        .limit(1);
+      gestor = g.length > 0;
+    } catch {
+      gestor = false;
+    }
     return store({
       perfil: 'visualizador', token,
       usuarioAcessoId: s.usuarioAcessoId,
@@ -213,6 +227,7 @@ export const getSession = cache(async (): Promise<Session | null> => {
       escopo: s.uaEscopo === 'nacional' ? 'nacional' : 'lista',
       filiaisIds,
       filiaisCodigos,
+      gestor,
     });
   }
   return store(null);

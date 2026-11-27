@@ -2,6 +2,7 @@ import { TopBar } from '@/components/layout/TopBar';
 import { requireSession } from '@/lib/auth/session';
 import { listarFiliais, listarUsuariosAcesso } from '@/actions/usuarios-acesso';
 import { UsuariosAcessoClient } from './UsuariosAcessoClient';
+import { GestoresQlpPanel } from './GestoresQlpPanel';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +16,8 @@ export default async function UsuariosAcessoPage() {
         subtitulo="Acessos regionais e nacionais (somente leitura)"
         badge="ADMIN"
       />
-      <div className="p-4 lg:p-6">
+      <div className="p-4 lg:p-6 space-y-6">
+        <GestoresQlpPanel />
         <UsuariosAcessoClient usuariosInicial={usuarios} filiais={filiais} />
       </div>
     </>

@@ -4,7 +4,7 @@ import {
   CalendarClock, Plus, BarChart3, UserCog, Target, BookOpen, Printer, ClipboardCheck,
   GalleryHorizontal, Cloud, Clock, AlertTriangle, Trophy, GraduationCap, CalendarOff,
   Network, Upload, IdCard, ListTree, UsersRound, CalendarDays,
-  Bus, Route, Briefcase, ListChecks, ClipboardPen, HardHat, GitCompare,
+  Bus, Route, Briefcase, ListChecks, ClipboardPen, HardHat, GitCompare, Shirt,
 } from 'lucide-react';
 
 // Fonte ÚNICA de navegação — consumida pela Sidebar (desktop) e pela MobileNav.
@@ -143,4 +143,14 @@ export const IC_NAV_BASE: NavItem[] = [
 export const IC_NAV_ADMIN_EXTRAS: NavItem[] = [
   { href: '/ic/importar',      label: 'Importar semana', icon: Upload },
   { href: '/ic/responsaveis',  label: 'Responsáveis',    icon: UsersRound },
+];
+
+// Uniformes: o admin (Gente e Gestão) gerencia as solicitações; os demais solicitam e acompanham.
+export const UNIFORMES_NAV_ADMIN: NavItem[] = [
+  { href: '/uniformes',           label: 'Solicitações', icon: Shirt },
+  { href: '/uniformes/solicitar', label: 'Solicitar',    icon: Plus },
+];
+export const UNIFORMES_NAV_BASE: NavItem[] = [
+  { href: '/uniformes',           label: 'Acompanhar', icon: Shirt },
+  { href: '/uniformes/solicitar', label: 'Solicitar',  icon: Plus },
 ];

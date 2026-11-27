@@ -21,13 +21,16 @@ import {
 import { ConectaLogo } from '@/components/brand/ConectaLogo';
 import { ConectaSymbol } from '@/components/brand/ConectaSymbol';
 import { LogoutButton } from '@/components/layout/LogoutButton';
-import { requireSession } from '@/lib/auth/session';
+import { redirect } from 'next/navigation';
+import { getSession } from '@/lib/auth/session';
 import { hasModuleAccess } from '@/lib/modules/permissions';
 
 export const dynamic = 'force-dynamic';
 
 export default async function InicioPage() {
-  const s = await requireSession();
+  // Sessão expirada/inválida: volta ao login em vez de estourar 500 (o middleware só confere a presença do cookie).
+  const s = await getSession();
+  if (!s) redirect('/login');
 
   const nome = s.perfil === 'filial' ? s.filialNome : (s.nome ?? 'Administrador');
   const sub = s.perfil === 'filial' ? `Filial ${s.filialCodigo}` : `@${s.usuario}`;
